@@ -8,9 +8,16 @@ The central design principle is not "make every device random." The safer target
 
 - [Execution plan](docs/execution-plan.md): goals, roadmap, milestones, development environment, risk model, and release tracks.
 - [Architecture](docs/architecture.md): proposed repository layout, tweak runtime, build system, configuration model, website/custom compiler, and QA harness.
+- [Implementation checklist](docs/implementation-checklist.md): actionable phase-by-phase handoff plan with statuses and acceptance checks.
 - [Fingerprinting surfaces](docs/fingerprinting-surfaces.md): detailed API-by-API notes, mitigation strategy, limitations, and priority.
 - [Spoofing option policy](docs/spoofing-option-policy.md): non-identifying constants, common defaults, required option documentation, and mitigation method coverage.
 - [Research notes](docs/research-notes.md): source inventory, Loupe upstream commit, and open research questions.
+
+## Development Environment
+
+The canonical local build environment is macOS with Xcode, Theos, `ldid`, `dpkg-deb`, and `fakeroot`. Development should start with a plain injectable `.dylib`, then wrap the same runtime in a rootless `.deb` once the hook and policy boundaries are stable. Real-device deployment and validation are intentionally out of band: the artifact may be injected into an owned app through Sideloadly or another sideloaded/test flow, or installed as a jailbreak package.
+
+Package work must support clean install, upgrade, disable, and uninstall paths. The `.deb` must remove or neutralize installed dynamic libraries, filter plists, preference bundles, launch helpers, generated caches, and package-owned configuration without touching protected app data unless the user explicitly chose that cleanup.
 
 ## Non-goals
 

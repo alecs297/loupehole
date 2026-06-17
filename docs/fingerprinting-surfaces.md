@@ -20,11 +20,11 @@ Default values should be common on real devices. For example, local-network spoo
 | Hardware model | `sysctlbyname("hw.machine")`, `hw.model`, `uname` | Exact model and SoC class | Return coherent cohort hardware identifiers | Same | P0 |
 | CPU identifiers | `hw.cputype`, `hw.cpusubtype`, `ProcessInfo.processorCount` | Model classifier | Return cohort CPU fields | Same | P0 |
 | OS version | `UIDevice.systemVersion`, `ProcessInfo.operatingSystemVersionString`, `kern.version` | Narrows device population | Report real major/minor or cohort-compatible patch bucket | Cohort OS string | P0 |
-| Boot time | `kern.boottime` | Stable until reboot; strong session link | Round to broad bucket or synthetic per-app stable boot window | Synthetic cohort boot time | P0 |
+| Boot time | `kern.boottime` | Stable until reboot; strong session link | Round to broad bucket or synthetic per-app stable boot window coherent with volume initialization time | Synthetic cohort boot time | P0 |
 | Lockdown mode | `UserDefaults` key patterns | Rare boolean, high entropy when enabled | Consider pass-through in compatibility; normalize to common off in standard with warning | Normalize | P2 |
 | Physical memory | `ProcessInfo.physicalMemory` | Device model classifier | Cohort memory value | Same | P0 |
 | Battery | `UIDevice.batteryLevel`, `batteryState`, low power, thermal | Time-domain correlation | Bucket level to 10 or 20 percent, slow update cadence, common state mapping | Fixed or coarse | P0 |
-| Storage | `URLResourceValues` capacity/free/creation/UUID/name | User-specific free space and setup date | Bucket capacities, hide volume creation date, common UUID/name | Common values | P0 |
+| Storage | `URLResourceValues` capacity/free/creation/UUID/name | User-specific free space and setup date | Bucket capacities, hide or normalize volume creation date, common UUID/name; volume initialization or creation time must predate last boot time | Common values | P0 |
 | Display | `UIScreen`, `UITraitCollection`, safe area, brightness, FPS | Exact model, settings, usage | Cohort screen metrics; bucket brightness; stable common Dynamic Type | Same, more generic | P0 |
 | Locale | `Locale.current`, `preferredLanguages`, `TimeZone`, `Calendar`, keyboard languages | High entropy combination | Shared locale profile; optional pass-through timezone region; limit language list | Cohort locale | P0 |
 | Accessibility | `UIAccessibility` flags, style/contrast | Rare settings identify users | Return common defaults except features needed for app usability; avoid breaking accessibility by default | Generic unless user opts in | P1 |
@@ -114,8 +114,11 @@ These values must be generated together:
 - OS version, kernel version, WebKit version, user agent.
 - Audio sample rate and route capabilities.
 - Telephony and device class.
+- Temporal values such as volume initialization or creation time, last boot time, app install time, and profile rotation time.
 
 Contradictions are high-risk. A tracker can flag the protection if an app sees an iPhone SE screen with ProMotion 120 Hz, an A18 Pro GPU, iPad safe area values, and a WebKit iPad platform string.
+
+Temporal contradictions are also high-risk. A tracker can flag the protection if a volume appears to have been initialized after the last boot, an app install predates the storage volume, or a resettable identifier appears older than the profile rotation that created it.
 
 ## Value Lifetime Rules
 
@@ -132,7 +135,9 @@ Contradictions are high-risk. A tracker can flag the protection if an app sees a
 
 P0 MVP:
 
-- IDFV/device/sysctl/uname.
+- IDFV replacement.
+- Device boot time and volume initialization or creation time, with volume time earlier than boot time.
+- Device/sysctl/uname.
 - ProcessInfo CPU/RAM/OS.
 - Storage capacity/date.
 - Display/safe area.

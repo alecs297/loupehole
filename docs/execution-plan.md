@@ -129,6 +129,47 @@ Good defaults:
 - App-specific strict mode warns that functionality may break.
 - Changing profile values requires confirmation because it may rotate identifiers.
 
+## Development Environment
+
+The canonical local environment is macOS with Xcode and Theos. The first build target is a plain arm64 iOS dylib; Theos packaging follows once that dylib has the final runtime shape.
+
+Required local tools:
+
+- Xcode 26+ with the iPhoneOS SDK.
+- Theos, updated regularly.
+- `ldid` for ad hoc signing jailbreak/test artifacts.
+- `dpkg-deb` and `fakeroot` for rootless `.deb` assembly.
+- `make`, `clang`, `xcrun`, `plutil`, `otool`, `nm`, `strings`, `strip`, `file`, `jq`, `rg`, and `git`.
+- Node.js/npm for the later custom build website.
+- Ruby/Bundler/Fastlane only when working on upstream Loupe App Store automation or if the builder adopts Fastlane for screenshots/metadata; it is not required for the tweak MVP.
+
+Runtime language choice:
+
+- The injected runtime uses C, Objective-C, and Objective-C++ only.
+- Swift is reserved for the optional preference UI and external tooling.
+
+Verified local baseline as of 2026-06-17:
+
+- Xcode 26.5 and iPhoneOS SDK 26.5 are installed.
+- Theos is installed at `/Users/alex/theos` and updated to commit `9bc7340`.
+- `ldid`, `dpkg-deb`, and `fakeroot` are installed.
+- A minimal arm64 iOS dylib can be compiled with Xcode clang and signed with `ldid`.
+- The upstream Loupe project is cloned in `.research/upstream/loupe` and remains ignored by Git.
+
+Current workflow constraints:
+
+- Real-device deployment and validation are manual. Supported artifact paths are a plain `.dylib` for Sideloadly-style owned-app injection experiments, and a rootless `.deb` for jailbreak package installation.
+- The repository should not require `ios-deploy`, `ideviceinstaller`, or simulator automation for the first milestones.
+- No Apple code-signing identity is required for the Theos/rootless package path. Xcode app builds for upstream Loupe or a signed harness app will need a developer team and signing identity.
+- The build website should eventually run on macOS workers with this same Xcode/Theos toolchain.
+
+Suggested ways of working:
+
+- Fast dylib loop: build a plain `.dylib`, run local binary audits, then hand the artifact to the manual Sideloadly/injection workflow.
+- Package loop: build the rootless `.deb`, inspect its layout and maintainer scripts locally, then hand the package to manual device installation.
+- Harness loop: compare Loupe-style probe output before and after injection, but keep capture/import manual until the package and preference flows stabilize.
+- Website loop: defer until the local Makefile/Theos build can produce deterministic artifacts from shared profile templates.
+
 ## Detection Resistance and Self-Fingerprinting
 
 The project should reduce its own fingerprint without becoming an app-security bypass toolkit.
@@ -246,6 +287,118 @@ loupehole/
     build/
     verify/
 ```
+
+## Implementation Sequence
+
+The project should proceed in artifact-sized steps, while keeping the final modular architecture from the first commit that adds source code.
+
+The trackable handoff checklist for implementation lives in [implementation-checklist.md](implementation-checklist.md). A new agent should use that file as the source of truth for what to build next and how to verify it.
+
+### Step 1: Minimal Injectable Dylib
+
+Goal:
+
+- Produce a loadable arm64 iOS dylib with a safe constructor, generated/internalized names, a module registry, hook backend abstraction, and no active spoofing yet.
+
+Exit criteria:
+
+- The dylib builds locally, signs with `ldid`, strips release symbols, and passes a string/symbol audit.
+- No project-identifying strings are present in the injected runtime except unavoidable development-only artifacts.
+- Hook modules can be compiled in or out without changing observable API behavior.
+- `LHHookBackend` exists with a Theos/Logos MobileSubstrate-compatible implementation first; alternate ElleKit/libhooker-specific backends are deferred behind build flags.
+
+### Step 2: Policy Engine and First Mitigation
+
+Goal:
+
+- Implement the core policy/profile/state path and the first low-risk passive mitigation group end to end: IDFV replacement, device boot time normalization, and volume initialization or creation time normalization.
+
+Exit criteria:
+
+- Hook code calls the policy engine instead of embedding spoofed values.
+- The selected mitigations have option documentation, default profile data, coherence notes, and harness probes.
+- The policy engine enforces temporal coherence: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
+- `LHEmbeddedStateProvider` and `LHLocalStateProvider` exist so early dylib tests can run before package state is available.
+- A UUIDv4 configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers.
+- Each first mitigation has a documented generic fallback; compatibility mode may pass through only for the affected mitigation when no coherent fallback is available.
+
+### Step 3: Dylib Mitigation Expansion
+
+Goal:
+
+- Add MVP passive modules behind independent switches before packaging complexity grows.
+
+Exit criteria:
+
+- The dylib covers an initial Loupe-style passive subset.
+- Runtime overhead, crash behavior, exported symbols, strings, and debug logs are audited.
+- The default embedded profile is coherent across implemented surfaces.
+- Build variability is controlled by build flags, with readable development builds and stricter generated names/audits for release or custom builds.
+
+### Step 4: Rootless Deb Package
+
+Goal:
+
+- Package the same dylib as a clean rootless `.deb`.
+
+Exit criteria:
+
+- The package installs under `/var/jb`, uses a conservative filter plist, and starts with no global injection.
+- Package scripts support clean install, upgrade, disable, and uninstall.
+- Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config, without deleting protected app data unless the user explicitly requested cleanup.
+
+### Step 5: Configuration and Preferences
+
+Goal:
+
+- Add embedded config, package-owned config/state, scope selection, and optional jailbreak preference UI without changing hook behavior directly.
+
+Exit criteria:
+
+- Config priority is emergency bypass, preference profile, embedded build config, then built-in default.
+- Per-app allowlist, profile selection, module toggles, scope mode, and seed reset work through the config provider.
+- Scope mode supports per-app default, per-vendor group, per-shared-app-group, and manual linked groups.
+- `LHPackageStateProvider` stores jailbreak package state outside target app containers.
+- `LHAppGroupStateProvider` and `LHKeychainGroupStateProvider` are deferred until sideloaded signing entitlements are known.
+- Preference identifiers, storage paths, filenames, and Keychain service/account names are derived from the instance seed and do not expose project names or module names to target app processes.
+
+### Step 6: Full Mitigation Coverage
+
+Goal:
+
+- Implement the remaining passive, advanced, WebView, persistence, and permissioned mitigations.
+
+Exit criteria:
+
+- Every stable option has required documentation, harness coverage, defaults, drawbacks, rollback behavior, and coherence dependencies.
+- Loupe-style reports show fewer high-entropy values without obvious contradictions.
+- Strict mode behavior is documented as breakage-tolerant and opt-in.
+
+### Step 6.5: Storage Guard Hardening
+
+Goal:
+
+- Add optional anti-detection hardening for Loupehole-owned state records in target-visible storage backends.
+
+Exit criteria:
+
+- Shared Keychain state is hidden from broad target-app `SecItemCopyMatching` queries and protected from target-app update/delete calls when ownership is certain.
+- Loupehole state providers have an explicit reentrancy bypass so they can access their own records.
+- File/App Group storage guards are optional and strict-mode oriented because filesystem enumeration has a broad API surface.
+- Guard hooks never hide unrelated app data and leave the app's storage call unfiltered when ownership is uncertain.
+
+### Step 7: Custom Build Website
+
+Goal:
+
+- Build a website and macOS worker pipeline that compiles shared-template dylib and `.deb` artifacts.
+
+Exit criteria:
+
+- Users can choose profiles, modules, and filters from predefined options.
+- Users can create a new configuration instance seed or provide an existing one to reproduce matching generated paths, keys, and scoped values.
+- The website warns about uniqueness risk and steers users toward shared cohorts.
+- Build variability affects static markers, not observable API behavior.
 
 ## Roadmap
 
@@ -431,10 +584,10 @@ Use macOS as the canonical build environment. Theos is cross-platform, but moder
 Keep the injected core small and boring:
 
 - C/Objective-C/Objective-C++ for runtime hooks.
-- Avoid Swift in the injected dylib unless there is a clear benefit.
+- Do not use Swift in the injected dylib; reserve Swift for optional preferences UI or tooling.
 - Split modules by framework to reduce blast radius.
 - Use lazy initialization.
-- Fail open in compatibility mode if a hook cannot produce a coherent value.
+- Prefer per-mitigation generic fallbacks; pass through only the affected mitigation in compatibility mode when a coherent fallback is not available.
 
 ## Best Privacy Strategy
 
@@ -473,7 +626,7 @@ Examples:
 - Per-app stable seeds for identifiers.
 - Coherence graph for plausible device bundles.
 - Compatibility/standard/strict modes.
-- Module-level hooks with fail-open behavior.
+- Module-level hooks with per-mitigation generic fallback behavior.
 - WebView user scripts plus selected native WebKit hooks.
 - Rootless Theos package for jailbreaks.
 - macOS build worker for custom artifacts.

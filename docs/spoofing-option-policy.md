@@ -45,10 +45,41 @@ Unacceptable hardcoded values:
 
 - Unique salts shared across all installs.
 - Project-specific Keychain services.
+- Project-specific shared-container filenames or storage keys.
 - Project-specific JS globals.
 - Project-specific class prefixes in target processes.
 - Rare fake defaults that normal devices almost never expose.
 - A single universal synthetic device profile if it becomes a recognizable signature.
+
+## Instance Seed and Storage Names
+
+Each configuration instance should have one high-entropy instance seed. The seed lets a user recreate or continue the same Loupehole instance across rebuilt dylibs or packages without manually tracking every generated path, key, and scoped value. The seed must never be returned through protected app APIs and must not be exposed to page scripts.
+
+The instance seed should derive:
+
+- Scoped per-app, per-vendor, per-shared-group, and manual-group seeds.
+- State record identifiers.
+- Shared-container filenames.
+- Keychain service/account names.
+- Package-owned internal state filenames.
+- Optional generated internal symbol or class prefixes, if those names cannot become app-visible API values.
+
+Storage-name rules:
+
+- Do not use readable project names, module names, mitigation names, or obvious prefixes in filenames, preference keys, Keychain service names, Keychain account names, or shared-container records that may be visible from a target app process.
+- Derive storage names with a keyed hash or KDF from the instance seed, purpose label, scope mode, and stable scope identifier.
+- Keep purpose labels internal to derivation code; do not store them next to the derived value.
+- Reusing the same instance seed and scope inputs should recreate the same derived paths and keys.
+- Rotating the instance seed should rotate every derived storage name and scoped value unless the user explicitly migrates state.
+- Release audits must search binaries, scripts, generated config, and package layouts for accidental project-identifying storage names.
+
+Storage guard hooks:
+
+- Hooking Keychain or filesystem APIs to hide Loupehole-owned state is allowed as a hardening feature, but it must not replace opaque seed-derived storage names.
+- Guard hooks may filter or protect only records that are provably derived from the active instance seed and scope.
+- Guard hooks must not hide unrelated app data, unrelated Keychain records, or user files.
+- Loupehole's own state provider must have an explicit reentrancy bypass.
+- Compatibility mode should leave the app's storage call unfiltered when Loupehole ownership cannot be proven.
 
 ## Coverage Requirement
 
@@ -100,6 +131,7 @@ Required fields:
 - Mitigation behavior: exactly what the tweak changes.
 - Value lifetime: pass-through, per-app stable, session-stable, slowly varying, or cohort static.
 - Coherence dependencies: other APIs that must agree with this value.
+- Temporal dependencies: dates, counters, and lifetimes that must be ordered plausibly.
 - Drawbacks: user-visible breakage, app compatibility risks, performance cost, and security implications.
 - Detection/uniqueness risk: how the mitigation itself could stand out.
 - Test plan: harness checks and expected results.
@@ -127,6 +159,8 @@ Common defaults:
 Value lifetime:
 
 Coherence dependencies:
+
+Temporal dependencies:
 
 Drawbacks:
 
@@ -166,6 +200,18 @@ Examples:
 - Canvas/WebGL: prefer deterministic cohort-level output rather than per-user random noise.
 - Accessibility: default to common settings, but avoid breaking real accessibility needs unless the user chooses strict spoofing.
 
+## Temporal Coherence Policy
+
+Generated values must describe a believable device history. Do not generate timestamps, counters, lifetimes, or slowly varying values independently when an app can compare them.
+
+Rules:
+
+- Volume initialization or creation time must be earlier than the last boot time.
+- App install time must not predate the volume initialization time.
+- Synthetic profile rotation time must not predate identifiers or app-scoped values that it is supposed to reset.
+- Slowly varying values such as battery, free storage, thermal state, and uptime-adjacent values must move in plausible directions and buckets.
+- If a hook cannot preserve temporal coherence, compatibility mode should use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
+
 ## Defaults Versus Hardcoding
 
 Common defaults are allowed. Identifying hardcoded constants are not.
@@ -190,4 +236,3 @@ A spoofing option is complete only when:
 - Its drawbacks are documented.
 - It does not contain identifying project/build constants in the injected runtime.
 - It can be disabled per app.
-
