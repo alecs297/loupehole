@@ -12,7 +12,8 @@ extern "C" {
 
 typedef enum LHStateProviderKind {
     LHStateProviderKindEmbedded = 0,
-    LHStateProviderKindLocal = 1
+    LHStateProviderKindLocal = 1,
+    LHStateProviderKindPackage = 2
 } LHStateProviderKind;
 
 typedef struct LHRuntimeConfig {

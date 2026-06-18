@@ -18,22 +18,40 @@ endif
 TARGET_DYLIB ?= packages/tweak/.theos/obj/runtime.dylib
 ARTIFACT_DIR ?= dist
 FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
+PACKAGE_NAME ?= com.loupehole.runtime
+PACKAGE_VERSION ?= 0.1.0
+PACKAGE_ARCH ?= iphoneos-arm64
+TARGET_DEB ?= packages/tweak/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
+FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 
 export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
 
-.PHONY: all build clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check state-check policy-check
+.PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check policy-check
 
 all: copy-artifact
 
 build: generate
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE)
 
+package: package-verify
+
+package-build: generate
+	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage package
+
+copy-package: package-build
+	mkdir -p "$(ARTIFACT_DIR)"
+	cp -f "$(TARGET_DEB)" "$(FINAL_DEB)"
+
+package-verify: copy-package
+	scripts/verify/package-layout-check.sh "$(FINAL_DEB)"
+
 generate:
 	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --values "$(POLICY_VALUE_CATALOG)" --selection "$(BUILD_SELECTION)"
 
 clean:
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" clean
+	rm -rf packages/tweak/packages
 	rm -rf "$(ARTIFACT_DIR)"
 
 sign: build
@@ -45,7 +63,7 @@ copy-artifact: sign
 
 audit: copy-artifact verify
 
-verify: seed-check state-check policy-check summary strings symbols swift-absence debug-log-absence
+verify: seed-check seed-provider-check state-check policy-check summary strings symbols swift-absence debug-log-absence
 
 summary:
 	scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
@@ -64,6 +82,9 @@ debug-log-absence:
 
 seed-check:
 	scripts/verify/seed-derivation-check.sh
+
+seed-provider-check: generate
+	scripts/verify/seed-provider-check.sh
 
 state-check: generate
 	scripts/verify/state-provider-check.sh

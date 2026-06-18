@@ -1,9 +1,18 @@
 #include "LHStateProvider.h"
+#include "LHGeneratedConfig.h"
 
 #import <Foundation/Foundation.h>
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef THEOS_PACKAGE_INSTALL_PREFIX
+#define THEOS_PACKAGE_INSTALL_PREFIX ""
+#endif
+
+#define LH_ROOTLESS_NS(path) @THEOS_PACKAGE_INSTALL_PREFIX path
+
+LH_DERIVATION_LABEL(package_state, root)
 
 static NSData *LHDataFromBytes(const uint8_t *bytes, size_t length) {
     return [NSData dataWithBytes:bytes length:length];
@@ -36,6 +45,49 @@ static NSString *LHStateBlobPath(const LHRuntimeConfig *config, const LHAppConte
 
     NSArray<NSString *> *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
     NSString *base = [paths firstObject];
+    NSString *name = LHStateBlobName(config, context, key);
+    if (base == nil || name == nil) {
+        return nil;
+    }
+    return [base stringByAppendingPathComponent:name];
+}
+
+static NSString *LHPackageStateRootName(const LHRuntimeConfig *config, const LHAppContext *context) {
+    char name[33] = { 0 };
+    if (!LHSeedDeriveOpaqueName(&config->instanceSeed,
+                                &LHGeneratedDerivationLabel_package_state_root,
+                                &context->scope,
+                                name,
+                                sizeof(name))) {
+        return nil;
+    }
+    return [NSString stringWithUTF8String:name];
+}
+
+static NSString *LHPackageStateBasePath(const LHRuntimeConfig *config, const LHAppContext *context) {
+    NSString *rootName = LHPackageStateRootName(config, context);
+    if (rootName == nil) {
+        return nil;
+    }
+    NSString *parentName = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
+    if (parentName == nil) {
+        return nil;
+    }
+
+#if LH_STATE_TESTING
+    const char *overrideRoot = getenv("LH_PACKAGE_STATE_TEST_ROOT");
+    if (overrideRoot != 0 && overrideRoot[0] != '\0') {
+        NSString *base = [[NSString stringWithUTF8String:overrideRoot] stringByAppendingPathComponent:@"var/mobile/Library/Application Support"];
+        return [[base stringByAppendingPathComponent:parentName] stringByAppendingPathComponent:rootName];
+    }
+#endif
+
+    NSString *base = LH_ROOTLESS_NS(@"/var/mobile/Library/Application Support");
+    return [[base stringByAppendingPathComponent:parentName] stringByAppendingPathComponent:rootName];
+}
+
+static NSString *LHPackageStateBlobPath(const LHRuntimeConfig *config, const LHAppContext *context, const LHStateKey *key) {
+    NSString *base = LHPackageStateBasePath(config, context);
     NSString *name = LHStateBlobName(config, context, key);
     if (base == nil || name == nil) {
         return nil;
@@ -134,6 +186,41 @@ static bool LHStateProviderLoadLocal(const LHRuntimeConfig *config,
     return true;
 }
 
+static bool LHStateProviderLoadPackage(const LHRuntimeConfig *config,
+                                       const LHAppContext *context,
+                                       const LHStateKey *key,
+                                       uint8_t *output,
+                                       size_t outputLength,
+                                       LHStateGenerateBytes generate,
+                                       void *generatorContext,
+                                       LHStateLoadResult *result) {
+    NSString *path = LHPackageStateBlobPath(config, context, key);
+    if (path == nil) {
+        return false;
+    }
+
+    if (LHStateReadBytes(path, key, output, outputLength)) {
+        if (result != 0) {
+            result->local = true;
+            result->created = false;
+        }
+        return true;
+    }
+
+    if (!LHStateGenerate(config, context, generate, generatorContext, output, outputLength)) {
+        return false;
+    }
+    if (!LHStateWriteBytes(path, key, output, outputLength)) {
+        return false;
+    }
+
+    if (result != 0) {
+        result->local = true;
+        result->created = true;
+    }
+    return true;
+}
+
 bool LHStateProviderLoadOrCreate(const LHRuntimeConfig *config,
                                  const LHAppContext *context,
                                  const LHStateKey *key,
@@ -153,6 +240,11 @@ bool LHStateProviderLoadOrCreate(const LHRuntimeConfig *config,
 
         if (config->stateProviderKind == LHStateProviderKindLocal &&
             LHStateProviderLoadLocal(config, context, key, output, outputLength, generate, generatorContext, result)) {
+            return true;
+        }
+
+        if (config->stateProviderKind == LHStateProviderKindPackage &&
+            LHStateProviderLoadPackage(config, context, key, output, outputLength, generate, generatorContext, result)) {
             return true;
         }
 

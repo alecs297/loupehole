@@ -70,6 +70,43 @@ static int has_opaque_state_file(void) {
     return has_opaque_file(path);
 }
 
+static int has_opaque_package_state_file(void) {
+    const char *root = getenv("LH_PACKAGE_STATE_TEST_ROOT");
+    if (root == 0) {
+        return 0;
+    }
+    if (!is_hex_name(LHGeneratedConfigPackageStateParentDirectoryName)) {
+        return 0;
+    }
+    char path[4096] = {0};
+    snprintf(path,
+             sizeof(path),
+             "%s/var/mobile/Library/Application Support/%s",
+             root,
+             LHGeneratedConfigPackageStateParentDirectoryName);
+
+    DIR *dir = opendir(path);
+    if (dir == 0) {
+        return 0;
+    }
+
+    struct dirent *entry = 0;
+    int found = 0;
+    while ((entry = readdir(dir)) != 0) {
+        if (!is_hex_name(entry->d_name)) {
+            continue;
+        }
+        char child[4096] = {0};
+        snprintf(child, sizeof(child), "%s/%s", path, entry->d_name);
+        if (has_opaque_file(child)) {
+            found = 1;
+            break;
+        }
+    }
+    closedir(dir);
+    return found;
+}
+
 static bool generate_state(const LHRuntimeConfig *config,
                            const LHAppContext *context,
                            void *generatorContext,
@@ -97,9 +134,13 @@ int main(void) {
     LHTestStateBlob first;
     LHTestStateBlob second;
     LHTestStateBlob embedded;
+    LHTestStateBlob packageFirst;
+    LHTestStateBlob packageSecond;
     LHStateLoadResult firstResult;
     LHStateLoadResult secondResult;
     LHStateLoadResult embeddedResult;
+    LHStateLoadResult packageFirstResult;
+    LHStateLoadResult packageSecondResult;
 
     if (!LHGeneratedConfigHasInstanceSeed &&
         memcmp(config.instanceSeed.bytes, otherConfig.instanceSeed.bytes, sizeof(config.instanceSeed.bytes)) == 0) {
@@ -143,6 +184,29 @@ int main(void) {
         return 11;
     }
 
+    config.stateProviderKind = LHStateProviderKindPackage;
+    if (!LHStateProviderLoadOrCreate(&config, &context, &LHTestStateKey, (uint8_t *)&packageFirst, sizeof(packageFirst), generate_state, 0, &packageFirstResult)) {
+        return 13;
+    }
+    if (!packageFirstResult.local || !packageFirstResult.created || packageFirst.marker != 0x5a17c0de) {
+        return 14;
+    }
+    if (!LHStateProviderLoadOrCreate(&config, &context, &LHTestStateKey, (uint8_t *)&packageSecond, sizeof(packageSecond), generate_state, 0, &packageSecondResult)) {
+        return 15;
+    }
+    if (memcmp(&packageFirst, &packageSecond, sizeof(packageFirst)) != 0) {
+        return 16;
+    }
+    if (!packageSecondResult.local || packageSecondResult.created) {
+        return 17;
+    }
+    if (!has_opaque_package_state_file()) {
+        return 18;
+    }
+    if (memcmp(&first, &packageFirst, sizeof(first)) != 0) {
+        return 19;
+    }
+
     return 0;
 }
 SOURCE
@@ -152,6 +216,7 @@ HOME="$tmpdir" cc \
   -Icore/include \
   -Icore/generated \
   core/generated/LHGeneratedConfig.c \
+  core/generated/LHGeneratedDerivationLabels.c \
   core/src/LHAppContext.m \
   core/src/LHConfig.c \
   core/src/LHScope.c \
@@ -161,5 +226,5 @@ HOME="$tmpdir" cc \
   -framework Foundation \
   -o "$tmpdir/state_check"
 
-LH_STATE_TEST_HOME="$tmpdir" "$tmpdir/state_check"
+LH_STATE_TEST_HOME="$tmpdir/local" LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" "$tmpdir/state_check"
 printf '%s\n' "state provider check passed"

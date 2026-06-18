@@ -1,0 +1,9 @@
+Package: com.loupehole.runtime
+Name: Loupehole Runtime
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: Privacy-preserving fingerprinting surface normalizer for selected apps.
+Maintainer: alecs297 <alex@palmes.dev>
+Author: alecs297
+Section: Tweaks
+Depends: mobilesubstrate | ellekit

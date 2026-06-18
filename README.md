@@ -20,6 +20,11 @@ The canonical local build environment is macOS with Xcode, Theos, `ldid`, `dpkg-
 
 Package work must support clean install, upgrade, disable, and uninstall paths. The `.deb` must remove or neutralize installed dynamic libraries, filter plists, preference bundles, launch helpers, generated caches, and package-owned configuration without touching protected app data unless the user explicitly chose that cleanup.
 
+Current local artifacts:
+
+- `make audit` builds and verifies `dist/runtime.dylib`.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for the first per-bundle toggle flow.
+
 ## Non-goals
 
 - No shipping invasive anti anti-jailbreak tweaks, the aim of the project is to combat fingerprinting in an effective way, not evade DRMs.

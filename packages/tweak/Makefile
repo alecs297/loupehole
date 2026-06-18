@@ -1,6 +1,10 @@
 export TARGET := iphone:clang:latest:15.0
 export ARCHS := arm64
 export THEOS_PACKAGE_SCHEME ?= rootless
+THEOS_LAYOUT_DIR_NAME ?= generated/package-layout
+_THEOS_PLATFORM_DPKG_DEB ?= ../../scripts/build/dpkg-deb-root-owner-group.sh
+THEOS_PLATFORM_DEB_COMPRESSION_TYPE ?= xz
+LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
@@ -26,6 +30,7 @@ runtime_FILES := \
 	../../core/src/LHRuntime.m \
 	../../core/src/LHScope.c \
 	../../core/src/LHSeed.c \
+	../../core/src/LHSeedProvider.m \
 	../../core/src/LHStateProvider.m \
 	../../core/src/LHValueQuantizer.c
 
@@ -40,7 +45,8 @@ runtime_CFLAGS += \
 	-Wextra \
 	-Werror \
 	-DLH_ENABLE_VARIABILITY=$(LH_ENABLE_VARIABILITY) \
-	-DLH_ENABLE_DIAGNOSTICS=$(LH_ENABLE_DIAGNOSTICS)
+	-DLH_ENABLE_DIAGNOSTICS=$(LH_ENABLE_DIAGNOSTICS) \
+	-DLH_DEFAULT_STATE_PROVIDER_KIND=$(LH_STATE_PROVIDER_KIND)
 
 runtime_CCFLAGS += $(runtime_CFLAGS) -fvisibility-inlines-hidden
 runtime_OBJCFLAGS += $(runtime_CFLAGS)

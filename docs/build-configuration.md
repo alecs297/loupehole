@@ -27,6 +27,9 @@ sources into the injected dylib.
   declarations.
 - `core/generated/LHGeneratedDerivationLabels.c`: generated opaque derivation
   label bytes.
+- `packages/tweak/generated/package-layout/`: generated Theos package layout,
+  including maintainer scripts, package-owned state directories, the package seed
+  root, and the first `lhctl` per-bundle toggle helper.
 
 Generated files are ignored by git. The root `make` target regenerates them
 before compiling. If building directly from `packages/tweak` with Theos, run
@@ -308,3 +311,45 @@ Change the destination with:
 ```sh
 make ARTIFACT_DIR=/tmp/loupehole-artifacts
 ```
+
+Build and verify the rootless jailbreak package:
+
+```sh
+make package
+```
+
+The verified package is copied to:
+
+```text
+dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb
+```
+
+The package build compiles the same runtime with `LHStateProviderKindPackage`,
+stages the tweak and empty allowlist filter under `/var/jb`, stages the
+generated package layout, and runs `scripts/verify/package-layout-check.sh`
+against the resulting `.deb`. The package-owned state parent directory, package
+seed root directory, and package root seed filename are derived at build time
+from the configured instance seed and emitted into the runtime config and
+maintainer scripts.
+
+On install, `postinst` creates package-owned state roots and a raw 16-byte root
+install seed under the generated package seed root. At runtime, `LHSeedProvider`
+uses that root install seed to create per-scope child seeds lazily for per-app,
+per-vendor, per-shared-app-group, and manual-linked-group scopes.
+
+The package also installs `/var/jb/usr/bin/lhctl`, a small shell helper for the
+initial per-bundle filter flow:
+
+```sh
+lhctl list
+lhctl enable com.example.app
+lhctl disable com.example.app
+lhctl toggle com.example.app
+lhctl clear
+lhctl menu
+```
+
+The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist`
+and starts from an empty `Bundles` allowlist, so no app is injected until a bundle
+is explicitly enabled. It must be run as root because it writes the rootless
+Substrate filter. Restart the target app after changing the filter.

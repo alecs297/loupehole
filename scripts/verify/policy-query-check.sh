@@ -100,6 +100,7 @@ cc \
   core/src/LHProfile.c \
   core/src/LHScope.c \
   core/src/LHSeed.c \
+  core/src/LHSeedProvider.m \
   core/src/LHStateProvider.m \
   packages/tweak/sources/identity/idfv/IDFVPolicyValue.c \
   packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c \

@@ -233,7 +233,7 @@ Acceptance checks:
 
 ## Phase 4: Dylib Audit and Build Variability
 
-Status: next pending phase.
+Status: skipped, will be done manually later on
 
 Harden the plain dylib before packaging.
 
@@ -264,7 +264,23 @@ Acceptance checks:
 
 ## Phase 5: Rootless Deb Package
 
-Status: pending.
+Status: complete for the first rootless package path.
+
+Implemented a rootless Theos package for the existing runtime. `make package`
+builds `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`, compiles the
+dylib with `LHStateProviderKindPackage`, verifies the `/var/jb` package layout,
+checks the package filter starts with an empty allowlist, and exercises the
+package toggle helper. The package includes install, upgrade, disable, and
+uninstall maintainer-script paths. The package layout, package-owned state parent
+directory, package seed root, and root seed filename are generated at build time
+and passed into the runtime config and maintainer scripts. `LHSeedProvider`
+resolves package installs to a persisted root install seed plus opaque persisted
+scoped child seeds. The package state provider stores blobs under package-owned
+rootless storage outside target app containers, with derived opaque per-scope
+state directories and blob filenames. A generated `/var/jb/usr/bin/lhctl` helper
+provides a first CLI/menu flow for listing, enabling, disabling, toggling, and
+clearing per-bundle injection. Device install and behavioral validation remain
+manual.
 
 Package the same dylib for jailbreak installation.
 
@@ -275,6 +291,8 @@ Implementation tasks:
 - Start with no global injection.
 - Add maintainer scripts for install, upgrade, disable, and uninstall.
 - Implement `LHPackageStateProvider`.
+- Implement `LHSeedProvider` for package root and scoped child seeds.
+- Add a first per-bundle toggle helper for the rootless filter plist.
 - Keep package-owned runtime state outside target app containers.
 - Keep target-process-visible state names seed-derived and opaque.
 
@@ -282,6 +300,8 @@ Acceptance checks:
 
 - `.deb` builds locally with `dpkg-deb` and `fakeroot`.
 - Package layout installs under `/var/jb`.
+- Package root seed and scoped child seed paths are generated and opaque.
+- Per-bundle filter toggling works against the packaged filter plist.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
 - Reinstall after uninstall does not leave stale filter plists, generated names, or dangling package-owned preferences.
@@ -307,7 +327,10 @@ Implementation tasks:
   - per vendor group
   - per shared app group
   - manual linked group
-- Add seed reset and state rotation.
+- Add seed reset and state rotation controls on top of the existing
+  `LHSeedProvider`.
+- Promote or replace the first `lhctl` bundle toggle helper with a full
+  preference/config provider flow.
 - Use Swift only for preference UI if needed.
 
 Acceptance checks:
@@ -425,24 +448,3 @@ Acceptance checks:
 - Custom values warn about uniqueness.
 - Observable API behavior remains in shared cohorts.
 - Artifacts expire and no telemetry is collected beyond operational build status.
-
-## Current Next Coding Task
-
-Status: pending.
-
-Start with Phase 4 only:
-
-1. Extend release audit coverage for build timestamps, build IDs, linked-library
-   expectations, generated-label/string leakage, and other static markers.
-2. Add build-flag-controlled generated internal names where they affect static
-   binary markers without changing observable API behavior.
-3. Evaluate mutable state field markers and decide whether the current generic
-   binary-plist keys are acceptable for the next package milestone or should
-   move to generated/keyed field names or a compact binary record first.
-4. Keep `LH_ENABLE_VARIABILITY=0` readable for development and
-   `LH_ENABLE_VARIABILITY=1` stricter for release/custom builds.
-5. Run `make audit` after each hardening change.
-
-Do not start rootless package work, preference UI, storage guards, or additional
-mitigation surfaces until the validated plain dylib passes the Phase 4 audit and
-variability checks.

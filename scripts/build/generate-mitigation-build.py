@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 
 
@@ -19,6 +20,9 @@ VALUE_KINDS = {
     "time_interval": "LHPolicyValueKindTimeInterval",
 }
 LABEL_NAMESPACE = b"lh.derivation-label.v1\0"
+PACKAGE_STATE_PARENT_NAMESPACE = b"lh.package-state-parent.v1\0"
+PACKAGE_SEED_ROOT_DIRECTORY_NAMESPACE = b"lh.package-seed-root-directory.v1\0"
+PACKAGE_ROOT_SEED_FILE_NAMESPACE = b"lh.package-root-seed-file.v1\0"
 LABEL_COMPONENT_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 LABEL_DECL_RE = re.compile(r"\bLH_DERIVATION_LABEL\s*\(\s*([a-z][a-z0-9_]*)\s*,\s*([a-z][a-z0-9_]*)\s*\)")
 
@@ -68,6 +72,23 @@ def label_bytes_for(identifier, instance_seed):
 
 def byte_initializer(data):
     return "{ " + ", ".join(f"0x{byte:02x}" for byte in data) + " }"
+
+
+def generated_hex_name(namespace, instance_seed):
+    seed = instance_seed if instance_seed is not None else b""
+    return hashlib.sha256(namespace + seed).hexdigest()[:32]
+
+
+def package_state_parent_name(instance_seed):
+    return generated_hex_name(PACKAGE_STATE_PARENT_NAMESPACE, instance_seed)
+
+
+def package_seed_root_directory_name(instance_seed):
+    return generated_hex_name(PACKAGE_SEED_ROOT_DIRECTORY_NAMESPACE, instance_seed)
+
+
+def package_root_seed_file_name(instance_seed):
+    return generated_hex_name(PACKAGE_ROOT_SEED_FILE_NAMESPACE, instance_seed)
 
 
 def normalize_catalog(catalog):
@@ -304,9 +325,21 @@ def selected_source_paths(selected, selected_values):
     return list(dict.fromkeys(sources))
 
 
+def core_derivation_label_source_paths():
+    sources = []
+    for pattern in ("core/src/*.c", "core/src/*.m", "core/src/*.mm"):
+        sources.extend(str(path.relative_to(ROOT)) for path in sorted(ROOT.glob(pattern)))
+    return sources
+
+
 def write_file(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def write_executable(path, text):
+    write_file(path, text)
+    path.chmod(0o755)
 
 
 def emit_make_fragment(selected, selected_values):
@@ -429,7 +462,7 @@ def emit_derivation_labels(labels):
     write_file(ROOT / "core/generated/LHGeneratedDerivationLabels.c", source)
 
 
-def emit_generated_config(instance_seed):
+def emit_generated_config(instance_seed, package_state_parent, package_seed_root_directory, package_root_seed_file):
     has_seed = instance_seed is not None
     seed_bytes = instance_seed if instance_seed is not None else bytes(16)
     header = "\n".join([
@@ -445,6 +478,9 @@ def emit_generated_config(instance_seed):
         "",
         "LH_INTERNAL extern const bool LHGeneratedConfigHasInstanceSeed;",
         "LH_INTERNAL extern const LHSeed LHGeneratedConfigInstanceSeed;",
+        "LH_INTERNAL extern const char LHGeneratedConfigPackageStateParentDirectoryName[];",
+        "LH_INTERNAL extern const char LHGeneratedConfigPackageSeedRootDirectoryName[];",
+        "LH_INTERNAL extern const char LHGeneratedConfigPackageRootSeedFileName[];",
         "",
         "#ifdef __cplusplus",
         "}",
@@ -461,11 +497,339 @@ def emit_generated_config(instance_seed):
         "LH_INTERNAL const LHSeed LHGeneratedConfigInstanceSeed = {",
         f"    .bytes = {byte_initializer(seed_bytes)}",
         "};",
+        f"LH_INTERNAL const char LHGeneratedConfigPackageStateParentDirectoryName[] = \"{package_state_parent}\";",
+        f"LH_INTERNAL const char LHGeneratedConfigPackageSeedRootDirectoryName[] = \"{package_seed_root_directory}\";",
+        f"LH_INTERNAL const char LHGeneratedConfigPackageRootSeedFileName[] = \"{package_root_seed_file}\";",
         "",
     ])
 
     write_file(ROOT / "core/generated/LHGeneratedConfig.h", header)
     write_file(ROOT / "core/generated/LHGeneratedConfig.c", source)
+
+
+def toggle_helper_script(package_state_parent):
+    return "\n".join([
+        "#!/bin/sh",
+        "set -eu",
+        "",
+        "ROOT_PREFIX=${ROOT_PREFIX:-/var/jb}",
+        "FILTER=\"$ROOT_PREFIX/Library/MobileSubstrate/DynamicLibraries/runtime.plist\"",
+        f"STATE_PARENT={package_state_parent}",
+        "CONFIG_DIR=\"$ROOT_PREFIX/var/mobile/Library/Preferences/$STATE_PARENT\"",
+        "",
+        "usage() {",
+        "  printf '%s\\n' \"usage: lhctl [list|enable|disable|toggle|clear|menu] [bundle-id]\"",
+        "}",
+        "",
+        "require_root() {",
+        "  [ \"${LHCTL_ALLOW_NONROOT:-0}\" = \"1\" ] && return 0",
+        "  current_uid=$(id -u 2>/dev/null || printf '1')",
+        "  if [ \"$current_uid\" != \"0\" ]; then",
+        "    printf '%s\\n' 'lhctl must be run as root; it writes the rootless Substrate filter.'",
+        "    exit 1",
+        "  fi",
+        "}",
+        "",
+        "valid_bundle() {",
+        "  bundle=${1:-}",
+        "  [ -n \"$bundle\" ] || return 1",
+        "  printf '%s\\n' \"$bundle\" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9.-]*$'",
+        "}",
+        "",
+        "list_bundles() {",
+        "  [ -f \"$FILTER\" ] || return 0",
+        "  LC_ALL=C sed -n '/<key>Bundles<\\/key>/,/<\\/array>/p' \"$FILTER\" 2>/dev/null | LC_ALL=C sed -n 's/.*<string>\\([^<][^<]*\\)<\\/string>.*/\\1/p'",
+        "}",
+        "",
+        "write_filter_from_file() {",
+        "  input=${1:?}",
+        "  mkdir -p \"$(dirname \"$FILTER\")\" \"$CONFIG_DIR\"",
+        "  tmp=\"$CONFIG_DIR/.runtime.plist.$$\"",
+        "  {",
+        "    printf '%s\\n' '<?xml version=\"1.0\" encoding=\"UTF-8\"?>'",
+        "    printf '%s\\n' '<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">'",
+        "    printf '%s\\n' '<plist version=\"1.0\">'",
+        "    printf '%s\\n' '<dict>'",
+        "    printf '\\t%s\\n' '<key>Filter</key>'",
+        "    printf '\\t%s\\n' '<dict>'",
+        "    printf '\\t\\t%s\\n' '<key>Bundles</key>'",
+        "    printf '\\t\\t%s\\n' '<array>'",
+        "    while IFS= read -r bundle; do",
+        "      [ -n \"$bundle\" ] || continue",
+        "      printf '\\t\\t\\t<string>%s</string>\\n' \"$bundle\"",
+        "    done < \"$input\"",
+        "    printf '\\t\\t%s\\n' '</array>'",
+        "    printf '\\t%s\\n' '</dict>'",
+        "    printf '%s\\n' '</dict>'",
+        "    printf '%s\\n' '</plist>'",
+        "  } > \"$tmp\"",
+        "  chmod 644 \"$tmp\"",
+        "  mv \"$tmp\" \"$FILTER\"",
+        "}",
+        "",
+        "ensure_filter() {",
+        "  [ -f \"$FILTER\" ] && return 0",
+        "  mkdir -p \"$CONFIG_DIR\"",
+        "  empty=\"$CONFIG_DIR/.bundles.empty.$$\"",
+        "  : > \"$empty\"",
+        "  write_filter_from_file \"$empty\"",
+        "  rm -f \"$empty\"",
+        "}",
+        "",
+        "restart_notice() {",
+        "  printf '%s\\n' 'Restart target app(s) for filter changes to apply.'",
+        "}",
+        "",
+        "print_list() {",
+        "  ensure_filter",
+        "  bundles=$(list_bundles || true)",
+        "  if [ -z \"$bundles\" ]; then",
+        "    printf '%s\\n' 'No bundles enabled.'",
+        "    return 0",
+        "  fi",
+        "  printf '%s\\n' \"$bundles\"",
+        "}",
+        "",
+        "enable_bundle() {",
+        "  bundle=${1:-}",
+        "  if ! valid_bundle \"$bundle\"; then",
+        "    printf '%s\\n' 'Invalid bundle id.'",
+        "    return 2",
+        "  fi",
+        "  ensure_filter",
+        "  tmp=\"$CONFIG_DIR/.bundles.$$\"",
+        "  {",
+        "    list_bundles | grep -Fvx \"$bundle\" || true",
+        "    printf '%s\\n' \"$bundle\"",
+        "  } > \"$tmp\"",
+        "  write_filter_from_file \"$tmp\"",
+        "  rm -f \"$tmp\"",
+        "  printf 'Enabled %s\\n' \"$bundle\"",
+        "  restart_notice",
+        "}",
+        "",
+        "disable_bundle() {",
+        "  bundle=${1:-}",
+        "  if ! valid_bundle \"$bundle\"; then",
+        "    printf '%s\\n' 'Invalid bundle id.'",
+        "    return 2",
+        "  fi",
+        "  ensure_filter",
+        "  tmp=\"$CONFIG_DIR/.bundles.$$\"",
+        "  list_bundles | grep -Fvx \"$bundle\" > \"$tmp\" || true",
+        "  write_filter_from_file \"$tmp\"",
+        "  rm -f \"$tmp\"",
+        "  printf 'Disabled %s\\n' \"$bundle\"",
+        "  restart_notice",
+        "}",
+        "",
+        "toggle_bundle() {",
+        "  bundle=${1:-}",
+        "  if ! valid_bundle \"$bundle\"; then",
+        "    printf '%s\\n' 'Invalid bundle id.'",
+        "    return 2",
+        "  fi",
+        "  ensure_filter",
+        "  if list_bundles | grep -Fxq \"$bundle\"; then",
+        "    disable_bundle \"$bundle\"",
+        "  else",
+        "    enable_bundle \"$bundle\"",
+        "  fi",
+        "}",
+        "",
+        "clear_bundles() {",
+        "  ensure_filter",
+        "  tmp=\"$CONFIG_DIR/.bundles.$$\"",
+        "  : > \"$tmp\"",
+        "  write_filter_from_file \"$tmp\"",
+        "  rm -f \"$tmp\"",
+        "  printf '%s\\n' 'Disabled all bundles.'",
+        "  restart_notice",
+        "}",
+        "",
+        "run_menu() {",
+        "  while :; do",
+        "    printf '\\n%s\\n' 'Loupehole bundle toggle'",
+        "    printf '%s\\n' '1) List enabled bundles'",
+        "    printf '%s\\n' '2) Enable bundle'",
+        "    printf '%s\\n' '3) Disable bundle'",
+        "    printf '%s\\n' '4) Toggle bundle'",
+        "    printf '%s\\n' '5) Disable all bundles'",
+        "    printf '%s\\n' '6) Quit'",
+        "    printf '%s' 'Choice: '",
+        "    IFS= read -r choice || exit 0",
+        "    case \"$choice\" in",
+        "      1) print_list ;;",
+        "      2)",
+        "        printf '%s' 'Bundle ID: '",
+        "        IFS= read -r bundle || exit 0",
+        "        enable_bundle \"$bundle\" || true",
+        "        ;;",
+        "      3)",
+        "        printf '%s' 'Bundle ID: '",
+        "        IFS= read -r bundle || exit 0",
+        "        disable_bundle \"$bundle\" || true",
+        "        ;;",
+        "      4)",
+        "        printf '%s' 'Bundle ID: '",
+        "        IFS= read -r bundle || exit 0",
+        "        toggle_bundle \"$bundle\" || true",
+        "        ;;",
+        "      5) clear_bundles ;;",
+        "      6|q|quit|exit) exit 0 ;;",
+        "      *) printf '%s\\n' 'Unknown choice.' ;;",
+        "    esac",
+        "  done",
+        "}",
+        "",
+        "command=${1:-menu}",
+        "case \"$command\" in",
+        "  -h|--help|help) usage; exit 0 ;;",
+        "esac",
+        "require_root",
+        "case \"$command\" in",
+        "  menu) run_menu ;;",
+        "  list) print_list ;;",
+        "  enable) shift; enable_bundle \"${1:-}\" ;;",
+        "  disable) shift; disable_bundle \"${1:-}\" ;;",
+        "  toggle) shift; toggle_bundle \"${1:-}\" ;;",
+        "  clear) clear_bundles ;;",
+        "  *) usage; exit 2 ;;",
+        "esac",
+        "",
+    ])
+
+
+def emit_package_layout(package_state_parent, package_seed_root_directory, package_root_seed_file):
+    layout_dir = ROOT / "packages/tweak/generated/package-layout"
+    if layout_dir.exists():
+        shutil.rmtree(layout_dir)
+
+    write_executable(layout_dir / "DEBIAN/preinst", "\n".join([
+        "#!/bin/sh",
+        "set -eu",
+        "",
+        "case \"${1:-}\" in",
+        "  install|upgrade)",
+        "    ;;",
+        "esac",
+        "",
+        "exit 0",
+        "",
+    ]))
+
+    write_executable(layout_dir / "DEBIAN/postinst", "\n".join([
+        "#!/bin/sh",
+        "set -eu",
+        "",
+        "ROOT_PREFIX=${ROOT_PREFIX:-/var/jb}",
+        f"STATE_PARENT={package_state_parent}",
+        f"SEED_ROOT_DIR={package_seed_root_directory}",
+        f"ROOT_SEED_FILE={package_root_seed_file}",
+        "",
+        "support_dir=\"$ROOT_PREFIX/var/mobile/Library/Application Support/$STATE_PARENT\"",
+        "cache_dir=\"$ROOT_PREFIX/var/mobile/Library/Caches/$STATE_PARENT\"",
+        "config_dir=\"$ROOT_PREFIX/var/mobile/Library/Preferences/$STATE_PARENT\"",
+        "seed_root_dir=\"$support_dir/$SEED_ROOT_DIR\"",
+        "root_seed_file=\"$seed_root_dir/$ROOT_SEED_FILE\"",
+        "",
+        "case \"${1:-}\" in",
+        "  configure)",
+        "    mkdir -p \"$support_dir\" \"$cache_dir\" \"$config_dir\" \"$seed_root_dir\"",
+        "    chmod 700 \"$support_dir\" \"$cache_dir\" \"$config_dir\" \"$seed_root_dir\"",
+        "    if [ ! -f \"$root_seed_file\" ]; then",
+        "      umask 077",
+        "      if dd if=/dev/urandom of=\"$root_seed_file\" bs=16 count=1 >/dev/null 2>&1; then",
+        "        chmod 600 \"$root_seed_file\"",
+        "      else",
+        "        rm -f \"$root_seed_file\"",
+        "      fi",
+        "    fi",
+        "    if command -v chown >/dev/null 2>&1; then",
+        "      chown mobile:mobile \"$support_dir\" \"$cache_dir\" \"$config_dir\" \"$seed_root_dir\" \"$root_seed_file\" 2>/dev/null || true",
+        "    fi",
+        "    ;;",
+        "esac",
+        "",
+        "exit 0",
+        "",
+    ]))
+
+    write_executable(layout_dir / "DEBIAN/prerm", "\n".join([
+        "#!/bin/sh",
+        "set -eu",
+        "",
+        "ROOT_PREFIX=${ROOT_PREFIX:-/var/jb}",
+        "filter=\"$ROOT_PREFIX/Library/MobileSubstrate/DynamicLibraries/runtime.plist\"",
+        "",
+        "write_disabled_filter() {",
+        "  if [ ! -d \"$(dirname \"$filter\")\" ]; then",
+        "    return 0",
+        "  fi",
+        "  cat >\"$filter\" <<'PLIST'",
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">",
+        "<plist version=\"1.0\">",
+        "<dict>",
+        "\t<key>Filter</key>",
+        "\t<dict>",
+        "\t\t<key>Bundles</key>",
+        "\t\t<array/>",
+        "\t</dict>",
+        "</dict>",
+        "</plist>",
+        "PLIST",
+        "}",
+        "",
+        "case \"${1:-}\" in",
+        "  remove|deconfigure)",
+        "    write_disabled_filter",
+        "    ;;",
+        "  upgrade)",
+        "    ;;",
+        "esac",
+        "",
+        "exit 0",
+        "",
+    ]))
+
+    write_executable(layout_dir / "DEBIAN/postrm", "\n".join([
+        "#!/bin/sh",
+        "set -eu",
+        "",
+        "ROOT_PREFIX=${ROOT_PREFIX:-/var/jb}",
+        f"STATE_PARENT={package_state_parent}",
+        "",
+        "dynamic_dir=\"$ROOT_PREFIX/Library/MobileSubstrate/DynamicLibraries\"",
+        "support_dir=\"$ROOT_PREFIX/var/mobile/Library/Application Support/$STATE_PARENT\"",
+        "cache_dir=\"$ROOT_PREFIX/var/mobile/Library/Caches/$STATE_PARENT\"",
+        "config_dir=\"$ROOT_PREFIX/var/mobile/Library/Preferences/$STATE_PARENT\"",
+        "preference_bundle=\"$ROOT_PREFIX/Library/PreferenceBundles/LoupeholePreferences.bundle\"",
+        "preference_loader=\"$ROOT_PREFIX/Library/PreferenceLoader/Preferences/Loupehole.plist\"",
+        "launch_helper=\"$ROOT_PREFIX/Library/LaunchDaemons/com.loupehole.runtime.plist\"",
+        "toggle_helper=\"$ROOT_PREFIX/usr/bin/lhctl\"",
+        "",
+        "case \"${1:-}\" in",
+        "  remove|purge)",
+        "    rm -f \"$dynamic_dir/runtime.dylib\" \"$dynamic_dir/runtime.plist\" \"$launch_helper\" \"$toggle_helper\"",
+        "    rm -rf \"$support_dir\" \"$cache_dir\" \"$config_dir\" \"$preference_bundle\" \"$preference_loader\"",
+        "    ;;",
+        "  upgrade)",
+        "    ;;",
+        "esac",
+        "",
+        "exit 0",
+        "",
+    ]))
+
+    for relative in (
+        "var/mobile/Library/Application Support",
+        "var/mobile/Library/Caches",
+        "var/mobile/Library/Preferences",
+    ):
+        write_file(layout_dir / relative / package_state_parent / ".keep", "\n")
+    write_file(layout_dir / "var/mobile/Library/Application Support" / package_state_parent / package_seed_root_directory / ".keep", "\n")
+    write_executable(layout_dir / "usr/bin/lhctl", toggle_helper_script(package_state_parent))
 
 
 def emit_policy_value_registry(selected_values):
@@ -531,15 +895,20 @@ def main():
     value_catalog = load_json(ROOT / args.values)
     selection = load_json(ROOT / args.selection)
     instance_seed = parse_uuid_bytes(selection.get("instanceSeed"), "selection.instanceSeed")
+    package_state_parent = package_state_parent_name(instance_seed)
+    package_seed_root_directory = package_seed_root_directory_name(instance_seed)
+    package_root_seed_file = package_root_seed_file_name(instance_seed)
     mitigations = normalize_catalog(catalog)
     policy_values = normalize_policy_values(value_catalog)
     selected, selected_values = validate_selection(selection, mitigations, policy_values)
-    derivation_labels = discover_derivation_labels(selected_source_paths(selected, selected_values), instance_seed)
+    label_sources = selected_source_paths(selected, selected_values) + core_derivation_label_source_paths()
+    derivation_labels = discover_derivation_labels(list(dict.fromkeys(label_sources)), instance_seed)
     emit_make_fragment(selected, selected_values)
     emit_registry(mitigations.values(), selected)
-    emit_generated_config(instance_seed)
+    emit_generated_config(instance_seed, package_state_parent, package_seed_root_directory, package_root_seed_file)
     emit_derivation_labels(derivation_labels)
     emit_policy_value_registry(selected_values)
+    emit_package_layout(package_state_parent, package_seed_root_directory, package_root_seed_file)
 
 
 if __name__ == "__main__":

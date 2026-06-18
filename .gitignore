@@ -3,6 +3,7 @@
 .theos/
 packages/tweak/.theos/
 packages/tweak/core/
+packages/tweak/packages/
 core/generated/
 packages/tweak/generated/
 dist/

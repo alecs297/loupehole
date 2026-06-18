@@ -1,5 +1,6 @@
 #include "LHPolicyEngine.h"
 #include "LHGeneratedPolicyValueRegistry.h"
+#include "LHSeedProvider.h"
 
 #include <string.h>
 
@@ -11,6 +12,9 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     memset(engine, 0, sizeof(*engine));
     engine->config = LHRuntimeConfigDefault();
     if (!LHAppContextInitCurrentWithScopeMode(&engine->appContext, engine->config.scopeMode)) {
+        return false;
+    }
+    if (!LHSeedProviderResolveActiveSeed(&engine->config, &engine->appContext)) {
         return false;
     }
 

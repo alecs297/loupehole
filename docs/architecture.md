@@ -196,6 +196,34 @@ Jailbreak packages should use package-owned rootless storage while keeping targe
 
 Sideloaded apps without jailbreak cannot reliably synchronize writable state across separately sandboxed apps unless they share entitlements. If the apps are signed with a common App Group entitlement, use the app-group container. If they are signed with a common Keychain Access Group entitlement, use shared Keychain items for compact state. If neither entitlement exists, use local per-app state or deterministic embedded config and do not claim true cross-app synchronization.
 
+### Seed Material Providers
+
+Runtime seed material is resolved through `LHSeedProvider` before profiles and
+mitigation values are queried. Local and embedded builds keep the generated
+build-selection seed as the active seed. Package builds use the generated seed
+only as build identity and as fallback derivation material; package mode replaces
+the active seed with an install-rooted scoped seed:
+
+- Build config supplies fallback seed material, generated labels, and generated
+  opaque package names.
+- Package installs own a package-root seed store outside target app containers.
+  `postinst` creates the generated package state roots and a raw 16-byte root
+  install seed under a generated opaque path.
+- First runtime use for a scope reads or creates a persisted scoped child seed
+  for per-app, per-vendor-group, per-shared-app-group, or manual-linked-group
+  contexts.
+- Scoped child seeds are derived from the root install seed, generated
+  seed-provider labels, scope mode, and stable scope identifier, then stored
+  under generated opaque package-owned paths.
+- Hook and resolver code ask policy/state APIs for values and never inspect
+  where seed material came from.
+
+Package install scripts create package-owned directories and the package root
+seed only. They do not eagerly generate app-specific seeds, because install time
+does not know every authoritative scope. Scoped seed creation stays tied to the
+same scope resolver used at runtime. Future preference UI or package helpers can
+rotate/reset scoped seed records or the root install seed explicitly.
+
 ### Storage Guard Hardening
 
 Opaque, seed-derived storage names are the primary defense. Hooking storage APIs to hide Loupehole-owned blobs is a later hardening feature for storage backends that are target-visible by design, not the first line of defense.

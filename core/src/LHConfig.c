@@ -3,10 +3,14 @@
 
 #include <stdlib.h>
 
+#ifndef LH_DEFAULT_STATE_PROVIDER_KIND
+#define LH_DEFAULT_STATE_PROVIDER_KIND LHStateProviderKindLocal
+#endif
+
 LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
         .scopeMode = LHScopeModePerApp,
-        .stateProviderKind = LHStateProviderKindLocal
+        .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND
     };
     if (LHGeneratedConfigHasInstanceSeed) {
         config.instanceSeed = LHGeneratedConfigInstanceSeed;
