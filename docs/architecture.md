@@ -146,14 +146,25 @@ All spoofed values should flow through the config/profile layer. Hook modules sh
 
 ### State Scope and Storage
 
-Values should be generated for an explicit scope. The default scope is per app, because it reduces cross-app linking. Compatibility profiles may allow the user to share mitigations across related apps when a suite expects sibling apps to agree.
+Values should be generated for an explicit scope. The default scope is per app
+install, because it rotates when the protected app is removed and reinstalled
+while still remaining stable during normal launches. Compatibility profiles may
+allow the user to share mitigations across related apps when a suite expects
+sibling apps to agree.
 
 Supported scope modes:
 
-- Per app: one state namespace per bundle ID. This is the default.
-- Per vendor group: one state namespace shared by apps that are intentionally grouped by vendor policy.
-- Per shared app group: one state namespace shared by apps that have a real shared entitlement or jailbreak package state.
-- Manual linked group: an explicit user-created group of bundle IDs.
+- Per app install: one namespace per app container install. The runtime stores a
+  random opaque marker in app data at a path derived from the practical seed and
+  bundle scope; deleting the app container deletes the marker and rotates the
+  active seed.
+- Per app: one stable namespace per bundle ID.
+- Per vendor group: one namespace shared by apps that report the same original
+  pre-spoof `identifierForVendor`, or by explicit vendor policy when configured.
+- Per shared app group: one namespace shared by apps with a real application
+  group entitlement, or by explicit package policy when configured.
+- Manual linked group: an explicit user-created group identifier or preshared
+  secret used across containers.
 
 Each Loupehole configuration instance should have one high-entropy instance seed
 represented as a UUID when supplied by config, without restricting the UUID
@@ -199,30 +210,30 @@ Sideloaded apps without jailbreak cannot reliably synchronize writable state acr
 ### Seed Material Providers
 
 Runtime seed material is resolved through `LHSeedProvider` before profiles and
-mitigation values are queried. Local and embedded builds keep the generated
-build-selection seed as the active seed. Package builds use the generated seed
-only as build identity and as fallback derivation material; package mode replaces
-the active seed with an install-rooted scoped seed:
+mitigation values are queried. The provider first chooses a practical seed:
 
-- Build config supplies fallback seed material, generated labels, and generated
-  opaque package names.
-- Package installs own a package-root seed store outside target app containers.
-  `postinst` creates the generated package state roots and a raw 16-byte root
-  install seed under a generated opaque path.
-- First runtime use for a scope reads or creates a persisted scoped child seed
-  for per-app, per-vendor-group, per-shared-app-group, or manual-linked-group
-  contexts.
-- Scoped child seeds are derived from the root install seed, generated
-  seed-provider labels, scope mode, and stable scope identifier, then stored
-  under generated opaque package-owned paths.
+- Dylib/local mode practical seed: the generated build-selection seed.
+- Deb/package mode practical seed: the package root install seed created by
+  `postinst` under a generated opaque package-owned path.
+
+The active runtime seed is then derived from the practical seed plus the resolved
+scope:
+
+- Per app install derives from the practical seed, bundle scope, and a raw
+  random app-container marker. The marker path is opaque and seed-derived; the
+  marker content is generated with system randomness and intentionally lives in
+  app data so app reinstall rotates the seed.
+- Per app, vendor group, shared app group, and manual linked group derive from
+  the practical seed plus scope mode and scope identifier.
 - Hook and resolver code ask policy/state APIs for values and never inspect
   where seed material came from.
 
 Package install scripts create package-owned directories and the package root
 seed only. They do not eagerly generate app-specific seeds, because install time
-does not know every authoritative scope. Scoped seed creation stays tied to the
-same scope resolver used at runtime. Future preference UI or package helpers can
-rotate/reset scoped seed records or the root install seed explicitly.
+does not know every authoritative scope. Per-app-install marker creation stays
+tied to the same scope resolver used at runtime. Future preference UI or package
+helpers can rotate/reset app markers, scoped state, or the root install seed
+explicitly.
 
 ### Storage Guard Hardening
 

@@ -25,13 +25,14 @@ If policy state is unavailable, the hook passes through to the original API.
 
 Common defaults:
 
-The default scope is per app. The generated UUID is deterministic for the active
-configuration instance seed and scope, and is stored in the IDFV state blob
-when the local provider is available.
+The default scope is per app install. The generated UUID is deterministic for
+the active practical seed, scope, and app-install marker, and is stored in the
+IDFV state blob when the local provider is available.
 
 Value lifetime:
 
-Per-scope stable until state is reset or the configuration instance seed changes.
+Per-scope stable until state is reset, the practical seed changes, or the
+per-app-install marker is removed by app reinstall.
 
 Value dependencies:
 
@@ -43,8 +44,8 @@ None directly.
 
 Drawbacks:
 
-Apps that expect sibling apps from the same vendor to share the same IDFV may
-need a future vendor-group scope configuration.
+Apps that expect sibling apps from the same vendor to share the same IDFV need a
+vendor-group scope configuration.
 
 Detection and uniqueness risks:
 

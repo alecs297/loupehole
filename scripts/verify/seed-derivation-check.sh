@@ -55,12 +55,19 @@ int main(void) {
     unsigned char first[32] = {0};
     unsigned char second[32] = {0};
     unsigned char other[32] = {0};
+    unsigned char install[32] = {0};
     unsigned char vendor[32] = {0};
     unsigned char shared[32] = {0};
     unsigned char manual[32] = {0};
+    unsigned char contextFirst[32] = {0};
+    unsigned char contextSecond[32] = {0};
+    unsigned char contextOther[32] = {0};
     char firstName[33] = {0};
     char secondName[33] = {0};
     LHSeed parsed;
+    LHScope contextScope;
+    static const uint8_t contextA[] = { 1, 2, 3, 4 };
+    static const uint8_t contextB[] = { 4, 3, 2, 1 };
 
     if (!LHSeedParseUUID("00000000-0000-0000-0000-000000000000", &parsed)) {
         return 1;
@@ -80,6 +87,9 @@ int main(void) {
     }
     if (derive(LHScopeInitPerApp, "example.two", other) != 0) {
         return 3;
+    }
+    if (derive(LHScopeInitPerAppInstall, "example.one", install) != 0) {
+        return 15;
     }
     if (derive(LHScopeInitPerVendorGroup, "example.one", vendor) != 0) {
         return 4;
@@ -103,6 +113,9 @@ int main(void) {
     if (memcmp(first, other, sizeof(first)) == 0) {
         return 10;
     }
+    if (memcmp(first, install, sizeof(first)) == 0) {
+        return 15;
+    }
     if (memcmp(first, vendor, sizeof(first)) == 0) {
         return 11;
     }
@@ -114,6 +127,24 @@ int main(void) {
     }
     if (strcmp(firstName, secondName) != 0 || strlen(firstName) != 32) {
         return 14;
+    }
+    if (!LHScopeInitPerApp(&contextScope, "example.one")) {
+        return 16;
+    }
+    if (!LHSeedDeriveBytesWithContext(&parsed, &LHTestBytesLabel, &contextScope, contextA, sizeof(contextA), contextFirst, sizeof(contextFirst))) {
+        return 17;
+    }
+    if (!LHSeedDeriveBytesWithContext(&parsed, &LHTestBytesLabel, &contextScope, contextA, sizeof(contextA), contextSecond, sizeof(contextSecond))) {
+        return 18;
+    }
+    if (!LHSeedDeriveBytesWithContext(&parsed, &LHTestBytesLabel, &contextScope, contextB, sizeof(contextB), contextOther, sizeof(contextOther))) {
+        return 19;
+    }
+    if (memcmp(contextFirst, contextSecond, sizeof(contextFirst)) != 0) {
+        return 20;
+    }
+    if (memcmp(contextFirst, contextOther, sizeof(contextFirst)) == 0 || memcmp(contextFirst, first, sizeof(contextFirst)) == 0) {
+        return 21;
     }
 
     return 0;

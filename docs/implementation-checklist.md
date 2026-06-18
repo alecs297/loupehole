@@ -14,7 +14,7 @@ This document is the actionable handoff plan for implementing Loupehole from the
 - Store mutable values through state providers. First providers: `LHEmbeddedStateProvider` and `LHLocalStateProvider`. Later providers: `LHPackageStateProvider`, `LHAppGroupStateProvider`, and `LHKeychainGroupStateProvider`.
 - Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Opaque derivation labels are inputs to derivation only and must not be stored next to derived names.
 - Default mutable state encoding: binary property list with a schema version. JSON is acceptable only for debug export/import tools, not target-process runtime state.
-- Default scope is per app. Design scope APIs for per-vendor group, per-shared-app-group, and manual linked group even if only per-app works initially.
+- Default scope is per app install. Design scope APIs for per-app, per-vendor group, per-shared-app-group, and manual linked group even if policy UI is not complete yet.
 - Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value in compatibility mode.
 - First mitigation group: `UIDevice.identifierForVendor`, device boot time, and volume initialization or creation time.
 - The first mitigation group must be complete enough to evaluate limits: hook Objective-C/Foundation and C/Darwin layers that expose the same values.
@@ -102,12 +102,15 @@ Core modules:
 Implementation tasks:
 
 - Define `LHScopeMode` with:
+  - per app install
   - per app
   - per vendor group
   - per shared app group
   - manual linked group
-- Implement per-app scope resolution first.
-- Stub other scope modes so callers can pass them without changing API later.
+- Implement per-app-install scope resolution first, with an opaque random marker
+  in app data.
+- Resolve vendor-group scope from original pre-spoof IDFV when available.
+- Resolve shared-app-group scope from app group entitlements when available.
 - Implement UUID instance seed parsing and validation without restricting the UUID version.
 - Implement KDF/keyed hash helpers for scoped seeds and opaque names.
 - Implement `LHHookBackend` with Theos/Logos/MobileSubstrate-compatible entry points first.
@@ -274,10 +277,12 @@ package toggle helper. The package includes install, upgrade, disable, and
 uninstall maintainer-script paths. The package layout, package-owned state parent
 directory, package seed root, and root seed filename are generated at build time
 and passed into the runtime config and maintainer scripts. `LHSeedProvider`
-resolves package installs to a persisted root install seed plus opaque persisted
-scoped child seeds. The package state provider stores blobs under package-owned
-rootless storage outside target app containers, with derived opaque per-scope
-state directories and blob filenames. A generated `/var/jb/usr/bin/lhctl` helper
+resolves package installs to a persisted root install seed used as the package
+practical seed. The default per-app-install scope uses an opaque random marker in
+app data so app reinstall rotates the active seed. The package state provider
+stores blobs under package-owned rootless storage outside target app containers,
+with derived opaque per-scope state directories and blob filenames. A generated
+`/var/jb/usr/bin/lhctl` helper
 provides a first CLI/menu flow for listing, enabling, disabling, toggling, and
 clearing per-bundle injection. Device install and behavioral validation remain
 manual.
@@ -291,7 +296,8 @@ Implementation tasks:
 - Start with no global injection.
 - Add maintainer scripts for install, upgrade, disable, and uninstall.
 - Implement `LHPackageStateProvider`.
-- Implement `LHSeedProvider` for package root and scoped child seeds.
+- Implement `LHSeedProvider` for practical seed resolution, package root seed,
+  per-app-install markers, and stable scoped seeds.
 - Add a first per-bundle toggle helper for the rootless filter plist.
 - Keep package-owned runtime state outside target app containers.
 - Keep target-process-visible state names seed-derived and opaque.
@@ -300,7 +306,8 @@ Acceptance checks:
 
 - `.deb` builds locally with `dpkg-deb` and `fakeroot`.
 - Package layout installs under `/var/jb`.
-- Package root seed and scoped child seed paths are generated and opaque.
+- Package root seed, per-app-install marker paths, and scoped state paths are
+  generated and opaque.
 - Per-bundle filter toggling works against the packaged filter plist.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
@@ -323,6 +330,7 @@ Implementation tasks:
 - Add mitigation toggles.
 - Add profile selection.
 - Add scope mode selector:
+  - per app install
   - per app
   - per vendor group
   - per shared app group

@@ -9,7 +9,7 @@
 
 LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
-        .scopeMode = LHScopeModePerApp,
+        .scopeMode = LHScopeModePerAppInstall,
         .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND
     };
     if (LHGeneratedConfigHasInstanceSeed) {

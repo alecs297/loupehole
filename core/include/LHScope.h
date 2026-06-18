@@ -9,10 +9,11 @@ extern "C" {
 #endif
 
 typedef enum LHScopeMode {
-    LHScopeModePerApp = 0,
-    LHScopeModePerVendorGroup = 1,
-    LHScopeModePerSharedAppGroup = 2,
-    LHScopeModeManualLinkedGroup = 3
+    LHScopeModePerAppInstall = 0,
+    LHScopeModePerApp = 1,
+    LHScopeModePerVendorGroup = 2,
+    LHScopeModePerSharedAppGroup = 3,
+    LHScopeModeManualLinkedGroup = 4
 } LHScopeMode;
 
 typedef struct LHScope {
@@ -22,6 +23,7 @@ typedef struct LHScope {
 } LHScope;
 
 LH_INTERNAL bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength);
+LH_INTERNAL bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier);
 LH_INTERNAL bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier);
 LH_INTERNAL bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier);
 LH_INTERNAL bool LHScopeInitPerSharedAppGroup(LHScope *scope, const char *appGroupIdentifier);

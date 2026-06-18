@@ -13,9 +13,10 @@
 
 #define LH_ROOTLESS_NS(path) @THEOS_PACKAGE_INSTALL_PREFIX path
 
-LH_DERIVATION_LABEL(seed_provider, scoped_seed_directory)
-LH_DERIVATION_LABEL(seed_provider, scoped_seed_record)
 LH_DERIVATION_LABEL(seed_provider, scoped_seed_value)
+LH_DERIVATION_LABEL(seed_provider, app_install_marker_directory)
+LH_DERIVATION_LABEL(seed_provider, app_install_marker_record)
+LH_DERIVATION_LABEL(seed_provider, app_install_seed_value)
 
 static NSData *LHSeedProviderDataFromSeed(const LHSeed *seed) {
     return [NSData dataWithBytes:seed->bytes length:sizeof(seed->bytes)];
@@ -82,38 +83,50 @@ static NSString *LHSeedProviderPackageRootSeedPath(void) {
     return [[base stringByAppendingPathComponent:seedRoot] stringByAppendingPathComponent:seedFile];
 }
 
-static NSString *LHSeedProviderScopedSeedDirectory(const LHRuntimeConfig *config, const LHAppContext *context) {
-    NSString *base = LHSeedProviderPackageParentBasePath();
-    if (base == nil) {
-        return nil;
+static NSString *LHSeedProviderLocalApplicationSupportPath(void) {
+#if LH_STATE_TESTING
+    const char *overrideHome = getenv("LH_APP_INSTALL_TEST_HOME");
+    if (overrideHome == 0 || overrideHome[0] == '\0') {
+        overrideHome = getenv("LH_STATE_TEST_HOME");
     }
+    if (overrideHome != 0 && overrideHome[0] != '\0') {
+        return [[NSString stringWithUTF8String:overrideHome] stringByAppendingPathComponent:@"Library/Application Support"];
+    }
+#endif
 
-    char name[33] = { 0 };
-    if (!LHSeedDeriveOpaqueName(&config->instanceSeed,
-                                &LHGeneratedDerivationLabel_seed_provider_scoped_seed_directory,
-                                &context->scope,
-                                name,
-                                sizeof(name))) {
-        return nil;
-    }
-    return [base stringByAppendingPathComponent:[NSString stringWithUTF8String:name]];
+    NSArray<NSString *> *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+    return [paths firstObject];
 }
 
-static NSString *LHSeedProviderScopedSeedPath(const LHRuntimeConfig *config, const LHAppContext *context) {
-    NSString *directory = LHSeedProviderScopedSeedDirectory(config, context);
-    if (directory == nil) {
+static NSString *LHSeedProviderOpaquePath(NSString *base,
+                                          const LHSeed *seed,
+                                          const LHAppContext *context,
+                                          const LHDerivationLabel *directoryLabel,
+                                          const LHDerivationLabel *recordLabel) {
+    if (base == nil || seed == 0 || context == 0 || directoryLabel == 0 || recordLabel == 0) {
         return nil;
     }
 
-    char name[33] = { 0 };
-    if (!LHSeedDeriveOpaqueName(&config->instanceSeed,
-                                &LHGeneratedDerivationLabel_seed_provider_scoped_seed_record,
-                                &context->scope,
-                                name,
-                                sizeof(name))) {
+    char directoryName[33] = { 0 };
+    if (!LHSeedDeriveOpaqueName(seed, directoryLabel, &context->scope, directoryName, sizeof(directoryName))) {
         return nil;
     }
-    return [directory stringByAppendingPathComponent:[NSString stringWithUTF8String:name]];
+
+    char recordName[33] = { 0 };
+    if (!LHSeedDeriveOpaqueName(seed, recordLabel, &context->scope, recordName, sizeof(recordName))) {
+        return nil;
+    }
+
+    NSString *directory = [base stringByAppendingPathComponent:[NSString stringWithUTF8String:directoryName]];
+    return [directory stringByAppendingPathComponent:[NSString stringWithUTF8String:recordName]];
+}
+
+static NSString *LHSeedProviderAppInstallMarkerPath(const LHSeed *practicalSeed, const LHAppContext *context) {
+    return LHSeedProviderOpaquePath(LHSeedProviderLocalApplicationSupportPath(),
+                                    practicalSeed,
+                                    context,
+                                    &LHGeneratedDerivationLabel_seed_provider_app_install_marker_directory,
+                                    &LHGeneratedDerivationLabel_seed_provider_app_install_marker_record);
 }
 
 static bool LHSeedProviderLoadOrCreateRootSeed(LHSeed *rootSeed) {
@@ -126,23 +139,55 @@ static bool LHSeedProviderLoadOrCreateRootSeed(LHSeed *rootSeed) {
     return LHSeedProviderWriteSeedAtPath(path, rootSeed);
 }
 
-static bool LHSeedProviderLoadOrCreateScopedSeed(const LHRuntimeConfig *buildConfig,
-                                                 const LHAppContext *context,
-                                                 const LHSeed *rootSeed,
-                                                 LHSeed *scopedSeed) {
-    NSString *path = LHSeedProviderScopedSeedPath(buildConfig, context);
-    if (LHSeedProviderReadSeedAtPath(path, scopedSeed)) {
+static bool LHSeedProviderLoadOrCreateRandomSeedAtPath(NSString *path, LHSeed *seed, bool requirePersistence) {
+    if (LHSeedProviderReadSeedAtPath(path, seed)) {
         return true;
     }
 
-    if (!LHSeedDeriveBytes(rootSeed,
-                           &LHGeneratedDerivationLabel_seed_provider_scoped_seed_value,
-                           &context->scope,
-                           scopedSeed->bytes,
-                           sizeof(scopedSeed->bytes))) {
+    arc4random_buf(seed->bytes, sizeof(seed->bytes));
+    if (LHSeedProviderWriteSeedAtPath(path, seed)) {
+        return true;
+    }
+    return !requirePersistence;
+}
+
+static bool LHSeedProviderResolvePracticalSeed(const LHRuntimeConfig *config, LHSeed *practicalSeed) {
+    if (config == 0 || practicalSeed == 0) {
         return false;
     }
-    return LHSeedProviderWriteSeedAtPath(path, scopedSeed);
+
+    *practicalSeed = config->instanceSeed;
+    if (config->stateProviderKind != LHStateProviderKindPackage) {
+        return true;
+    }
+
+    return LHSeedProviderLoadOrCreateRootSeed(practicalSeed);
+}
+
+static bool LHSeedProviderResolveAppInstallSeed(const LHSeed *practicalSeed, const LHAppContext *context, LHSeed *activeSeed) {
+    LHSeed marker = { 0 };
+    NSString *path = LHSeedProviderAppInstallMarkerPath(practicalSeed, context);
+    if (!LHSeedProviderLoadOrCreateRandomSeedAtPath(path, &marker, false)) {
+        return false;
+    }
+
+    return LHSeedDeriveBytesWithContext(practicalSeed,
+                                        &LHGeneratedDerivationLabel_seed_provider_app_install_seed_value,
+                                        &context->scope,
+                                        marker.bytes,
+                                        sizeof(marker.bytes),
+                                        activeSeed->bytes,
+                                        sizeof(activeSeed->bytes));
+}
+
+static bool LHSeedProviderResolveDeterministicScopedSeed(const LHSeed *practicalSeed,
+                                                        const LHAppContext *context,
+                                                        LHSeed *activeSeed) {
+    return LHSeedDeriveBytes(practicalSeed,
+                             &LHGeneratedDerivationLabel_seed_provider_scoped_seed_value,
+                             &context->scope,
+                             activeSeed->bytes,
+                             sizeof(activeSeed->bytes));
 }
 
 bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext *context) {
@@ -150,22 +195,21 @@ bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext
         if (config == 0 || context == 0) {
             return false;
         }
-        if (config->stateProviderKind != LHStateProviderKindPackage) {
-            return true;
-        }
-
-        LHRuntimeConfig buildConfig = *config;
-        LHSeed rootSeed = { 0 };
-        LHSeed scopedSeed = { 0 };
-
-        if (!LHSeedProviderLoadOrCreateRootSeed(&rootSeed)) {
-            return false;
-        }
-        if (!LHSeedProviderLoadOrCreateScopedSeed(&buildConfig, context, &rootSeed, &scopedSeed)) {
+        LHSeed practicalSeed = { 0 };
+        LHSeed activeSeed = { 0 };
+        if (!LHSeedProviderResolvePracticalSeed(config, &practicalSeed)) {
             return false;
         }
 
-        config->instanceSeed = scopedSeed;
+        if (context->scope.mode == LHScopeModePerAppInstall) {
+            if (!LHSeedProviderResolveAppInstallSeed(&practicalSeed, context, &activeSeed)) {
+                return false;
+            }
+        } else if (!LHSeedProviderResolveDeterministicScopedSeed(&practicalSeed, context, &activeSeed)) {
+            return false;
+        }
+
+        config->instanceSeed = activeSeed;
         return true;
     }
 }

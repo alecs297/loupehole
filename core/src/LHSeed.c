@@ -58,9 +58,27 @@ static void LHHmacSha256(const uint8_t *key, size_t keyLength, const uint8_t *da
     CCHmac(kCCHmacAlgSHA256, key, keyLength, data, dataLength, output);
 }
 
-static void LHSeedInfo(const LHScope *scope, const LHDerivationLabel *label, uint8_t *info, size_t *infoLength) {
+static bool LHSeedInfo(const LHScope *scope,
+                       const LHDerivationLabel *label,
+                       const uint8_t *context,
+                       size_t contextLength,
+                       uint8_t *info,
+                       size_t infoCapacity,
+                       size_t *infoLength) {
+    if (scope == 0 || label == 0 || info == 0 || infoLength == 0 || contextLength > 0xffff || (contextLength > 0 && context == 0)) {
+        return false;
+    }
+
+    size_t required = 1 + sizeof(label->bytes) + 1 + scope->identifierLength;
+    if (contextLength > 0) {
+        required += 2 + contextLength;
+    }
+    if (scope->identifierLength > sizeof(scope->identifier) || required > infoCapacity) {
+        return false;
+    }
+
     size_t offset = 0;
-    info[offset++] = 1;
+    info[offset++] = contextLength > 0 ? 2 : 1;
     memcpy(info + offset, label->bytes, sizeof(label->bytes));
     offset += sizeof(label->bytes);
     info[offset++] = (uint8_t)scope->mode;
@@ -68,11 +86,24 @@ static void LHSeedInfo(const LHScope *scope, const LHDerivationLabel *label, uin
         memcpy(info + offset, scope->identifier, scope->identifierLength);
         offset += scope->identifierLength;
     }
+    if (contextLength > 0) {
+        info[offset++] = (uint8_t)((contextLength >> 8) & 0xff);
+        info[offset++] = (uint8_t)(contextLength & 0xff);
+        memcpy(info + offset, context, contextLength);
+        offset += contextLength;
+    }
     *infoLength = offset;
+    return true;
 }
 
-bool LHSeedDeriveBytes(const LHSeed *seed, const LHDerivationLabel *label, const LHScope *scope, uint8_t *output, size_t outputLength) {
-    if (seed == 0 || label == 0 || scope == 0 || output == 0 || outputLength == 0 || outputLength > 64) {
+bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
+                                  const LHDerivationLabel *label,
+                                  const LHScope *scope,
+                                  const uint8_t *context,
+                                  size_t contextLength,
+                                  uint8_t *output,
+                                  size_t outputLength) {
+    if (seed == 0 || label == 0 || scope == 0 || output == 0 || outputLength == 0 || outputLength > 64 || contextLength > 128) {
         return false;
     }
 
@@ -80,9 +111,11 @@ bool LHSeedDeriveBytes(const LHSeed *seed, const LHDerivationLabel *label, const
     uint8_t prk[CC_SHA256_DIGEST_LENGTH] = { 0 };
     LHHmacSha256(extractSalt, sizeof(extractSalt), seed->bytes, sizeof(seed->bytes), prk);
 
-    uint8_t info[sizeof(scope->identifier) + sizeof(label->bytes) + 2] = { 0 };
+    uint8_t info[sizeof(scope->identifier) + sizeof(label->bytes) + 4 + 128] = { 0 };
     size_t infoLength = 0;
-    LHSeedInfo(scope, label, info, &infoLength);
+    if (!LHSeedInfo(scope, label, context, contextLength, info, sizeof(info), &infoLength)) {
+        return false;
+    }
 
     uint8_t previous[CC_SHA256_DIGEST_LENGTH] = { 0 };
     uint8_t blockInput[sizeof(previous) + sizeof(info) + 1] = { 0 };
@@ -108,6 +141,10 @@ bool LHSeedDeriveBytes(const LHSeed *seed, const LHDerivationLabel *label, const
     }
 
     return true;
+}
+
+bool LHSeedDeriveBytes(const LHSeed *seed, const LHDerivationLabel *label, const LHScope *scope, uint8_t *output, size_t outputLength) {
+    return LHSeedDeriveBytesWithContext(seed, label, scope, 0, 0, output, outputLength);
 }
 
 bool LHSeedDeriveOpaqueName(const LHSeed *seed, const LHDerivationLabel *label, const LHScope *scope, char *output, size_t outputLength) {

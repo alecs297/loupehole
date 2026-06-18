@@ -31,6 +31,13 @@ LH_INTERNAL bool LHSeedDeriveBytes(const LHSeed *seed,
                                    const LHScope *scope,
                                    uint8_t *output,
                                    size_t outputLength);
+LH_INTERNAL bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
+                                              const LHDerivationLabel *label,
+                                              const LHScope *scope,
+                                              const uint8_t *context,
+                                              size_t contextLength,
+                                              uint8_t *output,
+                                              size_t outputLength);
 LH_INTERNAL bool LHSeedDeriveOpaqueName(const LHSeed *seed,
                                         const LHDerivationLabel *label,
                                         const LHScope *scope,

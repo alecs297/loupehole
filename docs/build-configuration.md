@@ -334,8 +334,11 @@ maintainer scripts.
 
 On install, `postinst` creates package-owned state roots and a raw 16-byte root
 install seed under the generated package seed root. At runtime, `LHSeedProvider`
-uses that root install seed to create per-scope child seeds lazily for per-app,
-per-vendor, per-shared-app-group, and manual-linked-group scopes.
+uses that root install seed as the package practical seed. The default
+per-app-install scope also creates an opaque random marker in the target app's
+application support data, at a path derived from the practical seed. Stable
+per-app, vendor-group, shared-app-group, and manual-linked-group scopes derive
+directly from the practical seed plus the resolved scope identifier.
 
 The package also installs `/var/jb/usr/bin/lhctl`, a small shell helper for the
 initial per-bundle filter flow:

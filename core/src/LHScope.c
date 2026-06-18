@@ -13,6 +13,15 @@ bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, si
     return true;
 }
 
+bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier) {
+    if (bundleIdentifier == 0) {
+        static const uint8_t fallback[] = { 'a', 'p', 'p', '-', 'i', 'n', 's', 't', 'a', 'l', 'l' };
+        return LHScopeInit(scope, LHScopeModePerAppInstall, fallback, sizeof(fallback));
+    }
+
+    return LHScopeInit(scope, LHScopeModePerAppInstall, (const uint8_t *)bundleIdentifier, strlen(bundleIdentifier));
+}
+
 bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier) {
     if (bundleIdentifier == 0) {
         static const uint8_t fallback[] = { 'a', 'p', 'p' };
