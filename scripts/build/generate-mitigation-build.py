@@ -19,6 +19,8 @@ VALUE_KINDS = {
     "time_interval": "LHPolicyValueKindTimeInterval",
 }
 LABEL_NAMESPACE = b"lh.derivation-label.v1\0"
+LABEL_COMPONENT_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+LABEL_DECL_RE = re.compile(r"\bLH_DERIVATION_LABEL\s*\(\s*([a-z][a-z0-9_]*)\s*,\s*([a-z][a-z0-9_]*)\s*\)")
 
 
 def load_json(path):
@@ -119,24 +121,100 @@ def normalize_catalog(catalog):
     return mitigations
 
 
-def normalize_derivation_labels(catalog, instance_seed):
-    raw = catalog.get("derivationLabels", [])
-    if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
-        raise SystemExit("derivationLabels must be a list of strings")
+def source_for_label_scan(text):
+    output = []
+    state = "code"
+    i = 0
+    while i < len(text):
+        char = text[i]
+        next_char = text[i + 1] if i + 1 < len(text) else ""
 
+        if state == "code":
+            if char == "/" and next_char == "/":
+                output.extend("  ")
+                i += 2
+                state = "line_comment"
+                continue
+            if char == "/" and next_char == "*":
+                output.extend("  ")
+                i += 2
+                state = "block_comment"
+                continue
+            if char == '"':
+                output.append(" ")
+                i += 1
+                state = "string"
+                continue
+            if char == "'":
+                output.append(" ")
+                i += 1
+                state = "char"
+                continue
+            output.append(char)
+            i += 1
+            continue
+
+        if state == "line_comment":
+            if char == "\n":
+                output.append("\n")
+                state = "code"
+            else:
+                output.append(" ")
+            i += 1
+            continue
+
+        if state == "block_comment":
+            if char == "*" and next_char == "/":
+                output.extend("  ")
+                i += 2
+                state = "code"
+                continue
+            output.append("\n" if char == "\n" else " ")
+            i += 1
+            continue
+
+        if state in ("string", "char"):
+            if char == "\\" and next_char:
+                output.extend("  ")
+                i += 2
+                continue
+            if (state == "string" and char == '"') or (state == "char" and char == "'"):
+                output.append(" ")
+                i += 1
+                state = "code"
+                continue
+            output.append("\n" if char == "\n" else " ")
+            i += 1
+
+    return "".join(output)
+
+
+def discover_derivation_labels(source_paths, instance_seed):
     labels = []
-    seen = set()
-    for identifier in raw:
-        if not VALUE_ID_RE.match(identifier):
-            raise SystemExit(f"invalid derivation label id: {identifier}")
-        if identifier in seen:
-            raise SystemExit(f"duplicate derivation label id: {identifier}")
-        seen.add(identifier)
-        labels.append({
-            "id": identifier,
-            "symbol": label_symbol_for(identifier),
-            "bytes": label_bytes_for(identifier, instance_seed),
-        })
+    seen = {}
+    for source in source_paths:
+        path = ROOT / source
+        text = path.read_text(encoding="utf-8")
+        scan_text = source_for_label_scan(text)
+        for match in LABEL_DECL_RE.finditer(scan_text):
+            domain, name = match.groups()
+            if not LABEL_COMPONENT_RE.match(domain) or not LABEL_COMPONENT_RE.match(name):
+                line = scan_text.count("\n", 0, match.start()) + 1
+                raise SystemExit(f"invalid derivation label declaration in {source}:{line}")
+            identifier = f"{domain}.{name}"
+            line = scan_text.count("\n", 0, match.start()) + 1
+            if identifier in seen:
+                first_source, first_line = seen[identifier]
+                raise SystemExit(
+                    f"duplicate derivation label id {identifier}: "
+                    f"{source}:{line} also declared in {first_source}:{first_line}"
+                )
+            seen[identifier] = (source, line)
+            labels.append({
+                "id": identifier,
+                "symbol": label_symbol_for(identifier),
+                "bytes": label_bytes_for(identifier, instance_seed),
+            })
 
     return labels
 
@@ -215,6 +293,15 @@ def validate_selection(selection, mitigations, policy_values):
 
 def make_words(items):
     return " ".join(dict.fromkeys(items))
+
+
+def selected_source_paths(selected, selected_values):
+    sources = []
+    for item in selected:
+        sources.extend(item["sources"])
+    for item in selected_values:
+        sources.extend(item["sources"])
+    return list(dict.fromkeys(sources))
 
 
 def write_file(path, text):
@@ -445,9 +532,9 @@ def main():
     selection = load_json(ROOT / args.selection)
     instance_seed = parse_uuid_bytes(selection.get("instanceSeed"), "selection.instanceSeed")
     mitigations = normalize_catalog(catalog)
-    derivation_labels = normalize_derivation_labels(value_catalog, instance_seed)
     policy_values = normalize_policy_values(value_catalog)
     selected, selected_values = validate_selection(selection, mitigations, policy_values)
+    derivation_labels = discover_derivation_labels(selected_source_paths(selected, selected_values), instance_seed)
     emit_make_fragment(selected, selected_values)
     emit_registry(mitigations.values(), selected)
     emit_generated_config(instance_seed)

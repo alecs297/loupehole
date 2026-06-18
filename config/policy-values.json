@@ -3,14 +3,6 @@
   "defaults": {
     "sources": []
   },
-  "derivationLabels": [
-    "identifier_for_vendor.value",
-    "identifier_for_vendor.state",
-    "temporal_lifetime.state",
-    "temporal_lifetime.boot_anchor",
-    "temporal_lifetime.volume_before_boot_offset",
-    "temporal_lifetime.profile_before_volume_offset"
-  ],
   "values": [
     {
       "id": "identifier_for_vendor",

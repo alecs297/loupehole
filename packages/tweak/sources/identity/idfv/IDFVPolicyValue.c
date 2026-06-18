@@ -1,7 +1,9 @@
 #include "LHPolicyEngine.h"
-#include "LHGeneratedDerivationLabels.h"
 
 #include <string.h>
+
+LH_DERIVATION_LABEL(identifier_for_vendor, state)
+LH_DERIVATION_LABEL(identifier_for_vendor, value)
 
 #define LH_IDFV_UUID_STRING_LENGTH 37
 

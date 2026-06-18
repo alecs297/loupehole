@@ -1,8 +1,12 @@
 #include "LHPolicyEngine.h"
-#include "LHGeneratedDerivationLabels.h"
 
 #include <string.h>
 #include <time.h>
+
+LH_DERIVATION_LABEL(temporal_lifetime, state)
+LH_DERIVATION_LABEL(temporal_lifetime, boot_anchor)
+LH_DERIVATION_LABEL(temporal_lifetime, volume_before_boot_offset)
+LH_DERIVATION_LABEL(temporal_lifetime, profile_before_volume_offset)
 
 #define LH_SECONDS_PER_HOUR 3600ULL
 #define LH_SECONDS_PER_DAY 86400ULL
