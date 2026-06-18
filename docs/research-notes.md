@@ -86,7 +86,7 @@ Verified local environment on 2026-06-17:
 
 - Xcode 26.5 with iPhoneOS SDK 26.5.
 - Apple clang 21.0.0 and Swift 6.3.2 are available through Xcode.
-- Theos is installed at `/Users/alex/theos` and updated to commit `9bc7340`.
+- Theos is expected through `THEOS`, `THEOS_HOME`, or the default `$(HOME)/theos` path.
 - `ldid` 2.1.5_1 is installed.
 - `dpkg-deb` 1.23.7 and `fakeroot` 1.38.1 are installed for `.deb` package assembly.
 - Binary audit tools are available: `file`, `otool`, `nm`, `strings`, and `strip`.

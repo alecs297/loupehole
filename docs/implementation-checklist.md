@@ -9,7 +9,7 @@ This document is the actionable handoff plan for implementing Loupehole from the
 - Real-device deployment and validation are manual: Sideloadly-style owned-app injection or rootless jailbreak package installation.
 - The injected runtime must use C, Objective-C, or Objective-C++. Do not use Swift in the dylib. Swift is allowed only for preferences UI or external tooling.
 - Use `LHHookBackend` from the first source commit. First implementation is Theos/Logos with MobileSubstrate-compatible hooks. ElleKit/libhooker-specific backends are postponed behind build flags.
-- Use a UUIDv4 configuration instance seed. Feed it through a KDF to derive scoped seeds, opaque storage identifiers, state filenames, Keychain service/account names, generated internal names, and optional build variability.
+- Use a configuration instance seed supplied as any valid UUID. Feed it through a KDF to derive scoped seeds, opaque storage identifiers, state filenames, Keychain service/account names, generated internal names, and optional build variability.
 - Compile cohort profile values into the binary for v1, preferably as generated C/Objective-C data under `core/profiles`.
 - Store mutable values through state providers. First providers: `LHEmbeddedStateProvider` and `LHLocalStateProvider`. Later providers: `LHPackageStateProvider`, `LHAppGroupStateProvider`, and `LHKeychainGroupStateProvider`.
 - Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Purpose labels are inputs to derivation only and must not be stored next to derived names.
@@ -50,9 +50,12 @@ Implementation tasks:
 - Add release/debug build flags:
   - `LH_ENABLE_VARIABILITY`
   - `LH_ENABLE_DIAGNOSTICS`
-  - `LH_ENABLE_MODULE_IDENTITY`
-  - `LH_ENABLE_MODULE_SYSCTL`
-  - `LH_ENABLE_MODULE_STORAGE`
+- Add static build-selection files:
+  - `config/mitigations.json`
+  - `config/build.default.json`
+- Add generated build inputs:
+  - Theos mitigation source fragment
+  - generated mitigation registry header/source
 - Add scripts for local binary audit:
   - string scan
   - exported symbol scan
@@ -94,17 +97,17 @@ Implementation tasks:
   - manual linked group
 - Implement per-app scope resolution first.
 - Stub other scope modes so callers can pass them without changing API later.
-- Implement UUIDv4 instance seed parsing and validation.
+- Implement UUID instance seed parsing and validation without restricting the UUID version.
 - Implement KDF/keyed hash helpers for scoped seeds and opaque names.
 - Implement `LHHookBackend` with Theos/Logos/MobileSubstrate-compatible entry points first.
 - Keep hook modules as adapters: hooks must call policy APIs, not invent values.
 
 Acceptance checks:
 
-- A test or small debug command can derive stable scoped seeds from the same UUIDv4 instance seed.
+- A test or small debug command can derive stable scoped seeds from the same UUID instance seed.
 - Different scopes produce different derived seeds.
 - Reusing the same instance seed and scope input reproduces the same derived identifiers.
-- Hook backend can register no-op hooks behind module flags.
+- Hook backend can register no-op hooks selected through the generated mitigation registry.
 
 ## Phase 2: Profile and State Providers
 
@@ -257,7 +260,7 @@ Implementation tasks:
   - embedded build-time config
   - built-in default profile
 - Add per-app allowlist.
-- Add module toggles.
+- Add mitigation toggles.
 - Add profile selection.
 - Add scope mode selector:
   - per app
@@ -370,7 +373,7 @@ Build after local deterministic artifacts are reliable.
 Implementation tasks:
 
 - Web UI for target, profile, modules, filters, and instance seed.
-- Let users create a new UUIDv4 seed or provide an existing one.
+- Let users create a new UUID seed or provide an existing one.
 - Compute uniqueness/anonymity-set risk.
 - Use macOS workers with Xcode/Theos.
 - Compile `.dylib` and rootless `.deb` artifacts.

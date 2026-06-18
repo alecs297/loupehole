@@ -67,7 +67,7 @@ Behavior:
 
 Purpose:
 
-- Allow users/researchers to compile variants with selected modules and profiles.
+- Allow users/researchers to compile variants with selected mitigation modules and profiles.
 - Avoid every build having the same static signature.
 - Allow an interactive way of exploring each anti-fingerprinting method 
 
@@ -151,7 +151,7 @@ Runtime language choice:
 Verified local baseline as of 2026-06-17:
 
 - Xcode 26.5 and iPhoneOS SDK 26.5 are installed.
-- Theos is installed at `/Users/alex/theos` and updated to commit `9bc7340`.
+- Theos is expected through `THEOS`, `THEOS_HOME`, or the default `$(HOME)/theos` path.
 - `ldid`, `dpkg-deb`, and `fakeroot` are installed.
 - A minimal arm64 iOS dylib can be compiled with Xcode clang and signed with `ldid`.
 - The upstream Loupe project is cloned in `.research/upstream/loupe` and remains ignored by Git.
@@ -196,7 +196,7 @@ Practical techniques:
 
 - Strip symbols and avoid descriptive exported names.
 - Generate internal prefixes at build time.
-- Compile only selected modules into custom builds.
+- Compile only selected mitigation modules into custom builds.
 - Keep optional preference UI in a separate package, at best also randomized
 - Avoid debug logs, environment variables, and injected resources in target containers.
 - Prefer app allowlists over global injection.
@@ -246,7 +246,7 @@ Use a layered design:
 
 1. Policy engine: decides what each API should return for a given app, profile, and context.
 2. Coherence graph: keeps device model, OS, screen, CPU, GPU, camera, RAM, and WebKit values plausible together.
-3. Hook modules: small isolated modules per framework/API family.
+3. Hook modules: small isolated modules per mitigation method.
 4. Persistence guard: mediates app-generated stable identifiers where feasible.
 5. WebView injector: applies JavaScript-level and native WebKit mitigations.
 6. Config provider: embedded default config, optional jailbreak preferences, no remote config.
@@ -304,7 +304,7 @@ Exit criteria:
 
 - The dylib builds locally, signs with `ldid`, strips release symbols, and passes a string/symbol audit.
 - No project-identifying strings are present in the injected runtime except unavoidable development-only artifacts.
-- Hook modules can be compiled in or out without changing observable API behavior.
+- Hook modules can be compiled in or out through the static mitigation catalog and generated registry without changing observable API behavior.
 - `LHHookBackend` exists with a Theos/Logos MobileSubstrate-compatible implementation first; alternate ElleKit/libhooker-specific backends are deferred behind build flags.
 
 ### Step 2: Policy Engine and First Mitigation
@@ -319,7 +319,7 @@ Exit criteria:
 - The selected mitigations have option documentation, default profile data, coherence notes, and harness probes.
 - The policy engine enforces temporal coherence: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
 - `LHEmbeddedStateProvider` and `LHLocalStateProvider` exist so early dylib tests can run before package state is available.
-- A UUIDv4 configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers.
+- A UUID configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers, without restricting callers to one UUID version.
 - Each first mitigation has a documented generic fallback; compatibility mode may pass through only for the affected mitigation when no coherent fallback is available.
 
 ### Step 3: Dylib Mitigation Expansion
@@ -356,7 +356,7 @@ Goal:
 Exit criteria:
 
 - Config priority is emergency bypass, preference profile, embedded build config, then built-in default.
-- Per-app allowlist, profile selection, module toggles, scope mode, and seed reset work through the config provider.
+- Per-app allowlist, profile selection, mitigation toggles, scope mode, and seed reset work through the config provider.
 - Scope mode supports per-app default, per-vendor group, per-shared-app-group, and manual linked groups.
 - `LHPackageStateProvider` stores jailbreak package state outside target app containers.
 - `LHAppGroupStateProvider` and `LHKeychainGroupStateProvider` are deferred until sideloaded signing entitlements are known.
@@ -510,7 +510,7 @@ Exit criteria:
 
 Deliverables:
 
-- Web UI for module selection and profile choice.
+- Web UI for mitigation module selection and profile choice.
 - macOS build worker.
 - Build reproducibility and artifact signing for project-owned packages.
 - Build variability that changes static markers without creating unique observable behavior.

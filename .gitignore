@@ -1,2 +1,4 @@
 .research/
-
+.theos/
+packages/tweak/.theos/
+packages/tweak/core/

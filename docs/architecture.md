@@ -50,12 +50,15 @@ Implementation language:
 
 ### Hook Modules
 
-Each module should be independently switchable:
+Each imported hook module should map to one mitigation method. Higher-level grouping, such as "identity" or "storage", belongs in configuration, UI, or build presets rather than the injected module boundary. The compilation boundary is driven by a static mitigation catalog and build-selection JSON; no dynamic module loading is used in target processes. Early mitigation-level modules include:
 
-- `IdentityHooks`
-- `SysctlHooks`
-- `ProcessInfoHooks`
-- `StorageHooks`
+- `IDFVMitigation`
+- `BootTimeSysctlMitigation`
+- `BootTimeProcessInfoMitigation`
+- `VolumeCreationTimeMitigation`
+- `DeviceModelSysctlMitigation`
+- `ProcessInfoCPUMitigation`
+- `StorageCapacityMitigation`
 - `DisplayHooks`
 - `BatteryHooks`
 - `LocaleHooks`
@@ -72,7 +75,13 @@ Each module should be independently switchable:
 - `WebKitHooks`
 - `PermissionedDataHooks`
 
-Hook modules should be compiled as thin adapters around a shared internal ABI. The first dylib should already use the final boundaries: module registration, per-module enablement, policy-engine lookups, and centralized value generation. A placeholder or no-op implementation is preferable to a shortcut that embeds spoofed constants in hook code.
+Hook modules should be compiled as thin adapters around a shared internal ABI. The first dylib should already use the final boundaries: generated module registration, per-mitigation compile selection, policy-engine lookups, and centralized value generation. A placeholder or no-op implementation is preferable to a shortcut that embeds spoofed constants in hook code.
+
+Mitigation IDs use `domain.surface.api_or_method.variant`, for example
+`system.boot_time.sysctl.synthetic`. Every ID includes a variant segment, even
+when only one variant exists. The generated registry derives install symbols
+from IDs using `LHMitigation_` plus the ID with dots replaced by underscores,
+then `_install`.
 
 Hook backend:
 
@@ -104,7 +113,7 @@ Supported scope modes:
 - Per shared app group: one state record shared by apps that have a real shared entitlement or jailbreak package state.
 - Manual linked group: an explicit user-created group of bundle IDs.
 
-Each Loupehole configuration instance should have one high-entropy UUIDv4 instance seed. The user can preserve, export, or reuse this seed to recreate the same generated state layout and value derivations across a new dylib or package build. The seed is not an app-visible API value. It is input material for deterministic derivation of scoped seeds, state record identifiers, shared-storage keys, generated internal names, and optional build variability.
+Each Loupehole configuration instance should have one high-entropy instance seed represented as a UUID, without restricting the UUID version. The user can preserve, export, or reuse this seed to recreate the same generated state layout and value derivations across a new dylib or package build. The seed is not an app-visible API value. It is input material for deterministic derivation of scoped seeds, state record identifiers, shared-storage keys, generated internal names, and optional build variability.
 
 When a scope is shared, the whole mitigation tuple should be shared. IDFV replacement, synthetic boot time, volume initialization or creation time, synthetic install epoch, WebView profile, and related app-scoped seeds should come from the same scoped state. Mixing scopes is allowed only when documented as a compatibility decision.
 
@@ -337,7 +346,7 @@ Security:
 
 - No arbitrary user scripts.
 - No user-provided source code in v1.
-- Predefined module toggles only.
+- Predefined mitigation module toggles only.
 - Hard resource/time limits.
 - Artifacts expire.
 - No telemetry beyond operational build status.

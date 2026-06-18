@@ -1,0 +1,9 @@
+#include "LHValueQuantizer.h"
+
+uint64_t LHValueQuantizeDown(uint64_t value, uint64_t bucketSize) {
+    if (bucketSize == 0) {
+        return value;
+    }
+
+    return value - (value % bucketSize);
+}

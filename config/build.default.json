@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "target": "ios-arm64-dylib",
+  "configuration": "release",
+  "minIos": "15.0",
+  "mitigations": [
+    "identity.idfv.uidevice.scoped_uuid",
+    "system.boot_time.sysctl.synthetic",
+    "storage.volume_creation_time.foundation.synthetic"
+  ]
+}
