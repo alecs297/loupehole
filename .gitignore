@@ -1,4 +1,6 @@
 .research/
+.DS_Store
 .theos/
 packages/tweak/.theos/
 packages/tweak/core/
+dist/

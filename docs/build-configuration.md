@@ -168,8 +168,20 @@ Build using the default selection:
 make
 ```
 
+The final signed dylib is copied to:
+
+```text
+dist/runtime.dylib
+```
+
 Build using a custom selection:
 
 ```sh
 make BUILD_SELECTION=config/build.default.json
+```
+
+Change the destination with:
+
+```sh
+make ARTIFACT_DIR=/tmp/loupehole-artifacts
 ```

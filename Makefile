@@ -15,13 +15,17 @@ THEOS_OBJ_CONFIG := release
 endif
 
 TARGET_DYLIB ?= packages/tweak/.theos/obj/runtime.dylib
+ARTIFACT_DIR ?= dist
+FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 
 export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
 
-.PHONY: all clean generate sign audit verify summary strings symbols swift-absence debug-log-absence seed-check
+.PHONY: all build clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check
 
-all: generate
+all: copy-artifact
+
+build: generate
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE)
 
 generate:
@@ -29,28 +33,33 @@ generate:
 
 clean:
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" clean
+	rm -rf "$(ARTIFACT_DIR)"
 
-sign: all
+sign: build
 	scripts/build/sign-dylib.sh "$(TARGET_DYLIB)"
 
-audit: sign verify
+copy-artifact: sign
+	mkdir -p "$(ARTIFACT_DIR)"
+	cp -f "$(TARGET_DYLIB)" "$(FINAL_DYLIB)"
+
+audit: copy-artifact verify
 
 verify: summary strings symbols swift-absence debug-log-absence
 
 summary:
-	scripts/verify/macho-summary.sh "$(TARGET_DYLIB)"
+	scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
 
 strings:
-	scripts/verify/string-scan.sh "$(TARGET_DYLIB)"
+	scripts/verify/string-scan.sh "$(FINAL_DYLIB)"
 
 symbols:
-	scripts/verify/exported-symbol-scan.sh "$(TARGET_DYLIB)"
+	scripts/verify/exported-symbol-scan.sh "$(FINAL_DYLIB)"
 
 swift-absence:
-	scripts/verify/swift-runtime-absence.sh "$(TARGET_DYLIB)"
+	scripts/verify/swift-runtime-absence.sh "$(FINAL_DYLIB)"
 
 debug-log-absence:
-	scripts/verify/debug-log-absence.sh "$(TARGET_DYLIB)"
+	scripts/verify/debug-log-absence.sh "$(FINAL_DYLIB)"
 
 seed-check:
 	scripts/verify/seed-derivation-check.sh
