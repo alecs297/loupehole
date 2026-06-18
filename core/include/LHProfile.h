@@ -10,6 +10,7 @@ extern "C" {
 
 typedef struct LHProfile {
     uint32_t version;
+    uint32_t stateSchemaVersion;
 } LHProfile;
 
 LH_INTERNAL const LHProfile *LHProfileDefault(void);

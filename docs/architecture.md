@@ -2,20 +2,20 @@
 
 ## System Overview
 
-Loupehole should be built as a small injected runtime with a policy engine at the center. Hook modules should not make independent spoofing decisions. They ask the policy engine for values so every API family remains coherent.
+Loupehole should be built as a small injected runtime with a policy engine at the center. Hook modules should not make independent spoofing decisions. They ask the policy engine for values generated from shared seeds and state.
 
 ```mermaid
 flowchart TD
   A["Target app process"] --> B["Hook modules"]
   B --> C["Policy engine"]
-  C --> D["Coherence graph"]
-  C --> E["Per-app seed"]
-  C --> F["Profile catalog"]
-  C --> G["Config provider"]
+  C --> D["Per-app seed"]
+  C --> E["Profile catalog"]
+  C --> F["Config provider"]
+  C --> G["State/value generators"]
   B --> H["Native API returns"]
   B --> I["WKWebView JS/native returns"]
-  J["Jailbreak preferences"] --> G
-  K["Embedded default config"] --> G
+  J["Jailbreak preferences"] --> F
+  K["Embedded default config"] --> F
 ```
 
 ## Runtime Components
@@ -27,7 +27,6 @@ Responsibilities:
 - Load static/default profile.
 - Derive app-scoped seeds.
 - Answer normalized values.
-- Own the coherence graph.
 - Provide safe helper functions for hooks.
 - Keep no telemetry.
 - Prevent hook modules from embedding identifying constants or spoofed values directly.
@@ -38,7 +37,6 @@ Suggested modules:
 - `LHProfile`
 - `LHAppContext`
 - `LHSeed`
-- `LHCoherenceGraph`
 - `LHValueQuantizer`
 - `LHCompatibility`
 
@@ -50,9 +48,16 @@ Implementation language:
 
 ### Hook Modules
 
-Each imported hook module should map to one mitigation method. Higher-level grouping, such as "identity" or "storage", belongs in configuration, UI, or build presets rather than the injected module boundary. The compilation boundary is driven by a static mitigation catalog and build-selection JSON; no dynamic module loading is used in target processes. Early mitigation-level modules include:
+Each imported hook module should map either to one mitigation method or to a
+surface-level composite when reliable coverage requires several API methods for
+the same policy value. Higher-level grouping, such as "identity" or "storage",
+belongs in configuration, UI, or build presets rather than the injected module
+boundary. The compilation boundary is driven by a static mitigation catalog and
+build-selection JSON; no dynamic module loading is used in target processes.
+Early mitigation-level modules include:
 
 - `IDFVMitigation`
+- `BootTimeMitigation`
 - `BootTimeSysctlMitigation`
 - `BootTimeProcessInfoMitigation`
 - `VolumeCreationTimeMitigation`
@@ -72,21 +77,58 @@ Each imported hook module should map to one mitigation method. Higher-level grou
 - `URLSchemeHooks`
 - `KeychainHooks`
 - `StorageGuardHooks`
-- `WebKitHooks`
 - `PermissionedDataHooks`
+- `WebKitHooks`
+
+`BootTimeMitigation` is the default catch-all mitigation for the boot-time
+surface. It imports the sysctl-family component and the `NSProcessInfo`
+component so a build can select one boot-time mitigation while still covering
+several call paths. `BootTimeSysctlMitigation` hooks both public sysctl wrappers
+and the available underscored syscall entry names for `kern.boottime`. It
+requests both function patching and imported-symbol rebinding from the backend,
+because Swift and libSystem call sites may not all pass through a patchable
+wrapper in the same way. These modules do not contain profile defaults or
+temporal policy logic.
+
+Mitigation source files are organized by runtime domain and surface:
+
+```text
+packages/tweak/sources/<domain>/<surface>/<Component>Mitigation.{c,m,mm}
+```
+
+Examples are `system/boot_time`, `identity/idfv`, and
+`storage/volume_creation_time`. Cross-surface runtime entry files, such as the
+constructor, can stay directly under `packages/tweak/sources`.
 
 Hook modules should be compiled as thin adapters around a shared internal ABI. The first dylib should already use the final boundaries: generated module registration, per-mitigation compile selection, policy-engine lookups, and centralized value generation. A placeholder or no-op implementation is preferable to a shortcut that embeds spoofed constants in hook code.
 
 Mitigation IDs use `domain.surface.api_or_method.variant`, for example
-`system.boot_time.sysctl.synthetic`. Every ID includes a variant segment, even
-when only one variant exists. The generated registry derives install symbols
-from IDs using `LHMitigation_` plus the ID with dots replaced by underscores,
-then `_install`.
+`system.boot_time.composite.synthetic`. Every ID includes a variant segment,
+even when only one variant exists. The generated registry derives install
+symbols from IDs using `LHMitigation_` plus the ID with dots replaced by
+underscores, then `_install`.
+
+Policy lookups use a generated value-query boundary rather than one top-level
+`LHPolicyEngineCopy...` function per future surface. Hook adapters construct a
+value request containing a generated value ID, expected payload kind, output
+buffer, and output length. The policy engine validates the request against the
+generated policy-value descriptor table and dispatches to the registered
+resolver. This keeps `LHPolicyEngine` as the shared config/scope/profile/state
+coordinator instead of a growing list of category-specific accessors or a
+central switch over every future value.
+
+Policy value IDs come from `config/policy-values.json` and are independent from
+mitigation IDs. Multiple mitigation modules can request the same policy value,
+which keeps alternate hook implementations coherent.
 
 Hook backend:
 
 - Use an `LHHookBackend` abstraction from the first implementation.
 - The first backend should be Theos/Logos with MobileSubstrate-compatible hooks.
+- C APIs can require two hook strategies: patching the shared implementation and
+  rebinding imported symbol pointers in already-loaded images. Both operations
+  live behind `LHHookBackend` so mitigation modules stay policy adapters instead
+  of Mach-O parsers.
 - ElleKit/libhooker-specific backends can be added later behind build flags without changing policy or mitigation code.
 
 ### Config Provider
@@ -108,18 +150,39 @@ Values should be generated for an explicit scope. The default scope is per app, 
 
 Supported scope modes:
 
-- Per app: one state record per bundle ID. This is the default.
-- Per vendor group: one state record shared by apps that are intentionally grouped by vendor policy.
-- Per shared app group: one state record shared by apps that have a real shared entitlement or jailbreak package state.
+- Per app: one state namespace per bundle ID. This is the default.
+- Per vendor group: one state namespace shared by apps that are intentionally grouped by vendor policy.
+- Per shared app group: one state namespace shared by apps that have a real shared entitlement or jailbreak package state.
 - Manual linked group: an explicit user-created group of bundle IDs.
 
-Each Loupehole configuration instance should have one high-entropy instance seed represented as a UUID, without restricting the UUID version. The user can preserve, export, or reuse this seed to recreate the same generated state layout and value derivations across a new dylib or package build. The seed is not an app-visible API value. It is input material for deterministic derivation of scoped seeds, state record identifiers, shared-storage keys, generated internal names, and optional build variability.
+Each Loupehole configuration instance should have one high-entropy instance seed
+represented as a UUID when supplied by config, without restricting the UUID
+version. If no profile/config seed is supplied, the runtime creates a random
+instance seed when `LHRuntimeConfigDefault` is built during runtime
+initialization. The user can preserve, export, or reuse an explicit seed to
+recreate the same generated state layout and value derivations across a new
+dylib or package build. The seed is not an app-visible API value. It is input
+material for deterministic derivation of scoped seeds, state identifiers,
+shared-storage keys, generated internal names, timeline values, and optional
+build variability.
+
+The random fallback seed is ephemeral. It is useful for profile-less local
+experiments, but an explicit seed is required when values must reproduce across
+app relaunches, state migration, or rebuilt artifacts.
+
+Profile definitions should not carry unique concrete timestamps such as a fixed
+boot age, fixed volume age, or fixed profile epoch. Concrete mutable values are
+derived by the owning policy resolver or mitigation source from the active
+instance seed, a generated opaque derivation label, and the active scope, then
+stored as a schema-versioned state blob when a writable provider is available.
+Profiles may define shared cohort metadata, schema versions, and broad
+plausibility constraints.
 
 When a scope is shared, the whole mitigation tuple should be shared. IDFV replacement, synthetic boot time, volume initialization or creation time, synthetic install epoch, WebView profile, and related app-scoped seeds should come from the same scoped state. Mixing scopes is allowed only when documented as a compatibility decision.
 
-State identifiers must not reveal the project. Filenames, App Group record names, Keychain service names, Keychain account names, preference keys visible to target processes, and any other storage keys must be derived from the instance seed and scope identifier with a keyed hash or KDF. The default KDF is HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Purpose labels are derivation inputs only and must not be stored next to derived names. Derived names must not contain `Loupehole`, module names, obvious prefixes, bundle filters, or readable mitigation labels. If a user rebuilds with the same instance seed and scope inputs, the derived paths and keys should match; if they rotate the instance seed, every derived storage name should rotate.
+State identifiers must not reveal the project. Filenames, App Group record names, Keychain service names, Keychain account names, preference keys visible to target processes, and any other storage keys must be derived from the instance seed and scope identifier with a keyed hash or KDF. The default KDF is HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Derivation label IDs live in build configuration and the generator emits opaque byte labels from the label ID plus configured instance seed for runtime use; readable IDs must not be stored next to derived names. Derived names must not contain `Loupehole`, module names, obvious prefixes, bundle filters, or readable mitigation labels. If a user rebuilds with the same instance seed and scope inputs, the derived paths and keys should match; if they rotate the instance seed, every derived storage name should rotate.
 
-The state layer should be hidden behind a provider interface so mitigation code does not care where state is stored:
+The state layer should be hidden behind a provider interface so mitigation code does not care where state is stored. Core state providers store and load opaque schema-versioned byte blobs keyed by seed-derived names; they do not know about IDFV, boot time, volume time, categories, or mitigation-specific parameters:
 
 - `LHEmbeddedStateProvider`: deterministic, read-only defaults for early dylib tests and custom builds.
 - `LHLocalStateProvider`: per-app sandbox state for sideloaded testing when no shared entitlement exists.
@@ -127,7 +190,7 @@ The state layer should be hidden behind a provider interface so mitigation code 
 - `LHAppGroupStateProvider`: shared container state for sideloaded apps signed with a common App Group entitlement.
 - `LHKeychainGroupStateProvider`: compact shared state for sideloaded apps signed with a common Keychain Access Group entitlement.
 
-Mutable state records should use binary property list encoding with explicit schema versioning. JSON is acceptable for debug export/import tools, but not for target-process runtime state.
+Mutable state blobs should use binary property list encoding with explicit schema versioning. JSON is acceptable for debug export/import tools, but not for target-process runtime state. The first local provider uses short binary-plist keys, which are generic and non-identifying, but they are still static strings. A later hardening pass should replace those static field keys with generated/keyed field names or a compact binary record format if audits show the keys are useful as static markers.
 
 Jailbreak packages should use package-owned rootless storage while keeping target app containers untouched unless the user explicitly requests cleanup. Public package metadata may use the project name, but target-process-visible storage names must be seed-derived and non-descriptive.
 
@@ -135,9 +198,9 @@ Sideloaded apps without jailbreak cannot reliably synchronize writable state acr
 
 ### Storage Guard Hardening
 
-Opaque, seed-derived storage names are the primary defense. Hooking storage APIs to hide Loupehole-owned records is a later hardening feature for storage backends that are target-visible by design, not the first line of defense.
+Opaque, seed-derived storage names are the primary defense. Hooking storage APIs to hide Loupehole-owned blobs is a later hardening feature for storage backends that are target-visible by design, not the first line of defense.
 
-`StorageGuardHooks` should protect only Loupehole-owned state records derived from the current instance seed. It must not hide, modify, or delete unrelated app records.
+`StorageGuardHooks` should protect only Loupehole-owned state blobs derived from the current instance seed. It must not hide, modify, or delete unrelated app records.
 
 Keychain guard behavior:
 
@@ -150,9 +213,16 @@ Shared App Group or file-backed guard behavior is optional and stricter because 
 
 This module is separate from `KeychainHooks`. `KeychainHooks` mitigates app reinstall tracking and app-generated persistent identifiers. `StorageGuardHooks` protects Loupehole's own state from discovery or accidental deletion when that state must live in a target-visible backend.
 
-### Coherence Graph
+### Generation Invariants
 
-The graph maps a profile to a plausible Apple device family:
+Relationships between values should be created by the generation functions that
+own those values, not by a separate graph or policy-check system. When two
+values must agree, their generators should share the same seed-derived anchor.
+For boot and volume time, boot time derives anchor `A1`; volume time derives the
+same `A1`, derives an additional offset, and subtracts the offset to produce
+`A2`.
+
+Profiles can still describe broad plausible Apple device families:
 
 - Marketing device family.
 - `hw.machine`, `hw.model`, `uname.machine`.
@@ -166,7 +236,10 @@ The graph maps a profile to a plausible Apple device family:
 
 Profiles should be versioned. A profile update must not silently change an app's stable identifiers unless the user rotates that app profile.
 
-Temporal coherence is mandatory. If the tweak reports a synthetic boot time and a synthetic volume initialization or creation time, the volume time must be earlier than the last boot time. The same rule applies generally: generated dates, counters, and slowly varying values must form a plausible timeline rather than independent random-looking facts.
+Temporal ordering is mandatory, but it should be true by construction. If the
+tweak reports a synthetic boot time and a synthetic volume initialization or
+creation time, the volume time generator must derive a value earlier than the
+boot time anchor rather than relying on a later graph check.
 
 ## Configuration Profiles
 
@@ -279,7 +352,7 @@ Every hook module must map to an option catalog entry. Every option catalog entr
 - Mitigation behavior.
 - Common defaults.
 - Drawbacks.
-- Coherence dependencies.
+- Value dependencies.
 - Test plan.
 
 The full required template is defined in [spoofing-option-policy.md](spoofing-option-policy.md).
@@ -372,7 +445,7 @@ Reports:
 - Protected observed value.
 - Expected cohort value.
 - Entropy bucket.
-- Coherence result.
+- Invariant result.
 - Breakage notes.
 
 ## Failure Modes

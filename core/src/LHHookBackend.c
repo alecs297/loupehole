@@ -8,6 +8,14 @@ bool LHHookBackendHookFunction(LHHookBackend *backend, void *target, void *repla
     return backend->vtable->hookFunction(backend, target, replacement, original);
 }
 
+bool LHHookBackendHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
+    if (backend == 0 || backend->vtable == 0 || backend->vtable->hookImportedSymbol == 0) {
+        return false;
+    }
+
+    return backend->vtable->hookImportedSymbol(backend, symbol, replacement, original);
+}
+
 bool LHHookBackendHookMessage(LHHookBackend *backend, Class targetClass, SEL selector, void *replacement, void **original) {
     if (backend == 0 || backend->vtable == 0 || backend->vtable->hookMessage == 0) {
         return false;

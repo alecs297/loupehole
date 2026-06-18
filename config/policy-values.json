@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "sources": []
+  },
+  "derivationLabels": [
+    "identifier_for_vendor.value",
+    "identifier_for_vendor.state",
+    "temporal_lifetime.state",
+    "temporal_lifetime.boot_anchor",
+    "temporal_lifetime.volume_before_boot_offset",
+    "temporal_lifetime.profile_before_volume_offset"
+  ],
+  "values": [
+    {
+      "id": "identifier_for_vendor",
+      "kind": "utf8_string",
+      "resolver": "LHPolicyResolve_identifier_for_vendor",
+      "sources": [
+        "packages/tweak/sources/identity/idfv/IDFVPolicyValue.c"
+      ]
+    },
+    {
+      "id": "boot_time",
+      "kind": "timeval",
+      "resolver": "LHPolicyResolve_boot_time",
+      "sources": [
+        "packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c"
+      ]
+    },
+    {
+      "id": "volume_creation_time",
+      "kind": "time_interval",
+      "resolver": "LHPolicyResolve_volume_creation_time",
+      "sources": [
+        "packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c"
+      ]
+    }
+  ]
+}

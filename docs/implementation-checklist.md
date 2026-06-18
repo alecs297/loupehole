@@ -12,20 +12,24 @@ This document is the actionable handoff plan for implementing Loupehole from the
 - Use a configuration instance seed supplied as any valid UUID. Feed it through a KDF to derive scoped seeds, opaque storage identifiers, state filenames, Keychain service/account names, generated internal names, and optional build variability.
 - Compile cohort profile values into the binary for v1, preferably as generated C/Objective-C data under `core/profiles`.
 - Store mutable values through state providers. First providers: `LHEmbeddedStateProvider` and `LHLocalStateProvider`. Later providers: `LHPackageStateProvider`, `LHAppGroupStateProvider`, and `LHKeychainGroupStateProvider`.
-- Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Purpose labels are inputs to derivation only and must not be stored next to derived names.
+- Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Opaque derivation labels are inputs to derivation only and must not be stored next to derived names.
 - Default mutable state encoding: binary property list with a schema version. JSON is acceptable only for debug export/import tools, not target-process runtime state.
 - Default scope is per app. Design scope APIs for per-vendor group, per-shared-app-group, and manual linked group even if only per-app works initially.
 - Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value in compatibility mode.
 - First mitigation group: `UIDevice.identifierForVendor`, device boot time, and volume initialization or creation time.
 - The first mitigation group must be complete enough to evaluate limits: hook Objective-C/Foundation and C/Darwin layers that expose the same values.
-- Temporal coherence is mandatory: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and generated dates must form a plausible timeline.
+- Temporal ordering is mandatory: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and generated dates must form a plausible timeline by construction.
 - Storage guard hooks are postponed hardening. Opaque seed-derived names are the primary defense.
 - Testing automation is postponed. Initial validation uses manual Loupe comparisons.
 - Custom build website is last, after local deterministic dylib and `.deb` builds work.
 
 ## Phase 0: Source Skeleton
 
-Status: pending.
+Status: complete.
+
+Completed in commit `7dec2d9` with follow-up artifact output cleanup in
+`c034790`. The current build produces a signed dylib at `dist/runtime.dylib`
+and `make audit` validates the release artifact.
 
 Create the source layout without active spoofing.
 
@@ -72,7 +76,15 @@ Acceptance checks:
 
 ## Phase 1: Core Types and Hook Backend
 
-Status: pending.
+Status: complete.
+
+Completed after Phase 0. The runtime boundary, generated mitigation registry,
+seed/scope helpers, named scope-mode initializers, and Theos-compatible hook
+backend are present. `make seed-check` validates UUID parsing, deterministic
+scoped derivation, different scope outputs, and opaque-name reproduction. `make
+policy-check` validates the generated policy value-query boundary and resolver
+table. `make audit` validates the selected mitigation and policy-value
+registries through the signed dylib build.
 
 Create the runtime boundary before adding real mitigations.
 
@@ -83,7 +95,6 @@ Core modules:
 - `LHAppContext`
 - `LHScope`
 - `LHSeed`
-- `LHCoherenceGraph`
 - `LHValueQuantizer`
 - `LHCompatibility`
 - `LHHookBackend`
@@ -100,7 +111,10 @@ Implementation tasks:
 - Implement UUID instance seed parsing and validation without restricting the UUID version.
 - Implement KDF/keyed hash helpers for scoped seeds and opaque names.
 - Implement `LHHookBackend` with Theos/Logos/MobileSubstrate-compatible entry points first.
+- Support imported C-symbol rebinding behind `LHHookBackend` for call sites that
+  do not reliably pass through a patched shared implementation.
 - Keep hook modules as adapters: hooks must call policy APIs, not invent values.
+- Use generated policy value queries instead of adding one top-level policy-engine accessor or central switch branch per future surface.
 
 Acceptance checks:
 
@@ -111,7 +125,14 @@ Acceptance checks:
 
 ## Phase 2: Profile and State Providers
 
-Status: pending.
+Status: local implementation complete; manual validation pending.
+
+Implemented embedded profile metadata, runtime scope configuration, local and
+embedded state-provider paths, binary property-list state encoding, opaque
+seed-derived state filenames, seed-derived timeline values, and mitigation-owned
+state blobs. `make state-check` validates local persistence, embedded fallback,
+binary plist round-trip behavior, generic blob loading, and opaque state
+filenames.
 
 Implement profile data and state access with future storage backends in mind.
 
@@ -125,33 +146,40 @@ Providers:
 
 Implementation tasks:
 
-- Compile a first cohort profile directly into the binary.
-- Include first-mitigation defaults in the compiled profile.
-- Encode mutable state as binary property lists with explicit schema versioning.
+- Compile first cohort profile metadata directly into the binary.
+- Derive first-mitigation state values from the active instance seed and scope;
+  do not store concrete boot age, volume age, or profile epoch constants in the
+  profile.
+- Encode mutable state blobs as binary property lists with explicit schema versioning.
 - Store Keychain-backed state, when implemented later, as opaque data values rather than descriptive attributes.
-- Define mutable state record shape:
-  - instance seed identifier or version
-  - scope identifier
-  - scoped seed
-  - IDFV replacement UUID
-  - synthetic boot time
-  - synthetic volume initialization or creation time
-  - profile epoch
-  - state schema version
+- Define each mutable state blob shape in the resolver or mitigation source that
+  owns it. Core state providers should only know the state key, schema version,
+  byte length, generated bytes callback, and opaque payload bytes.
+- Define derivation label IDs in build configuration and use generated
+  seed-bound `LHDerivationLabel` constants in resolver or mitigation sources.
 - Derive storage names from the instance seed and scope. Do not use readable prefixes.
 - Implement generic fallback values per mitigation.
 
 Acceptance checks:
 
 - No profile values are hardcoded in hook modules.
-- Mutable state records round-trip through binary property list encoding.
+- Concrete temporal state values are derived from the active seed and scope.
+- Mutable state blobs round-trip through binary property list encoding.
 - Local state survives app relaunch where the backend supports persistence.
 - Embedded state can run without writable storage.
 - State filenames and keys are opaque and seed-derived.
 
 ## Phase 3: First Mitigation Group
 
-Status: pending.
+Status: local implementation complete; manual Loupe validation pending.
+
+Implemented the first mitigation group as policy-driven hooks for IDFV,
+boot-time surfaces, and Foundation volume creation date APIs. Boot time is
+selected through a catch-all composite mitigation that imports sysctl-family and
+`NSProcessInfo.systemUptime` adapters. Hook modules are thin adapters around
+policy accessors and pass through only the affected API when hook installation
+or policy lookup fails. Real-device deployment and Loupe comparison remain
+manual and out of scope for repo automation.
 
 Implement IDFV, boot time, and volume initialization or creation time together.
 
@@ -164,7 +192,9 @@ IDFV tasks:
 
 Boot time tasks:
 
-- Hook `sysctl` and `sysctlbyname` for `kern.boottime`.
+- Hook `sysctl`, `sysctlbyname`, and available underscored syscall entry names
+  for `kern.boottime` through function patching and imported-symbol rebinding.
+- Hook `NSProcessInfo.systemUptime` as part of the same boot-time composite.
 - Identify whether additional APIs in Loupe expose boot/uptime-adjacent values.
 - Return a synthetic boot time from the policy timeline.
 - Preserve structure, errno behavior, and buffer-size behavior as closely as possible.
@@ -173,18 +203,19 @@ Boot time tasks:
 Volume time tasks:
 
 - Hook Foundation storage APIs used by Loupe for volume creation/init metadata.
-- Hook lower-level file attribute APIs if needed for coherence:
+- Hook lower-level file attribute APIs if needed for temporal alignment:
   - `getattrlist`
   - `stat`/`fstat`/`lstat` where relevant
   - URL resource values where relevant
 - Return synthetic volume initialization or creation time from the same policy timeline.
 - Document option behavior in `docs/options/storage-volume-time.md`.
 
-Temporal coherence tasks:
+Temporal generation tasks:
 
-- Generate a timeline where `volumeInitializedAt < lastBootAt < now`.
+- Generate boot-time anchor `A1` from the active seed and scope.
+- Generate volume time by deriving the same `A1`, deriving a second offset, and
+  subtracting the offset so `volumeInitializedAt < lastBootAt < now`.
 - Reserve room for later `appInstalledAt`, `profileEpoch`, and profile rotation values.
-- Add policy checks that reject contradictory generated timelines.
 
 Acceptance checks:
 
@@ -214,6 +245,10 @@ Implementation tasks:
 - Add build-flag-controlled generated internal names.
 - Keep development builds readable by default.
 - Ensure build variability never changes observable API values.
+- Harden mutable state encoding markers:
+  - evaluate replacing static binary-plist field keys with generated/keyed field names or a compact binary record
+  - keep schema versioning and binary round-trip checks
+  - ensure target-process-visible state filenames remain opaque and seed-derived
 
 Acceptance checks:
 
@@ -221,6 +256,7 @@ Acceptance checks:
 - `LH_ENABLE_VARIABILITY=1` produces generated internal names where implemented.
 - Release audit fails on project-identifying strings in injected runtime.
 - Release audit does not fail on package metadata outside target process.
+- Release audit does not expose useful static mutable-state field markers beyond intentionally generic platform/runtime strings.
 
 ## Phase 5: Rootless Deb Package
 
@@ -284,7 +320,7 @@ Implement remaining MVP and later surfaces after the first mitigation group is s
 
 MVP passive targets:
 
-- device/sysctl/uname coherence
+- device/sysctl/uname alignment
 - ProcessInfo CPU/RAM/OS
 - storage capacity/free/date
 - display/safe area
@@ -303,7 +339,7 @@ Rules:
 
 - Every option needs documentation before it can be marked stable.
 - Every option needs a generic fallback and rollback behavior.
-- Every option must list coherence and temporal dependencies.
+- Every option must list temporal and value dependencies.
 - Permissioned APIs default to compatibility-preserving behavior.
 
 ## Phase 8: Storage Guard Hardening
@@ -358,7 +394,7 @@ Implementation tasks:
 - Define snapshot schema for observed values.
 - Import or recreate Loupe-style probes.
 - Compare real, protected, and expected cohort values.
-- Report entropy and coherence failures.
+- Report entropy and invariant failures.
 
 Acceptance checks:
 
@@ -388,7 +424,7 @@ Acceptance checks:
 
 ## First Coding Task
 
-Status: pending.
+Status: complete.
 
 Start with Phase 0 and Phase 1 only:
 

@@ -11,16 +11,41 @@ cat >"$tmpdir/seed_check.c" <<'SOURCE'
 #include <stdio.h>
 #include <string.h>
 
-static int derive(const char *scopeText, unsigned char output[32]) {
+typedef bool (*ScopeInit)(LHScope *scope, const char *identifier);
+
+static const LHDerivationLabel LHTestBytesLabel = {
+    .bytes = { 0x41, 0x8c, 0x7d, 0xb5, 0x0f, 0x63, 0x44, 0xaa, 0x81, 0x25, 0x39, 0x4d, 0x0e, 0x91, 0x56, 0xc8 }
+};
+
+static const LHDerivationLabel LHTestNameLabel = {
+    .bytes = { 0x8d, 0x12, 0xf4, 0xa1, 0x77, 0x30, 0x4c, 0x26, 0x9e, 0x42, 0x1d, 0xe8, 0x5a, 0x04, 0xbb, 0x93 }
+};
+
+static int derive(ScopeInit init, const char *scopeText, unsigned char output[32]) {
     LHSeed seed;
     LHScope scope;
     if (!LHSeedParseUUID("123e4567-e89b-12d3-a456-426614174000", &seed)) {
         return 1;
     }
-    if (!LHScopeInitPerApp(&scope, scopeText)) {
+    if (!init(&scope, scopeText)) {
         return 2;
     }
-    if (!LHSeedDeriveBytes(&seed, LHDerivationPurposeScopedSeed, &scope, output, 32)) {
+    if (!LHSeedDeriveBytes(&seed, &LHTestBytesLabel, &scope, output, 32)) {
+        return 3;
+    }
+    return 0;
+}
+
+static int derive_name(ScopeInit init, const char *scopeText, char output[33]) {
+    LHSeed seed;
+    LHScope scope;
+    if (!LHSeedParseUUID("123e4567-e89b-12d3-a456-426614174000", &seed)) {
+        return 1;
+    }
+    if (!init(&scope, scopeText)) {
+        return 2;
+    }
+    if (!LHSeedDeriveOpaqueName(&seed, &LHTestNameLabel, &scope, output, 33)) {
         return 3;
     }
     return 0;
@@ -30,27 +55,67 @@ int main(void) {
     unsigned char first[32] = {0};
     unsigned char second[32] = {0};
     unsigned char other[32] = {0};
+    unsigned char vendor[32] = {0};
+    unsigned char shared[32] = {0};
+    unsigned char manual[32] = {0};
+    char firstName[33] = {0};
+    char secondName[33] = {0};
+    LHSeed parsed;
 
-    if (derive("example.one", first) != 0) {
+    if (!LHSeedParseUUID("00000000-0000-0000-0000-000000000000", &parsed)) {
         return 1;
     }
-    if (derive("example.one", second) != 0) {
+    if (!LHSeedParseUUID("123e4567-e89b-42d3-a456-426614174000", &parsed)) {
         return 1;
     }
-    if (derive("example.two", other) != 0) {
+    if (LHSeedParseUUID("not-a-uuid", &parsed)) {
         return 1;
     }
-    if (memcmp(first, second, sizeof(first)) != 0) {
+
+    if (derive(LHScopeInitPerApp, "example.one", first) != 0) {
         return 2;
     }
-    if (memcmp(first, other, sizeof(first)) == 0) {
+    if (derive(LHScopeInitPerApp, "example.one", second) != 0) {
+        return 2;
+    }
+    if (derive(LHScopeInitPerApp, "example.two", other) != 0) {
         return 3;
     }
-
-    for (size_t i = 0; i < sizeof(first); i++) {
-        printf("%02x", first[i]);
+    if (derive(LHScopeInitPerVendorGroup, "example.one", vendor) != 0) {
+        return 4;
     }
-    printf("\n");
+    if (derive(LHScopeInitPerSharedAppGroup, "example.one", shared) != 0) {
+        return 5;
+    }
+    if (derive(LHScopeInitManualLinkedGroup, "example.one", manual) != 0) {
+        return 6;
+    }
+    if (derive_name(LHScopeInitPerApp, "example.one", firstName) != 0) {
+        return 7;
+    }
+    if (derive_name(LHScopeInitPerApp, "example.one", secondName) != 0) {
+        return 8;
+    }
+
+    if (memcmp(first, second, sizeof(first)) != 0) {
+        return 9;
+    }
+    if (memcmp(first, other, sizeof(first)) == 0) {
+        return 10;
+    }
+    if (memcmp(first, vendor, sizeof(first)) == 0) {
+        return 11;
+    }
+    if (memcmp(first, shared, sizeof(first)) == 0) {
+        return 12;
+    }
+    if (memcmp(first, manual, sizeof(first)) == 0) {
+        return 13;
+    }
+    if (strcmp(firstName, secondName) != 0 || strlen(firstName) != 32) {
+        return 14;
+    }
+
     return 0;
 }
 SOURCE

@@ -23,6 +23,9 @@ typedef struct LHScope {
 
 LH_INTERNAL bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength);
 LH_INTERNAL bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier);
+LH_INTERNAL bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier);
+LH_INTERNAL bool LHScopeInitPerSharedAppGroup(LHScope *scope, const char *appGroupIdentifier);
+LH_INTERNAL bool LHScopeInitManualLinkedGroup(LHScope *scope, const char *groupIdentifier);
 
 #ifdef __cplusplus
 }

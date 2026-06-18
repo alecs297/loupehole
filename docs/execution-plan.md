@@ -245,7 +245,7 @@ When defaults are needed, prefer common real-world values. Examples:
 Use a layered design:
 
 1. Policy engine: decides what each API should return for a given app, profile, and context.
-2. Coherence graph: keeps device model, OS, screen, CPU, GPU, camera, RAM, and WebKit values plausible together.
+2. Generation invariants: value generators share seed-derived anchors where related device, OS, screen, CPU, GPU, camera, RAM, WebKit, or temporal values must agree.
 3. Hook modules: small isolated modules per mitigation method.
 4. Persistence guard: mediates app-generated stable identifiers where feasible.
 5. WebView injector: applies JavaScript-level and native WebKit mitigations.
@@ -316,8 +316,8 @@ Goal:
 Exit criteria:
 
 - Hook code calls the policy engine instead of embedding spoofed values.
-- The selected mitigations have option documentation, default profile data, coherence notes, and harness probes.
-- The policy engine enforces temporal coherence: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
+- The selected mitigations have option documentation, default profile data, temporal/value dependency notes, and harness probes.
+- Temporal generators produce ordered values by construction: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
 - `LHEmbeddedStateProvider` and `LHLocalStateProvider` exist so early dylib tests can run before package state is available.
 - A UUID configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers, without restricting callers to one UUID version.
 - Each first mitigation has a documented generic fallback; compatibility mode may pass through only for the affected mitigation when no coherent fallback is available.
@@ -370,7 +370,7 @@ Goal:
 
 Exit criteria:
 
-- Every stable option has required documentation, harness coverage, defaults, drawbacks, rollback behavior, and coherence dependencies.
+- Every stable option has required documentation, harness coverage, defaults, drawbacks, rollback behavior, and temporal/value dependencies.
 - Loupe-style reports show fewer high-entropy values without obvious contradictions.
 - Strict mode behavior is documented as breakage-tolerant and opt-in.
 
@@ -378,12 +378,12 @@ Exit criteria:
 
 Goal:
 
-- Add optional anti-detection hardening for Loupehole-owned state records in target-visible storage backends.
+- Add optional anti-detection hardening for Loupehole-owned state blobs in target-visible storage backends.
 
 Exit criteria:
 
 - Shared Keychain state is hidden from broad target-app `SecItemCopyMatching` queries and protected from target-app update/delete calls when ownership is certain.
-- Loupehole state providers have an explicit reentrancy bypass so they can access their own records.
+- Loupehole state providers have an explicit reentrancy bypass so they can access their own blobs or records.
 - File/App Group storage guards are optional and strict-mode oriented because filesystem enumeration has a broad API surface.
 - Guard hooks never hide unrelated app data and leave the app's storage call unfiltered when ownership is uncertain.
 
@@ -427,7 +427,7 @@ Deliverables:
 - A Loupe-inspired local probe app that records every covered API before and after injection.
 - WKWebView fingerprint test page.
 - Snapshot format for comparing signals.
-- Basic entropy/coherence report.
+- Basic entropy/invariant report.
 
 Exit criteria:
 
@@ -624,7 +624,7 @@ Examples:
 
 - Cohort profiles for low uniqueness.
 - Per-app stable seeds for identifiers.
-- Coherence graph for plausible device bundles.
+- Generation invariants for plausible device bundles.
 - Compatibility/standard/strict modes.
 - Module-level hooks with per-mitigation generic fallback behavior.
 - WebView user scripts plus selected native WebKit hooks.

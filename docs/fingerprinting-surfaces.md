@@ -7,7 +7,7 @@ This matrix starts with Loupe's current provider set and extends into adjacent i
 - P2: useful/advanced.
 - P3: research/backlog.
 
-Every surface in this document should eventually expand into one or more option catalog entries following [spoofing-option-policy.md](spoofing-option-policy.md). A surface is not complete until every sensible mitigation method has documented original API behavior, fingerprinting mechanism, mitigation behavior, common defaults, drawbacks, coherence dependencies, uniqueness risks, and tests.
+Every surface in this document should eventually expand into one or more option catalog entries following [spoofing-option-policy.md](spoofing-option-policy.md). A surface is not complete until every sensible mitigation method has documented original API behavior, fingerprinting mechanism, mitigation behavior, common defaults, drawbacks, temporal or value dependencies, uniqueness risks, and tests.
 
 Default values should be common on real devices. For example, local-network spoofing should prefer common private networks such as `192.168.1.0/24`; if the value represents a router/gateway, `192.168.1.1/24` is common, while a device interface should usually use a non-gateway host like `192.168.1.23/24`.
 
@@ -102,7 +102,7 @@ Default values should be common on real devices. For example, local-network spoo
 | Nearby interaction/UWB | NearbyInteraction capabilities | Device class/environment | Deny or generic unless app requires it | P3 |
 | ARKit/LiDAR | ARWorldTrackingConfiguration supports flags | Exact hardware | Cohort capability; pass-through for AR apps | P2 |
 
-## Coherence Requirements
+## Generation Invariants
 
 These values must be generated together:
 

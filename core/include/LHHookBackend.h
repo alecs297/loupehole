@@ -22,11 +22,13 @@ extern "C" {
 typedef struct LHHookBackend LHHookBackend;
 
 typedef bool (*LHHookFunctionInstaller)(LHHookBackend *backend, void *target, void *replacement, void **original);
+typedef bool (*LHHookImportedSymbolInstaller)(LHHookBackend *backend, const char *symbol, void *replacement, void **original);
 typedef bool (*LHHookMessageInstaller)(LHHookBackend *backend, Class targetClass, SEL selector, void *replacement, void **original);
 typedef bool (*LHHookNoOpRegistrar)(LHHookBackend *backend, uint32_t moduleID);
 
 typedef struct LHHookBackendVTable {
     LHHookFunctionInstaller hookFunction;
+    LHHookImportedSymbolInstaller hookImportedSymbol;
     LHHookMessageInstaller hookMessage;
     LHHookNoOpRegistrar registerNoOp;
 } LHHookBackendVTable;
@@ -37,6 +39,7 @@ struct LHHookBackend {
 };
 
 LH_INTERNAL bool LHHookBackendHookFunction(LHHookBackend *backend, void *target, void *replacement, void **original);
+LH_INTERNAL bool LHHookBackendHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original);
 LH_INTERNAL bool LHHookBackendHookMessage(LHHookBackend *backend, Class targetClass, SEL selector, void *replacement, void **original);
 LH_INTERNAL bool LHHookBackendRegisterNoOp(LHHookBackend *backend, uint32_t moduleID);
 LH_INTERNAL LHHookBackend LHHookBackendCreateTheos(void);

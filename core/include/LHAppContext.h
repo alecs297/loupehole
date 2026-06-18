@@ -14,6 +14,7 @@ typedef struct LHAppContext {
 } LHAppContext;
 
 LH_INTERNAL bool LHAppContextInitCurrent(LHAppContext *context);
+LH_INTERNAL bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mode);
 
 #ifdef __cplusplus
 }

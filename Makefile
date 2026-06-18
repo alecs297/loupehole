@@ -2,6 +2,7 @@ THEOS ?= $(if $(THEOS_HOME),$(THEOS_HOME),$(HOME)/theos)
 CONFIG ?= release
 PYTHON ?= python3
 MITIGATION_CATALOG ?= config/mitigations.json
+POLICY_VALUE_CATALOG ?= config/policy-values.json
 BUILD_SELECTION ?= config/build.default.json
 
 ifeq ($(CONFIG),debug)
@@ -21,7 +22,7 @@ FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
 
-.PHONY: all build clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check
+.PHONY: all build clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check state-check policy-check
 
 all: copy-artifact
 
@@ -29,7 +30,7 @@ build: generate
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE)
 
 generate:
-	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --selection "$(BUILD_SELECTION)"
+	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --values "$(POLICY_VALUE_CATALOG)" --selection "$(BUILD_SELECTION)"
 
 clean:
 	$(MAKE) -C packages/tweak THEOS="$(THEOS)" clean
@@ -44,7 +45,7 @@ copy-artifact: sign
 
 audit: copy-artifact verify
 
-verify: summary strings symbols swift-absence debug-log-absence
+verify: seed-check state-check policy-check summary strings symbols swift-absence debug-log-absence
 
 summary:
 	scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
@@ -63,3 +64,9 @@ debug-log-absence:
 
 seed-check:
 	scripts/verify/seed-derivation-check.sh
+
+state-check: generate
+	scripts/verify/state-provider-check.sh
+
+policy-check: generate
+	scripts/verify/policy-query-check.sh

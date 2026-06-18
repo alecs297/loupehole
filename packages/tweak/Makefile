@@ -10,9 +10,13 @@ TWEAK_NAME := runtime
 runtime_FILES := \
 	sources/Runtime.mm \
 	$(LH_SELECTED_MITIGATION_SOURCES) \
+	$(LH_SELECTED_POLICY_VALUE_SOURCES) \
+	../../core/generated/LHGeneratedConfig.c \
+	../../core/generated/LHGeneratedDerivationLabels.c \
 	../../core/generated/LHGeneratedMitigationRegistry.c \
+	../../core/generated/LHGeneratedPolicyValueRegistry.c \
 	../../core/src/LHAppContext.m \
-	../../core/src/LHCoherenceGraph.c \
+	../../core/src/LHConfig.c \
 	../../core/src/LHCompatibility.c \
 	../../core/src/LHHookBackend.c \
 	../../core/src/LHHookBackendTheos.c \
@@ -22,6 +26,7 @@ runtime_FILES := \
 	../../core/src/LHRuntime.m \
 	../../core/src/LHScope.c \
 	../../core/src/LHSeed.c \
+	../../core/src/LHStateProvider.m \
 	../../core/src/LHValueQuantizer.c
 
 runtime_CFLAGS += \

@@ -13,53 +13,46 @@
     {
       "id": "identity.idfv.uidevice.scoped_uuid",
       "sources": [
-        "packages/tweak/sources/IDFVMitigation.m"
+        "packages/tweak/sources/identity/idfv/IDFVMitigation.m"
+      ],
+      "policyValues": [
+        "identifier_for_vendor"
       ],
       "language": "objc",
-      "status": "planned",
-      "coherenceGroup": "identity.vendor_identifier",
+      "status": "experimental",
       "optionDoc": "docs/options/identity-idfv.md"
     },
     {
-      "id": "system.boot_time.sysctl.synthetic",
+      "id": "system.boot_time.composite.synthetic",
       "sources": [
-        "packages/tweak/sources/BootTimeSysctlMitigation.c"
+        "packages/tweak/sources/system/boot_time/BootTimeMitigation.m",
+        "packages/tweak/sources/system/boot_time/BootTimeSysctlMitigation.c",
+        "packages/tweak/sources/system/boot_time/BootTimeProcessInfoMitigation.m"
       ],
-      "conflicts": [
-        "system.boot_time.process_info.synthetic"
+      "policyValues": [
+        "boot_time"
       ],
-      "language": "c",
-      "status": "planned",
-      "coherenceGroup": "temporal.device_lifetime",
-      "optionDoc": "docs/options/system-boot-time.md"
-    },
-    {
-      "id": "system.boot_time.process_info.synthetic",
-      "sources": [
-        "packages/tweak/sources/BootTimeProcessInfoMitigation.m"
-      ],
-      "conflicts": [
-        "system.boot_time.sysctl.synthetic"
-      ],
+      "conflicts": [],
       "frameworks": [
         "Foundation"
       ],
       "language": "objc",
-      "status": "planned",
-      "coherenceGroup": "temporal.device_lifetime",
+      "status": "experimental",
       "optionDoc": "docs/options/system-boot-time.md"
     },
     {
       "id": "storage.volume_creation_time.foundation.synthetic",
       "sources": [
-        "packages/tweak/sources/VolumeCreationTimeMitigation.m"
+        "packages/tweak/sources/storage/volume_creation_time/VolumeCreationTimeMitigation.m"
+      ],
+      "policyValues": [
+        "volume_creation_time"
       ],
       "frameworks": [
         "Foundation"
       ],
       "language": "objc",
       "status": "planned",
-      "coherenceGroup": "temporal.device_lifetime",
       "optionDoc": "docs/options/storage-volume-time.md"
     }
   ]

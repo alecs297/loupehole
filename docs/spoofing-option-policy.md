@@ -62,6 +62,8 @@ The instance seed should derive:
 - Shared-container filenames.
 - Keychain service/account names.
 - Package-owned internal state filenames.
+- Concrete timeline values such as boot time, volume creation time, and profile
+  epoch.
 - Optional generated internal symbol or class prefixes, if those names cannot become app-visible API values.
 
 Storage-name rules:
@@ -72,6 +74,7 @@ Storage-name rules:
 - Reusing the same instance seed and scope inputs should recreate the same derived paths and keys.
 - Rotating the instance seed should rotate every derived storage name and scoped value unless the user explicitly migrates state.
 - Release audits must search binaries, scripts, generated config, and package layouts for accidental project-identifying storage names.
+- Mutable state field names inside target-process runtime storage should avoid readable project, module, or mitigation names. Short generic binary-plist keys are acceptable for the initial local provider, but a later hardening pass should evaluate generated/keyed field names or a compact binary record format to reduce static markers.
 
 Storage guard hooks:
 
@@ -130,7 +133,7 @@ Required fields:
 - Fingerprinting mechanism: how trackers combine or persist the value.
 - Mitigation behavior: exactly what the tweak changes.
 - Value lifetime: pass-through, per-app stable, session-stable, slowly varying, or cohort static.
-- Coherence dependencies: other APIs that must agree with this value.
+- Value dependencies: other APIs that must agree with this value.
 - Temporal dependencies: dates, counters, and lifetimes that must be ordered plausibly.
 - Drawbacks: user-visible breakage, app compatibility risks, performance cost, and security implications.
 - Detection/uniqueness risk: how the mitigation itself could stand out.
@@ -158,7 +161,7 @@ Common defaults:
 
 Value lifetime:
 
-Coherence dependencies:
+Value dependencies:
 
 Temporal dependencies:
 
@@ -200,7 +203,7 @@ Examples:
 - Canvas/WebGL: prefer deterministic cohort-level output rather than per-user random noise.
 - Accessibility: default to common settings, but avoid breaking real accessibility needs unless the user chooses strict spoofing.
 
-## Temporal Coherence Policy
+## Temporal Ordering Policy
 
 Generated values must describe a believable device history. Do not generate timestamps, counters, lifetimes, or slowly varying values independently when an app can compare them.
 
@@ -210,7 +213,7 @@ Rules:
 - App install time must not predate the volume initialization time.
 - Synthetic profile rotation time must not predate identifiers or app-scoped values that it is supposed to reset.
 - Slowly varying values such as battery, free storage, thermal state, and uptime-adjacent values must move in plausible directions and buckets.
-- If a hook cannot preserve temporal coherence, compatibility mode should use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
+- If a hook cannot preserve required temporal ordering, compatibility mode should use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
 
 ## Defaults Versus Hardcoding
 
@@ -232,7 +235,7 @@ A spoofing option is complete only when:
 - It has full documentation using the required fields.
 - It has a test harness case.
 - It has at least one common default or an explicit pass-through default.
-- Its coherence dependencies are listed.
+- Its temporal or value dependencies are listed.
 - Its drawbacks are documented.
 - It does not contain identifying project/build constants in the injected runtime.
 - It can be disabled per app.
