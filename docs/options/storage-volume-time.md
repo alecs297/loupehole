@@ -59,6 +59,10 @@ Test plan:
 Manual Loupe comparison after injection should show volume creation time
 normalized and earlier than synthetic boot time.
 
+Validation:
+
+Phase 3 manual Loupe validation passed on 2026-06-18.
+
 Rollback:
 
 If hook installation or policy lookup fails, pass through only volume creation

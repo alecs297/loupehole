@@ -63,6 +63,10 @@ Manual Loupe comparison after injection should show `kern.boottime` normalized
 through Loupe's `SysctlHelper.timeval("kern.boottime")` path and still later
 than the synthetic volume creation time.
 
+Validation:
+
+Phase 3 manual Loupe validation passed on 2026-06-18.
+
 Rollback:
 
 If hook installation or policy lookup fails, pass through only the affected

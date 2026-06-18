@@ -56,6 +56,10 @@ Test plan:
 Manual Loupe comparison after injection should show a scoped UUID distinct from
 the real IDFV and stable across relaunches for the same scope.
 
+Validation:
+
+Phase 3 manual Loupe validation passed on 2026-06-18.
+
 Rollback:
 
 If hook installation or policy lookup fails, pass through only this affected API.

@@ -125,14 +125,16 @@ Acceptance checks:
 
 ## Phase 2: Profile and State Providers
 
-Status: local implementation complete; manual validation pending.
+Status: complete for the current embedded/local providers.
 
 Implemented embedded profile metadata, runtime scope configuration, local and
 embedded state-provider paths, binary property-list state encoding, opaque
 seed-derived state filenames, seed-derived timeline values, and mitigation-owned
 state blobs. `make state-check` validates local persistence, embedded fallback,
 binary plist round-trip behavior, generic blob loading, and opaque state
-filenames.
+filenames. Phase 3 manual Loupe validation confirmed these providers support the
+current first mitigation group. Package, App Group, and Keychain-backed providers
+remain postponed to their later phases.
 
 Implement profile data and state access with future storage backends in mind.
 
@@ -172,15 +174,16 @@ Acceptance checks:
 
 ## Phase 3: First Mitigation Group
 
-Status: local implementation complete; manual Loupe validation pending.
+Status: complete.
 
 Implemented the first mitigation group as policy-driven hooks for IDFV,
 boot-time surfaces, and Foundation volume creation date APIs. Boot time is
 selected through a catch-all composite mitigation that imports sysctl-family and
 `NSProcessInfo.systemUptime` adapters. Hook modules are thin adapters around
 policy accessors and pass through only the affected API when hook installation
-or policy lookup fails. Real-device deployment and Loupe comparison remain
-manual and out of scope for repo automation.
+or policy lookup fails. Manual Loupe validation passed on 2026-06-18. Real-device
+deployment and Loupe comparison remain manual and out of scope for repo
+automation.
 
 Implement IDFV, boot time, and volume initialization or creation time together.
 
@@ -220,17 +223,17 @@ Temporal generation tasks:
 
 Acceptance checks:
 
-- Manual Loupe run shows IDFV changed according to policy.
-- Manual Loupe run shows boot time normalized.
-- Manual Loupe run shows volume initialization or creation time normalized.
-- Loupe does not observe volume time after boot time.
-- Repeated launches see stable values for the same scope.
+- Manual Loupe run showed IDFV changed according to policy.
+- Manual Loupe run showed boot time normalized.
+- Manual Loupe run showed volume initialization or creation time normalized.
+- Loupe did not observe volume time after boot time.
+- Repeated launches showed stable values for the same scope.
 - Different app scopes see different per-app values unless shared scope is selected.
 - If a mitigation fails, only that affected value uses fallback/pass-through behavior.
 
 ## Phase 4: Dylib Audit and Build Variability
 
-Status: pending.
+Status: next pending phase.
 
 Harden the plain dylib before packaging.
 
@@ -423,17 +426,23 @@ Acceptance checks:
 - Observable API behavior remains in shared cohorts.
 - Artifacts expire and no telemetry is collected beyond operational build status.
 
-## First Coding Task
+## Current Next Coding Task
 
-Status: complete.
+Status: pending.
 
-Start with Phase 0 and Phase 1 only:
+Start with Phase 4 only:
 
-1. Create source directories and minimal Theos dylib target.
-2. Add no-op constructor and module registry.
-3. Add C/Objective-C/Objective-C++ core scaffolding.
-4. Add `LHHookBackend` abstraction with first Theos/Logos-compatible implementation.
-5. Add local audit scripts.
-6. Build, sign, and audit the empty dylib.
+1. Extend release audit coverage for build timestamps, build IDs, linked-library
+   expectations, generated-label/string leakage, and other static markers.
+2. Add build-flag-controlled generated internal names where they affect static
+   binary markers without changing observable API behavior.
+3. Evaluate mutable state field markers and decide whether the current generic
+   binary-plist keys are acceptable for the next package milestone or should
+   move to generated/keyed field names or a compact binary record first.
+4. Keep `LH_ENABLE_VARIABILITY=0` readable for development and
+   `LH_ENABLE_VARIABILITY=1` stricter for release/custom builds.
+5. Run `make audit` after each hardening change.
 
-Do not implement spoofed values until this skeleton builds and audits cleanly.
+Do not start rootless package work, preference UI, storage guards, or additional
+mitigation surfaces until the validated plain dylib passes the Phase 4 audit and
+variability checks.
