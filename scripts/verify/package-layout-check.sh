@@ -14,6 +14,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 root="$tmpdir/root"
 control="$tmpdir/control"
 filter="$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist"
+install_refresh_filter="$root/var/jb/Library/MobileSubstrate/DynamicLibraries/installrefresh.plist"
 toggle_helper="$root/var/jb/usr/bin/lhctl"
 
 dpkg-deb -x "$artifact" "$root"
@@ -35,6 +36,8 @@ require_dir() {
 
 require_file "$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.dylib"
 require_file "$filter"
+require_file "$root/var/jb/Library/MobileSubstrate/DynamicLibraries/installrefresh.dylib"
+require_file "$install_refresh_filter"
 require_file "$toggle_helper"
 if [ ! -x "$toggle_helper" ]; then
   printf '%s\n' "toggle helper is not executable"
@@ -108,6 +111,8 @@ if "awk" in helper_text:
 old_selector_pattern = r"\bmo" "de\\b|\\bmo" "des\\b|compat" "ibility|stan" "dard|str" "ict"
 if re.search(old_selector_pattern, helper_text):
     raise SystemExit("toggle helper must not expose the old profile selector")
+if "LHCTL_APP_BUNDLE_ROOTS" not in helper_text or "refresh_filter" not in helper_text or "refresh-auto" not in helper_text:
+    raise SystemExit("toggle helper must support materialized third-party default targeting")
 
 with filter_path.open("rb") as handle:
     data = plistlib.load(handle)
@@ -115,6 +120,14 @@ with filter_path.open("rb") as handle:
 bundles = data.get("Filter", {}).get("Bundles")
 if bundles != []:
     raise SystemExit("package filter must start with an empty Bundles allowlist")
+
+with (root / "var/jb/Library/MobileSubstrate/DynamicLibraries/installrefresh.plist").open("rb") as handle:
+    trigger_data = plistlib.load(handle)
+trigger_filter = trigger_data.get("Filter", {})
+if trigger_filter.get("Executables") != ["installd"]:
+    raise SystemExit("install refresh trigger must target only installd")
+if "Bundles" in trigger_filter:
+    raise SystemExit("install refresh trigger must not target app bundles")
 
 print(state_parent)
 PY
@@ -136,18 +149,76 @@ for bundle in data.get("Filter", {}).get("Bundles", []):
 PY
 }
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.example.one >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default scope per-app >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mitigations identity.idfv.uidevice.scoped_uuid >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one scope per-vendor-group >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one mitigations system.boot_time.composite.synthetic storage.volume_creation_time.foundation.synthetic >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" toggle com.example.two >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" disable com.example.one >/dev/null
-bundles=$(bundles_from_filter)
-if [ "$bundles" != "com.example.two" ]; then
-  printf '%s\n' "toggle helper did not update filter allowlist"
-  exit 1
-fi
+assert_filter_bundles() {
+  python3 - "$filter" "$@" <<'PY'
+import plistlib
+import sys
+
+with open(sys.argv[1], "rb") as handle:
+    data = plistlib.load(handle)
+actual = data.get("Filter", {}).get("Bundles", [])
+expected = sys.argv[2:]
+if sorted(actual) != sorted(expected):
+    raise SystemExit(f"filter bundles mismatch: actual={actual!r} expected={expected!r}")
+PY
+}
+
+app_root="$tmpdir/apps"
+make_test_app() {
+  bundle_id=${1:?}
+  app_name=${2:?}
+  app_dir="$app_root/$app_name.app"
+  mkdir -p "$app_dir"
+  cat >"$app_dir/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>$bundle_id</string>
+</dict>
+</plist>
+PLIST
+}
+
+lhctl() {
+  LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" LHCTL_APP_BUNDLE_ROOTS="$app_root" "$toggle_helper" "$@"
+}
+
+make_test_app com.example.one One
+make_test_app com.example.two Two
+make_test_app com.example.three Three
+make_test_app com.apple.Maps AppleMaps
+
+lhctl refresh-auto >/dev/null
+assert_filter_bundles
+
+lhctl default enabled on >/dev/null
+assert_filter_bundles com.example.one com.example.two com.example.three
+
+make_test_app com.example.four Four
+lhctl refresh-auto >/dev/null
+assert_filter_bundles com.example.one com.example.two com.example.three com.example.four
+
+lhctl disable com.example.two >/dev/null
+assert_filter_bundles com.example.one com.example.three com.example.four
+
+lhctl set com.example.one scope per-vendor-group >/dev/null
+lhctl set com.example.one mitigations system.boot_time.composite.synthetic storage.volume_creation_time.foundation.synthetic >/dev/null
+lhctl default scope per-app >/dev/null
+lhctl default mitigations identity.idfv.uidevice.scoped_uuid >/dev/null
+assert_filter_bundles com.example.one com.example.three com.example.four
+
+lhctl default enabled off >/dev/null
+assert_filter_bundles com.example.one
+
+make_test_app com.example.five Five
+lhctl refresh-auto >/dev/null
+assert_filter_bundles com.example.one
+
+lhctl toggle com.example.three >/dev/null
+lhctl disable com.example.one >/dev/null
+assert_filter_bundles com.example.three
 
 python3 - "$root" "$state_parent" <<'PY'
 import re
@@ -175,16 +246,14 @@ if entries.get("D") != ["D", "0", "1", "1", "1"]:
     raise SystemExit(f"default policy mismatch: {entries.get('D')}")
 if entries.get("com.example.one") != ["B", "com.example.one", "0", "2", "1", "2,3"]:
     raise SystemExit(f"bundle one policy mismatch: {entries.get('com.example.one')}")
-if entries.get("com.example.two") != ["B", "com.example.two", "1", "1", "1", "1"]:
+if entries.get("com.example.two") != ["B", "com.example.two", "0", "0", "0", ""]:
     raise SystemExit(f"bundle two policy mismatch: {entries.get('com.example.two')}")
+if entries.get("com.example.three") != ["B", "com.example.three", "1", "1", "1", "1"]:
+    raise SystemExit(f"bundle three policy mismatch: {entries.get('com.example.three')}")
 PY
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" clear >/dev/null
-bundles=$(bundles_from_filter)
-if [ -n "$bundles" ]; then
-  printf '%s\n' "toggle helper did not clear filter allowlist"
-  exit 1
-fi
+lhctl clear >/dev/null
+assert_filter_bundles
 
 python3 - "$root" "$state_parent" <<'PY'
 import re
@@ -197,6 +266,8 @@ config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
 policy_file = next(path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name))
 for line in policy_file.read_text(encoding="utf-8").splitlines():
     fields = line.split("|")
+    if fields and fields[0] == "D" and len(fields) > 1 and fields[1] != "0":
+        raise SystemExit("clear did not disable default policy")
     if fields and fields[0] == "B" and len(fields) > 2 and fields[2] != "0":
         raise SystemExit("clear did not disable bundle policy entries")
 PY

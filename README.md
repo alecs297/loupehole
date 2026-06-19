@@ -23,7 +23,7 @@ Package work must support clean install, upgrade, disable, and uninstall paths. 
 Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
-- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for per-bundle injection, scope, and mitigation-list settings.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for default third-party-app targeting plus per-bundle injection, scope, and mitigation-list overrides. The default profile applies to discovered third-party installed app bundles when enabled, but remains disabled on install. A small package trigger loaded only into `installd` asks `lhctl` to refresh that app list after install-service lifecycle notifications when the default profile is on.
 
 ## Non-goals
 

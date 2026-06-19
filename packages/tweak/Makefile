@@ -9,7 +9,7 @@ LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
 
-TWEAK_NAME := runtime
+TWEAK_NAME := runtime installrefresh
 
 runtime_FILES := \
 	sources/Runtime.mm \
@@ -55,5 +55,17 @@ runtime_LDFLAGS += -Wl,-dead_strip -Wl,-x -Wl,-install_name,@rpath/runtime.dylib
 runtime_FRAMEWORKS := Foundation $(LH_SELECTED_FRAMEWORKS)
 runtime_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
 runtime_LIBRARIES := $(LH_SELECTED_LIBRARIES)
+
+installrefresh_FILES := sources/InstallRefreshTrigger.m
+installrefresh_CFLAGS += \
+	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
+	-fvisibility=hidden \
+	-fdata-sections \
+	-ffunction-sections \
+	-Wall \
+	-Wextra \
+	-Werror
+installrefresh_OBJCFLAGS += $(installrefresh_CFLAGS)
+installrefresh_LDFLAGS += -Wl,-dead_strip -Wl,-x -Wl,-install_name,@rpath/installrefresh.dylib
 
 include $(THEOS_MAKE_PATH)/tweak.mk

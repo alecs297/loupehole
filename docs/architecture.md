@@ -152,7 +152,11 @@ so the runtime can find it before loading the package root install seed. The
 root install seed remains the practical seed for scoped runtime values and
 state. The package policy contains a default behavior plus per-bundle overrides
 for enabled/off state, scope mode, and the compiled mitigation module IDs to
-install.
+install. The default behavior represents discovered third-party installed app
+bundles as a group and is disabled on install. When it is enabled, package
+tooling materializes the loader filter from third-party app containers while
+excluding system bundle identifiers; a per-bundle override can still disable one
+bundle under the enabled default or enable one bundle while the default is off.
 
 The package's list of available mitigations is generated from the same build
 selection that compiles the dylib. `lhctl` does not discover modules dynamically;
@@ -438,8 +442,18 @@ Theos notes:
 Recommended first filter:
 
 - Do not inject into every process by default.
-- Start with a user-selected app allowlist.
-- Exclude SpringBoard, system daemons, banking/DRM apps, and critical Apple services unless explicitly tested.
+- Start with an empty materialized app allowlist and a default-off third-party
+  app profile.
+- When the default profile is enabled, materialize the allowlist from installed
+  third-party app bundles rather than loading into system processes and deciding
+  later inside the runtime.
+- For automatic new-app coverage, keep the trigger separate from the privacy
+  runtime. The current package builds a tiny `installd`-only executable-filtered
+  dylib that watches install-service notifications and runs `lhctl
+  refresh-auto`; it is best-effort and must keep manual `lhctl refresh` as the
+  fallback.
+- Exclude SpringBoard, unrelated system daemons, banking/DRM apps, and critical
+  Apple services unless explicitly tested.
 
 Install and uninstall requirements:
 

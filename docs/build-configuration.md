@@ -358,9 +358,11 @@ lhctl status com.example.app
 lhctl set com.example.app enabled off
 lhctl set com.example.app scope per-vendor-group
 lhctl set com.example.app mitigations identity.idfv.uidevice.scoped_uuid
+lhctl default enabled on
 lhctl default enabled off
 lhctl default scope per-app-install
 lhctl default mitigations all
+lhctl refresh
 lhctl mitigations
 lhctl clear
 lhctl menu
@@ -370,9 +372,26 @@ The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist
 for injection and the generated package policy file for default/per-bundle
 runtime settings. Those runtime settings are enabled/off state, scope, and the
 compiled mitigation module list. The package starts from an empty `Bundles`
-allowlist and a default-off policy, so no app is injected until a bundle is
-explicitly enabled. It must be run as root because it writes rootless package
-configuration. Restart the target app after changing filter or policy settings.
+allowlist and a default-off policy. When the default profile is enabled, `lhctl`
+discovers installed third-party app bundles from user app containers and
+materializes those bundle IDs into the positive loader filter, excluding system
+bundle identifiers. Per-bundle overrides can still enable one app while the
+default is off, or disable one app while the default is on. `lhctl refresh`
+rebuilds the filter after app installs or removals. It must be run as root
+because it writes rootless package configuration. Restart the target app after
+changing filter or policy settings.
+
+The package also builds a separate `installrefresh.dylib` with an executable
+filter for `installd` only. This trigger is intentionally not the privacy
+runtime and does not add SpringBoard or Apple apps to `runtime.plist`. Inside
+`installd`, it hooks `notify_post`, watches a narrow set of app-install,
+uninstall, update, and LaunchServices application notification families, and
+runs `lhctl refresh-auto` after a short debounce. `refresh-auto` is quiet and
+only rebuilds the filter when the default profile is already enabled, so the
+disabled-by-default install state remains unchanged. This is a best-effort iOS
+compatibility hook; manual `lhctl refresh` remains the fallback when a jailbreak,
+loader, or iOS version does not inject the trigger into `installd` or uses a
+different private notification path.
 
 The deb's available mitigation list is frozen at build time. The generator
 assigns numeric module IDs from the mitigation catalog, compiles only the
