@@ -51,6 +51,21 @@ static int derive_name(ScopeInit init, const char *scopeText, char output[33]) {
     return 0;
 }
 
+static int is_random_fallback_identifier(const LHScope *scope) {
+    if (scope->identifierLength != 32) {
+        return 0;
+    }
+    for (size_t index = 0; index < scope->identifierLength; index++) {
+        unsigned char byte = scope->identifier[index];
+        if (!((byte >= 'a' && byte <= 'z') ||
+              (byte >= 'A' && byte <= 'Z') ||
+              (byte >= '0' && byte <= '9'))) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 int main(void) {
     unsigned char first[32] = {0};
     unsigned char second[32] = {0};
@@ -66,6 +81,11 @@ int main(void) {
     char secondName[33] = {0};
     LHSeed parsed;
     LHScope contextScope;
+    LHScope fallbackNilFirst;
+    LHScope fallbackNilSecond;
+    LHScope fallbackEmpty;
+    LHScope fallbackLong;
+    char longIdentifier[160];
     static const uint8_t contextA[] = { 1, 2, 3, 4 };
     static const uint8_t contextB[] = { 4, 3, 2, 1 };
 
@@ -145,6 +165,23 @@ int main(void) {
     }
     if (memcmp(contextFirst, contextOther, sizeof(contextFirst)) == 0 || memcmp(contextFirst, first, sizeof(contextFirst)) == 0) {
         return 21;
+    }
+    memset(longIdentifier, 'x', sizeof(longIdentifier) - 1);
+    longIdentifier[sizeof(longIdentifier) - 1] = '\0';
+    if (!LHScopeInitPerApp(&fallbackNilFirst, 0) ||
+        !LHScopeInitPerApp(&fallbackNilSecond, 0) ||
+        !LHScopeInitPerApp(&fallbackEmpty, "") ||
+        !LHScopeInitPerApp(&fallbackLong, longIdentifier)) {
+        return 22;
+    }
+    if (!is_random_fallback_identifier(&fallbackNilFirst) ||
+        !is_random_fallback_identifier(&fallbackNilSecond) ||
+        !is_random_fallback_identifier(&fallbackEmpty) ||
+        !is_random_fallback_identifier(&fallbackLong)) {
+        return 23;
+    }
+    if (memcmp(fallbackNilFirst.identifier, fallbackNilSecond.identifier, fallbackNilFirst.identifierLength) == 0) {
+        return 24;
     }
 
     return 0;

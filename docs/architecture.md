@@ -166,6 +166,12 @@ Supported scope modes:
 - Manual linked group: an explicit user-created group identifier or preshared
   secret used across containers.
 
+If a scope resolver cannot provide a usable identifier, such as a missing,
+empty, or oversized bundle/vendor/group string, the scope layer must use a fresh
+random alphanumeric fallback identifier. This fallback is intentionally
+ephemeral and non-descriptive; it should not use readable constants such as
+`app`, `vendor`, or project names.
+
 Each Loupehole configuration instance should have one high-entropy instance seed
 represented as a UUID when supplied by config, without restricting the UUID
 version. If no profile/config seed is supplied, the runtime creates a random

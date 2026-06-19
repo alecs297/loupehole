@@ -111,6 +111,8 @@ Implementation tasks:
   in app data.
 - Resolve vendor-group scope from original pre-spoof IDFV when available.
 - Resolve shared-app-group scope from app group entitlements when available.
+- Use fresh random alphanumeric scope identifiers when scope input is missing,
+  empty, or too long to copy safely.
 - Implement UUID instance seed parsing and validation without restricting the UUID version.
 - Implement KDF/keyed hash helpers for scoped seeds and opaque names.
 - Implement `LHHookBackend` with Theos/Logos/MobileSubstrate-compatible entry points first.

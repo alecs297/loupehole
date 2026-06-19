@@ -1,59 +1,71 @@
 #include "LHScope.h"
 
+#include <stdlib.h>
 #include <string.h>
 
-bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength) {
-    if (scope == 0 || identifier == 0 || identifierLength == 0 || identifierLength > sizeof(scope->identifier)) {
+static bool LHScopeInitRandomIdentifier(LHScope *scope, LHScopeMode mode) {
+    static const uint8_t alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    enum { kFallbackLength = 32 };
+
+    if (scope == 0) {
         return false;
     }
 
     scope->mode = mode;
+    scope->identifierLength = kFallbackLength;
+    memset(scope->identifier, 0, sizeof(scope->identifier));
+    for (size_t index = 0; index < kFallbackLength; index++) {
+        scope->identifier[index] = alphabet[arc4random_uniform((uint32_t)(sizeof(alphabet) - 1))];
+    }
+    return true;
+}
+
+bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength) {
+    if (scope == 0) {
+        return false;
+    }
+    if (identifier == 0 || identifierLength == 0 || identifierLength > sizeof(scope->identifier)) {
+        return LHScopeInitRandomIdentifier(scope, mode);
+    }
+
+    scope->mode = mode;
     scope->identifierLength = identifierLength;
+    memset(scope->identifier, 0, sizeof(scope->identifier));
     memcpy(scope->identifier, identifier, identifierLength);
     return true;
 }
 
 bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier) {
-    if (bundleIdentifier == 0) {
-        static const uint8_t fallback[] = { 'a', 'p', 'p', '-', 'i', 'n', 's', 't', 'a', 'l', 'l' };
-        return LHScopeInit(scope, LHScopeModePerAppInstall, fallback, sizeof(fallback));
-    }
-
-    return LHScopeInit(scope, LHScopeModePerAppInstall, (const uint8_t *)bundleIdentifier, strlen(bundleIdentifier));
+    return LHScopeInit(scope,
+                       LHScopeModePerAppInstall,
+                       (const uint8_t *)bundleIdentifier,
+                       bundleIdentifier == 0 ? 0 : strlen(bundleIdentifier));
 }
 
 bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier) {
-    if (bundleIdentifier == 0) {
-        static const uint8_t fallback[] = { 'a', 'p', 'p' };
-        return LHScopeInit(scope, LHScopeModePerApp, fallback, sizeof(fallback));
-    }
-
-    return LHScopeInit(scope, LHScopeModePerApp, (const uint8_t *)bundleIdentifier, strlen(bundleIdentifier));
+    return LHScopeInit(scope,
+                       LHScopeModePerApp,
+                       (const uint8_t *)bundleIdentifier,
+                       bundleIdentifier == 0 ? 0 : strlen(bundleIdentifier));
 }
 
 bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier) {
-    if (vendorIdentifier == 0) {
-        static const uint8_t fallback[] = { 'v', 'e', 'n', 'd', 'o', 'r' };
-        return LHScopeInit(scope, LHScopeModePerVendorGroup, fallback, sizeof(fallback));
-    }
-
-    return LHScopeInit(scope, LHScopeModePerVendorGroup, (const uint8_t *)vendorIdentifier, strlen(vendorIdentifier));
+    return LHScopeInit(scope,
+                       LHScopeModePerVendorGroup,
+                       (const uint8_t *)vendorIdentifier,
+                       vendorIdentifier == 0 ? 0 : strlen(vendorIdentifier));
 }
 
 bool LHScopeInitPerSharedAppGroup(LHScope *scope, const char *appGroupIdentifier) {
-    if (appGroupIdentifier == 0) {
-        static const uint8_t fallback[] = { 'g', 'r', 'o', 'u', 'p' };
-        return LHScopeInit(scope, LHScopeModePerSharedAppGroup, fallback, sizeof(fallback));
-    }
-
-    return LHScopeInit(scope, LHScopeModePerSharedAppGroup, (const uint8_t *)appGroupIdentifier, strlen(appGroupIdentifier));
+    return LHScopeInit(scope,
+                       LHScopeModePerSharedAppGroup,
+                       (const uint8_t *)appGroupIdentifier,
+                       appGroupIdentifier == 0 ? 0 : strlen(appGroupIdentifier));
 }
 
 bool LHScopeInitManualLinkedGroup(LHScope *scope, const char *groupIdentifier) {
-    if (groupIdentifier == 0) {
-        static const uint8_t fallback[] = { 'l', 'i', 'n', 'k' };
-        return LHScopeInit(scope, LHScopeModeManualLinkedGroup, fallback, sizeof(fallback));
-    }
-
-    return LHScopeInit(scope, LHScopeModeManualLinkedGroup, (const uint8_t *)groupIdentifier, strlen(groupIdentifier));
+    return LHScopeInit(scope,
+                       LHScopeModeManualLinkedGroup,
+                       (const uint8_t *)groupIdentifier,
+                       groupIdentifier == 0 ? 0 : strlen(groupIdentifier));
 }
