@@ -60,7 +60,7 @@ Behavior:
 - Normalize high-entropy passive APIs.
 - Reduce WebView fingerprinting.
 - Guard Keychain reinstall tracking.
-- Leave permissioned data mostly pass-through in compatibility mode, with optional coarse/empty responses per category.
+- Leave permissioned data mostly pass-through by default, with optional coarse/empty responses per category.
 - Per-app stable seeds for IDFV-like values and synthetic values.
 
 ### Track B: Custom Build Website
@@ -112,7 +112,7 @@ Stealth-aware defaults:
 
 Brainstormed menu structure:
 
-- Global mode: off, compatibility, standard, strict.
+- Global defaults: enabled state, scope, and mitigation presets.
 - Protected apps: per-bundle allowlist with search, presets, and emergency bypass.
 - Profile: device cohort, locale cohort, WebView cohort, identifier lifetime.
 - Passive surfaces: identity, system, storage, display, battery, locale, accessibility, pasteboard, network, fonts/voices, GPU, telephony.
@@ -126,7 +126,7 @@ Brainstormed menu structure:
 Good defaults:
 
 - New installs start with no app selected.
-- App-specific strict mode warns that functionality may break.
+- App-specific aggressive blocking warns that functionality may break.
 - Changing profile values requires confirmation because it may rotate identifiers.
 
 ## Development Environment
@@ -320,7 +320,7 @@ Exit criteria:
 - Temporal generators produce ordered values by construction: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
 - `LHEmbeddedStateProvider` and `LHLocalStateProvider` exist so early dylib tests can run before package state is available.
 - A UUID configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers, without restricting callers to one UUID version.
-- Each first mitigation has a documented generic fallback; compatibility mode may pass through only for the affected mitigation when no coherent fallback is available.
+- Each first mitigation has a documented generic fallback; the affected mitigation may pass through when no coherent fallback is available.
 
 ### Step 3: Dylib Mitigation Expansion
 
@@ -356,7 +356,7 @@ Goal:
 Exit criteria:
 
 - Config priority is emergency bypass, preference profile, embedded build config, then built-in default.
-- Per-app allowlist, profile selection, mitigation toggles, scope mode, and seed reset work through the config provider.
+- Per-app allowlist, profile/cohort selection, mitigation toggles, scope mode, and seed reset work through the config provider.
 - Scope mode supports per-app default, per-vendor group, per-shared-app-group, and manual linked groups.
 - `LHPackageStateProvider` stores jailbreak package state outside target app containers.
 - `LHAppGroupStateProvider` and `LHKeychainGroupStateProvider` are deferred until sideloaded signing entitlements are known.
@@ -372,7 +372,7 @@ Exit criteria:
 
 - Every stable option has required documentation, harness coverage, defaults, drawbacks, rollback behavior, and temporal/value dependencies.
 - Loupe-style reports show fewer high-entropy values without obvious contradictions.
-- Strict mode behavior is documented as breakage-tolerant and opt-in.
+- Aggressive blocking behavior is documented as breakage-tolerant and opt-in.
 
 ### Step 6.5: Storage Guard Hardening
 
@@ -384,7 +384,7 @@ Exit criteria:
 
 - Shared Keychain state is hidden from broad target-app `SecItemCopyMatching` queries and protected from target-app update/delete calls when ownership is certain.
 - Loupehole state providers have an explicit reentrancy bypass so they can access their own blobs or records.
-- File/App Group storage guards are optional and strict-mode oriented because filesystem enumeration has a broad API surface.
+- File/App Group storage guards are optional and hardening-oriented because filesystem enumeration has a broad API surface.
 - Guard hooks never hide unrelated app data and leave the app's storage call unfiltered when ownership is uncertain.
 
 ### Step 7: Custom Build Website
@@ -481,16 +481,16 @@ Exit criteria:
 
 Deliverables:
 
-- Policy modes for location, camera enumeration, Bluetooth, local network, contacts, photos, calendars, reminders, music, motion/fitness.
-- Default compatibility policy.
-- Strict policy for high-risk apps.
+- Per-surface policy behaviors for location, camera enumeration, Bluetooth, local network, contacts, photos, calendars, reminders, music, motion/fitness.
+- Default pass-through or coarse policy.
+- Optional aggressive deny/coarsen policy for high-risk apps.
 - Per-app user override UI.
 - Detailed docs covering original permission/API behavior, fingerprinting risk, mitigation, and drawbacks for every permissioned suboption.
 
 Exit criteria:
 
 - Permissioned APIs can be passed through, coarsened, summarized, or denied by policy.
-- Apps that need permissions can be assigned compatibility profiles.
+- Apps that need permissions can be assigned pass-through or coarse per-surface settings.
 
 ### Phase 6: Jailbreak Package and Preferences
 
@@ -556,7 +556,7 @@ M3 - Jailbreak MVP:
 
 - Rootless `.deb`.
 - Inject into selected bundles.
-- Per-app compatibility profile.
+- Per-app profile/cohort selection.
 
 M4 - WebView MVP:
 
@@ -565,7 +565,7 @@ M4 - WebView MVP:
 
 M5 - Permissioned controls:
 
-- Strict and compatibility policies.
+- Per-surface pass-through, coarse, and deny policies.
 - Preference UI.
 
 M6 - Custom builder:
@@ -587,7 +587,7 @@ Keep the injected core small and boring:
 - Do not use Swift in the injected dylib; reserve Swift for optional preferences UI or tooling.
 - Split modules by framework to reduce blast radius.
 - Use lazy initialization.
-- Prefer per-mitigation generic fallbacks; pass through only the affected mitigation in compatibility mode when a coherent fallback is not available.
+- Prefer per-mitigation generic fallbacks; pass through only the affected mitigation when a coherent fallback is not available.
 
 ## Best Privacy Strategy
 
@@ -625,7 +625,7 @@ Examples:
 - Cohort profiles for low uniqueness.
 - Per-app stable seeds for identifiers.
 - Generation invariants for plausible device bundles.
-- Compatibility/standard/strict modes.
+- Per-surface policy behaviors.
 - Module-level hooks with per-mitigation generic fallback behavior.
 - WebView user scripts plus selected native WebKit hooks.
 - Rootless Theos package for jailbreaks.

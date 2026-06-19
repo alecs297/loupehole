@@ -182,10 +182,10 @@ policy_file=$2
 policy_dir="$tmpdir/package/var/mobile/Library/Preferences/$state_parent"
 mkdir -p "$policy_dir"
 
-printf 'D|0|2|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|0|0|0|\n' > "$policy_dir/$policy_file"
 LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" "$tmpdir/package_policy_check" disabled
 
-printf 'D|1|2|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|1|0|0|\n' > "$policy_dir/$policy_file"
 LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" "$tmpdir/package_policy_check" enabled
 
 printf '%s\n' "policy query check passed"

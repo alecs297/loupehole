@@ -16,13 +16,6 @@ typedef enum LHStateProviderKind {
     LHStateProviderKindPackage = 2
 } LHStateProviderKind;
 
-typedef enum LHPolicyMode {
-    LHPolicyModeOff = 0,
-    LHPolicyModeCompatibility = 1,
-    LHPolicyModeStandard = 2,
-    LHPolicyModeStrict = 3
-} LHPolicyMode;
-
 enum {
     LHRuntimeConfigMaxEnabledModules = 1024
 };
@@ -30,7 +23,6 @@ enum {
 typedef struct LHRuntimeConfig {
     LHScopeMode scopeMode;
     LHStateProviderKind stateProviderKind;
-    LHPolicyMode policyMode;
     bool policyEnabled;
     bool moduleFilterEnabled;
     uint32_t enabledModuleIDs[LHRuntimeConfigMaxEnabledModules];

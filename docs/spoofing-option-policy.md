@@ -86,7 +86,7 @@ Storage guard hooks:
 - Guard hooks may filter or protect only records that are provably derived from the active instance seed and scope.
 - Guard hooks must not hide unrelated app data, unrelated Keychain records, or user files.
 - Loupehole's own state provider must have an explicit reentrancy bypass.
-- Compatibility mode should leave the app's storage call unfiltered when Loupehole ownership cannot be proven.
+- Storage guard hooks should leave the app's storage call unfiltered when Loupehole ownership cannot be proven.
 
 ## Coverage Requirement
 
@@ -96,7 +96,7 @@ The final tweak must include every spoofing method that makes sense in at least 
 
 - It reduces a real fingerprinting surface.
 - It can be explained and tested.
-- It has a clear compatibility mode or opt-in strict mode.
+- It has a clear default behavior and an explicit opt-in path for higher-breakage behavior.
 - It does not make the protected device more unique than the original value.
 
 Every method should be available as one of these policy behaviors:
@@ -131,7 +131,7 @@ Required fields:
 - Surface: device identity, WebView, storage, location, etc.
 - Affected APIs: classes, functions, selectors, C APIs, JavaScript APIs, and frameworks.
 - Permission requirements: whether iOS prompts are involved.
-- Default mode: compatibility, standard, strict, or off.
+- Default behavior: pass-through, enabled mitigation, coarse, denied, or off.
 - Common default: the recommended default value or bucket, with reasoning.
 - Original API behavior: how the real API works and what a normal app receives.
 - Fingerprinting mechanism: how trackers combine or persist the value.
@@ -205,7 +205,7 @@ Examples:
 - Fonts/voices: return the normal system baseline for the cohort OS, not a tiny fake list.
 - WebView user agent: choose a common Safari/WKWebView string matching the cohort iOS/WebKit version.
 - Canvas/WebGL: prefer deterministic cohort-level output rather than per-user random noise.
-- Accessibility: default to common settings, but avoid breaking real accessibility needs unless the user chooses strict spoofing.
+- Accessibility: default to common settings, but avoid breaking real accessibility needs unless the user explicitly chooses higher-breakage spoofing.
 
 ## Temporal Ordering Policy
 
@@ -217,7 +217,7 @@ Rules:
 - App install time must not predate the volume initialization time.
 - Synthetic profile rotation time must not predate identifiers or app-scoped values that it is supposed to reset.
 - Slowly varying values such as battery, free storage, thermal state, and uptime-adjacent values must move in plausible directions and buckets.
-- If a hook cannot preserve required temporal ordering, compatibility mode should use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
+- If a hook cannot preserve required temporal ordering, use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
 
 ## Defaults Versus Hardcoding
 

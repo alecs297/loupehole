@@ -21,7 +21,7 @@ Default values should be common on real devices. For example, local-network spoo
 | CPU identifiers | `hw.cputype`, `hw.cpusubtype`, `ProcessInfo.processorCount` | Model classifier | Return cohort CPU fields | Same | P0 |
 | OS version | `UIDevice.systemVersion`, `ProcessInfo.operatingSystemVersionString`, `kern.version` | Narrows device population | Report real major/minor or cohort-compatible patch bucket | Cohort OS string | P0 |
 | Boot time | `kern.boottime` | Stable until reboot; strong session link | Round to broad bucket or synthetic per-app stable boot window coherent with volume initialization time | Synthetic cohort boot time | P0 |
-| Lockdown mode | `UserDefaults` key patterns | Rare boolean, high entropy when enabled | Consider pass-through in compatibility; normalize to common off in standard with warning | Normalize | P2 |
+| Lockdown state | `UserDefaults` key patterns | Rare boolean, high entropy when enabled | Pass-through by default; optional normalization to common off with warning | Normalize | P2 |
 | Physical memory | `ProcessInfo.physicalMemory` | Device model classifier | Cohort memory value | Same | P0 |
 | Battery | `UIDevice.batteryLevel`, `batteryState`, low power, thermal | Time-domain correlation | Bucket level to 10 or 20 percent, slow update cadence, common state mapping | Fixed or coarse | P0 |
 | Storage | `URLResourceValues` capacity/free/creation/UUID/name | User-specific free space and setup date | Bucket capacities, hide or normalize volume creation date, common UUID/name; volume initialization or creation time must predate last boot time | Common values | P0 |
@@ -91,13 +91,13 @@ Default values should be common on real devices. For example, local-network spoo
 | APNs token | App delegate device token | Stable app install signal | Do not spoof by default; user can block network transmission only outside this tweak | P3 |
 | DeviceCheck/App Attest | DeviceCheck, App Attest | Security/fraud binding | Pass-through; do not spoof | P3 |
 | Biometry availability | `LAContext.canEvaluatePolicy`, `biometryType` | Face ID/Touch ID/enrollment state | Generic availability matching cohort, but pass-through for auth flows | P2 |
-| Apple Pay availability | `PKPaymentAuthorizationController.canMakePayments` | Region/card setup | Pass-through by default; generic in strict mode | P2 |
+| Apple Pay availability | `PKPaymentAuthorizationController.canMakePayments` | Region/card setup | Pass-through by default; optional generic policy for apps that do not require payments | P2 |
 | Haptics | CoreHaptics capability | Device model classifier | Cohort capability | P3 |
 | Orientation/proximity | `UIDevice.orientation`, proximity monitoring | Usage context | Pass-through for UI, rate-limit or neutralize background probes | P2 |
 | Thermal/performance benchmarks | CPU/GPU timing, memory pressure | Device and state classifier | Hard to solve; reduce exposed static fields, consider timing precision in WebView | P3 |
 | Filesystem paths | Container UUIDs, path names, file timestamps | Install/session identifiers | Normalize timestamps; avoid exposing container UUID where hookable | P1 |
 | Receipt/store metadata | App receipt, storefront, purchase environment | Account/region/app install state | Pass-through; only normalize storefront in privacy profile | P2 |
-| Notifications | Authorization status/settings | Rare preference state | Normalize statuses only in strict mode; pass-through for UX | P3 |
+| Notifications | Authorization status/settings | Rare preference state | Pass-through for UX by default; optional normalization when notification behavior is nonessential | P3 |
 | HealthKit | Health samples and availability | Extremely sensitive | Do not spoof broadly; rely on iOS permissions and user-denied default | P3 |
 | Nearby interaction/UWB | NearbyInteraction capabilities | Device class/environment | Deny or generic unless app requires it | P3 |
 | ARKit/LiDAR | ARWorldTrackingConfiguration supports flags | Exact hardware | Cohort capability; pass-through for AR apps | P2 |

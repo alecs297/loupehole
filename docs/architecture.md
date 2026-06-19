@@ -151,8 +151,8 @@ generated preferences directory. The policy path is derived from the build seed
 so the runtime can find it before loading the package root install seed. The
 root install seed remains the practical seed for scoped runtime values and
 state. The package policy contains a default behavior plus per-bundle overrides
-for enabled/off state, compatibility/standard/strict mode, scope mode, and the
-compiled mitigation module IDs to install.
+for enabled/off state, scope mode, and the compiled mitigation module IDs to
+install.
 
 The package's list of available mitigations is generated from the same build
 selection that compiles the dylib. `lhctl` does not discover modules dynamically;
@@ -267,7 +267,7 @@ Keychain guard behavior:
 - Filter Loupehole-owned records out of broad `SecItemCopyMatching` results, including `kSecMatchLimitAll` and attribute-only queries.
 - Ignore, reject, or protect against target-app `SecItemUpdate` and `SecItemDelete` calls that accidentally match Loupehole-owned records.
 - Allow Loupehole's own state provider to read, write, update, and delete through an explicit reentrancy bypass.
-- Leave the app's storage call unfiltered in compatibility mode when ownership is uncertain.
+- Leave the app's storage call unfiltered when ownership is uncertain.
 
 Shared App Group or file-backed guard behavior is optional and stricter because the API surface is broader. It may require filtering `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value paths. Prefer opaque filenames and avoid shared containers unless shared scope is explicitly needed.
 
@@ -455,12 +455,11 @@ Install and uninstall requirements:
 ### User Flow
 
 1. Choose target: jailbreak package or developer dylib.
-2. Choose profile: compatibility, standard, strict.
-3. Choose modules.
-4. Choose app bundle filters.
-5. Review uniqueness score.
-6. Build artifact.
-7. Download artifact and manifest.
+2. Choose modules.
+3. Choose scope and app bundle filters.
+4. Review uniqueness score.
+5. Build artifact.
+6. Download artifact and manifest.
 
 ### Backend
 
@@ -510,11 +509,11 @@ Reports:
 
 ## Failure Modes
 
-Never disable all hooks as the normal response to a single mitigation failure. Each mitigation should define its own best-effort generic fallback and rollback behavior. If a coherent generic fallback is not available, the affected mitigation may pass through the real value in compatibility mode. Strict mode may return documented generic or denied values only when they remain coherent with the active profile.
+Never disable all hooks as the normal response to a single mitigation failure. Each mitigation should define its own best-effort generic fallback and rollback behavior. If a coherent generic fallback is not available, the affected mitigation may pass through the real value.
 
 Examples:
 
-- If a display hook cannot find a coherent profile value, use the display module's documented generic fallback or return the real display value in compatibility mode.
+- If a display hook cannot find a coherent profile value, use the display module's documented generic fallback or return the real display value.
 - If a WebView script injection fails, log only in diagnostics mode.
 - If config is corrupt, load built-in defaults.
 - If a hook detects an unsupported OS/API version, bypass that hook.

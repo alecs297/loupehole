@@ -11,7 +11,6 @@ LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
         .scopeMode = LHScopeModePerAppInstall,
         .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND,
-        .policyMode = LHPolicyModeStandard,
         .policyEnabled = LH_DEFAULT_STATE_PROVIDER_KIND != LHStateProviderKindPackage,
         .moduleFilterEnabled = false,
         .enabledModuleIDCount = 0

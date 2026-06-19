@@ -2,7 +2,7 @@
 
 Name: Volume creation time
 Status: experimental
-Default: standard
+Default behavior: enabled when the module is selected
 Affected APIs: `NSURL getResourceValue:forKey:error:`,
 `NSURL resourceValuesForKeys:error:`, `NSURLVolumeCreationDateKey`
 Permissions: none

@@ -14,7 +14,6 @@
 
 typedef struct LHParsedPolicy {
     bool enabled;
-    LHPolicyMode mode;
     LHScopeMode scopeMode;
     bool moduleFilterEnabled;
     uint32_t moduleIDs[LHRuntimeConfigMaxEnabledModules];
@@ -74,15 +73,6 @@ static bool LHConfigProviderParseBool(NSString *text, bool *value) {
     return true;
 }
 
-static bool LHConfigProviderParseMode(NSString *text, LHPolicyMode *mode) {
-    uint32_t parsed = 0;
-    if (!LHConfigProviderParseUnsigned(text, &parsed) || parsed > LHPolicyModeStrict || mode == 0) {
-        return false;
-    }
-    *mode = (LHPolicyMode)parsed;
-    return true;
-}
-
 static bool LHConfigProviderParseScopeMode(NSString *text, LHScopeMode *mode) {
     uint32_t parsed = 0;
     if (!LHConfigProviderParseUnsigned(text, &parsed) || parsed > LHScopeModeManualLinkedGroup || mode == 0) {
@@ -129,32 +119,26 @@ static bool LHConfigProviderParseModules(NSString *text, LHParsedPolicy *policy)
 }
 
 static bool LHConfigProviderParsePolicyFields(NSArray<NSString *> *fields, NSUInteger offset, LHParsedPolicy *policy) {
-    if (fields == nil || policy == 0 || [fields count] < offset + 5) {
+    if (fields == nil || policy == 0 || [fields count] < offset + 4) {
         return false;
     }
 
     bool enabled = false;
-    LHPolicyMode mode = LHPolicyModeOff;
     LHScopeMode scopeMode = LHScopeModePerAppInstall;
     bool moduleFilterEnabled = false;
     if (!LHConfigProviderParseBool(fields[offset], &enabled) ||
-        !LHConfigProviderParseMode(fields[offset + 1], &mode) ||
-        !LHConfigProviderParseScopeMode(fields[offset + 2], &scopeMode) ||
-        !LHConfigProviderParseBool(fields[offset + 3], &moduleFilterEnabled)) {
+        !LHConfigProviderParseScopeMode(fields[offset + 1], &scopeMode) ||
+        !LHConfigProviderParseBool(fields[offset + 2], &moduleFilterEnabled)) {
         return false;
     }
 
     LHParsedPolicy parsed = {
         .enabled = enabled,
-        .mode = mode,
         .scopeMode = scopeMode,
         .moduleFilterEnabled = moduleFilterEnabled
     };
-    if (!LHConfigProviderParseModules(fields[offset + 4], &parsed)) {
+    if (!LHConfigProviderParseModules(fields[offset + 3], &parsed)) {
         return false;
-    }
-    if (parsed.mode == LHPolicyModeOff) {
-        parsed.enabled = false;
     }
 
     *policy = parsed;
@@ -167,7 +151,6 @@ static void LHConfigProviderApplyParsedPolicy(LHRuntimeConfig *config, const LHP
     }
 
     config->policyEnabled = policy->enabled;
-    config->policyMode = policy->mode;
     config->scopeMode = policy->scopeMode;
     config->moduleFilterEnabled = policy->moduleFilterEnabled;
     config->enabledModuleIDCount = policy->moduleIDCount;
@@ -204,7 +187,6 @@ bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppCont
 
         LHParsedPolicy effective = {
             .enabled = config->policyEnabled,
-            .mode = config->policyMode,
             .scopeMode = config->scopeMode,
             .moduleFilterEnabled = config->moduleFilterEnabled,
             .moduleIDCount = config->enabledModuleIDCount
@@ -227,7 +209,7 @@ bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppCont
                 if (LHConfigProviderParsePolicyFields(fields, 1, &parsed)) {
                     effective = parsed;
                 }
-            } else if ([kind isEqualToString:@"B"] && bundleIdentifier != nil && [fields count] >= 7 && [fields[1] isEqualToString:bundleIdentifier]) {
+            } else if ([kind isEqualToString:@"B"] && bundleIdentifier != nil && [fields count] >= 6 && [fields[1] isEqualToString:bundleIdentifier]) {
                 LHParsedPolicy parsed;
                 if (LHConfigProviderParsePolicyFields(fields, 2, &parsed)) {
                     effective = parsed;

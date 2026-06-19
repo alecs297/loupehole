@@ -23,7 +23,7 @@ Package work must support clean install, upgrade, disable, and uninstall paths. 
 Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
-- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for per-bundle injection, mode, scope, and mitigation-list settings.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for per-bundle injection, scope, and mitigation-list settings.
 
 ## Non-goals
 

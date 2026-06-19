@@ -2,7 +2,7 @@
 
 Name: Vendor identifier
 Status: experimental
-Default: standard
+Default behavior: enabled when the module is selected
 Affected APIs: `UIDevice.identifierForVendor`
 Permissions: none
 

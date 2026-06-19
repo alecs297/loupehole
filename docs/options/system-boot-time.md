@@ -2,7 +2,7 @@
 
 Name: Device boot time
 Status: experimental
-Default: standard
+Default behavior: enabled when the module is selected
 Affected APIs: `sysctl`, `sysctlbyname`, `__sysctl`, `__sysctlbyname`, `kern.boottime`, `NSProcessInfo.systemUptime`
 Permissions: none
 

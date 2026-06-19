@@ -105,6 +105,9 @@ if policy_file not in helper_text:
     raise SystemExit("toggle helper does not reference generated policy file")
 if "awk" in helper_text:
     raise SystemExit("toggle helper must not require awk")
+old_selector_pattern = r"\bmo" "de\\b|\\bmo" "des\\b|compat" "ibility|stan" "dard|str" "ict"
+if re.search(old_selector_pattern, helper_text):
+    raise SystemExit("toggle helper must not expose the old profile selector")
 
 with filter_path.open("rb") as handle:
     data = plistlib.load(handle)
@@ -134,7 +137,6 @@ PY
 }
 
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.example.one >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mode strict >/dev/null
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default scope per-app >/dev/null
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mitigations identity.idfv.uidevice.scoped_uuid >/dev/null
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one scope per-vendor-group >/dev/null
@@ -169,11 +171,11 @@ for line in policy_files[0].read_text(encoding="utf-8").splitlines():
     elif fields[0] == "B" and len(fields) > 1:
         entries[fields[1]] = fields
 
-if entries.get("D") != ["D", "0", "3", "1", "1", "1"]:
+if entries.get("D") != ["D", "0", "1", "1", "1"]:
     raise SystemExit(f"default policy mismatch: {entries.get('D')}")
-if entries.get("com.example.one") != ["B", "com.example.one", "0", "2", "2", "1", "2,3"]:
+if entries.get("com.example.one") != ["B", "com.example.one", "0", "2", "1", "2,3"]:
     raise SystemExit(f"bundle one policy mismatch: {entries.get('com.example.one')}")
-if entries.get("com.example.two") != ["B", "com.example.two", "1", "3", "1", "1", "1"]:
+if entries.get("com.example.two") != ["B", "com.example.two", "1", "1", "1", "1"]:
     raise SystemExit(f"bundle two policy mismatch: {entries.get('com.example.two')}")
 PY
 

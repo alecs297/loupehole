@@ -355,10 +355,10 @@ lhctl enable com.example.app
 lhctl disable com.example.app
 lhctl toggle com.example.app
 lhctl status com.example.app
-lhctl set com.example.app mode strict
+lhctl set com.example.app enabled off
 lhctl set com.example.app scope per-vendor-group
 lhctl set com.example.app mitigations identity.idfv.uidevice.scoped_uuid
-lhctl default mode standard
+lhctl default enabled off
 lhctl default scope per-app-install
 lhctl default mitigations all
 lhctl mitigations
@@ -368,10 +368,11 @@ lhctl menu
 
 The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist`
 for injection and the generated package policy file for default/per-bundle
-runtime settings. The package starts from an empty `Bundles` allowlist and a
-default-off policy, so no app is injected until a bundle is explicitly enabled.
-It must be run as root because it writes rootless package configuration. Restart
-the target app after changing filter or policy settings.
+runtime settings. Those runtime settings are enabled/off state, scope, and the
+compiled mitigation module list. The package starts from an empty `Bundles`
+allowlist and a default-off policy, so no app is injected until a bundle is
+explicitly enabled. It must be run as root because it writes rootless package
+configuration. Restart the target app after changing filter or policy settings.
 
 The deb's available mitigation list is frozen at build time. The generator
 assigns numeric module IDs from the mitigation catalog, compiles only the

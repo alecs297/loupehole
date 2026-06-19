@@ -15,7 +15,7 @@ This document is the actionable handoff plan for implementing Loupehole from the
 - Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Opaque derivation labels are inputs to derivation only and must not be stored next to derived names.
 - Default mutable state encoding: binary property list with a schema version. JSON is acceptable only for debug export/import tools, not target-process runtime state.
 - Default scope is per app install. Design scope APIs for per-app, per-vendor group, per-shared-app-group, and manual linked group even if policy UI is not complete yet.
-- Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value in compatibility mode.
+- Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value.
 - First mitigation group: `UIDevice.identifierForVendor`, device boot time, and volume initialization or creation time.
 - The first mitigation group must be complete enough to evaluate limits: hook Objective-C/Foundation and C/Darwin layers that expose the same values.
 - Temporal ordering is mandatory: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and generated dates must form a plausible timeline by construction.
@@ -287,7 +287,7 @@ stores blobs under package-owned rootless storage outside target app containers,
 with derived opaque per-scope state directories and blob filenames. A generated
 `/var/jb/usr/bin/lhctl` helper
 provides a CLI/menu flow for listing, enabling, disabling, toggling, clearing,
-and configuring per-bundle injection, mode, scope, and mitigation lists. Device
+and configuring per-bundle injection, scope, and mitigation lists. Device
 install and behavioral validation remain manual.
 
 Package the same dylib for jailbreak installation.
@@ -411,7 +411,7 @@ Implementation tasks:
   - add reentrancy bypass for Loupehole state providers
 - For shared App Group/file storage:
   - evaluate `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value filtering
-  - keep this strict-mode or hardening-only unless needed earlier
+  - keep this hardening-only unless needed earlier
 
 Acceptance checks:
 
