@@ -1,6 +1,6 @@
 # Loupehole
 
-Loupehole is a planned privacy-preserving iOS tweak/library that reduces abusive fingerprinting from native apps and embedded web views. The project is currently in planning mode. The initial scope is based on the public surfaces demonstrated by [mysk-research/loupe](https://github.com/mysk-research/loupe), plus adjacent iOS fingerprinting techniques that are not yet covered by Loupe.
+Loupehole is a privacy-preserving iOS tweak/library that reduces abusive fingerprinting from native apps and embedded web views. The initial scope is based on the public surfaces demonstrated by [mysk-research/loupe](https://github.com/mysk-research/loupe), plus adjacent iOS fingerprinting techniques that are not yet covered by Loupe.
 
 The central design principle is not "make every device random." The safer target is to make protected apps see a coherent, common, low-entropy device profile. A per-user random pile of values is easy to recognize as synthetic and can become a stronger fingerprint than the real device.
 
@@ -23,7 +23,7 @@ Package work must support clean install, upgrade, disable, and uninstall paths. 
 Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
-- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for the first per-bundle toggle flow.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for per-bundle injection, mode, scope, and mitigation-list settings.
 
 ## Non-goals
 

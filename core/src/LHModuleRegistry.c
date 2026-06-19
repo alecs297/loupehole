@@ -7,6 +7,10 @@ bool LHModuleRegistryInstall(LHHookBackend *backend, LHPolicyEngine *policy) {
     }
 
     for (size_t i = 0; i < LHGeneratedModuleDescriptorCount; i++) {
+        if (!LHPolicyEngineIsModuleEnabled(policy, LHGeneratedModuleDescriptors[i].moduleID)) {
+            (void)LHHookBackendRegisterNoOp(backend, LHGeneratedModuleDescriptors[i].moduleID);
+            continue;
+        }
         if (!LHGeneratedModuleDescriptors[i].install(backend, policy)) {
             return false;
         }

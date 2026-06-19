@@ -29,7 +29,8 @@ sources into the injected dylib.
   label bytes.
 - `packages/tweak/generated/package-layout/`: generated Theos package layout,
   including maintainer scripts, package-owned state directories, the package seed
-  root, and the first `lhctl` per-bundle toggle helper.
+  root, the package policy file, and the first `lhctl` per-bundle settings
+  helper.
 
 Generated files are ignored by git. The root `make` target regenerates them
 before compiling. If building directly from `packages/tweak` with Theos, run
@@ -328,31 +329,55 @@ The package build compiles the same runtime with `LHStateProviderKindPackage`,
 stages the tweak and empty allowlist filter under `/var/jb`, stages the
 generated package layout, and runs `scripts/verify/package-layout-check.sh`
 against the resulting `.deb`. The package-owned state parent directory, package
-seed root directory, and package root seed filename are derived at build time
-from the configured instance seed and emitted into the runtime config and
-maintainer scripts.
+seed root directory, package root seed filename, and package policy filename are
+derived at build time from the configured instance seed and emitted into the
+runtime config and maintainer scripts.
 
-On install, `postinst` creates package-owned state roots and a raw 16-byte root
-install seed under the generated package seed root. At runtime, `LHSeedProvider`
-uses that root install seed as the package practical seed. The default
-per-app-install scope also creates an opaque random marker in the target app's
-application support data, at a path derived from the practical seed. Stable
-per-app, vendor-group, shared-app-group, and manual-linked-group scopes derive
-directly from the practical seed plus the resolved scope identifier.
+On install, `postinst` creates package-owned state roots, a raw 16-byte root
+install seed under the generated package seed root, and a default-off package
+policy file under the generated package preferences directory. The policy path
+is derived from the build-selection seed so the runtime can find it before
+resolving the package root install seed. At runtime, `LHConfigProvider` reads the
+policy file, resolves the default policy plus any current-bundle override, and
+then scope and seed resolution continue. `LHSeedProvider` uses the root install
+seed as the package practical seed. The default per-app-install scope also
+creates an opaque random marker in the target app's application support data, at
+a path derived from the practical seed. Stable per-app, vendor-group,
+shared-app-group, and manual-linked-group scopes derive directly from the
+practical seed plus the resolved scope identifier.
 
 The package also installs `/var/jb/usr/bin/lhctl`, a small shell helper for the
-initial per-bundle filter flow:
+initial per-bundle filter and policy flow:
 
 ```sh
 lhctl list
 lhctl enable com.example.app
 lhctl disable com.example.app
 lhctl toggle com.example.app
+lhctl status com.example.app
+lhctl set com.example.app mode strict
+lhctl set com.example.app scope per-vendor-group
+lhctl set com.example.app mitigations identity.idfv.uidevice.scoped_uuid
+lhctl default mode standard
+lhctl default scope per-app-install
+lhctl default mitigations all
+lhctl mitigations
 lhctl clear
 lhctl menu
 ```
 
 The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist`
-and starts from an empty `Bundles` allowlist, so no app is injected until a bundle
-is explicitly enabled. It must be run as root because it writes the rootless
-Substrate filter. Restart the target app after changing the filter.
+for injection and the generated package policy file for default/per-bundle
+runtime settings. The package starts from an empty `Bundles` allowlist and a
+default-off policy, so no app is injected until a bundle is explicitly enabled.
+It must be run as root because it writes rootless package configuration. Restart
+the target app after changing filter or policy settings.
+
+The deb's available mitigation list is frozen at build time. The generator
+assigns numeric module IDs from the mitigation catalog, compiles only the
+selected mitigation sources into the dylib, and emits the same selected ID/name
+map into `lhctl`. `lhctl mitigations` prints that generated map and accepts
+either the numeric module ID or the dotted mitigation ID when writing a
+per-bundle or default mitigation list. Runtime policy stores only numeric module
+IDs, and a package cannot enable a mitigation that was not compiled into that
+deb.

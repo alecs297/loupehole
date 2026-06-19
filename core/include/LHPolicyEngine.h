@@ -36,6 +36,7 @@ LH_INTERNAL bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,
                                                  LHStateGenerateBytes generate,
                                                  void *generatorContext,
                                                  LHStateLoadResult *result);
+LH_INTERNAL bool LHPolicyEngineIsModuleEnabled(const LHPolicyEngine *engine, uint32_t moduleID);
 LH_INTERNAL bool LHPolicyEngineCopyValue(const LHPolicyEngine *engine,
                                          const LHPolicyValueRequest *request,
                                          LHPolicyValueResponse *response);

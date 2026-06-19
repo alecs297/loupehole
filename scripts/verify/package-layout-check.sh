@@ -87,18 +87,24 @@ for script_name, script_text in (("postinst", postinst_text), ("postrm", postrm_
 
 script_values = {}
 for line in postinst_text.splitlines():
-    match = re.fullmatch(r"(STATE_PARENT|SEED_ROOT_DIR|ROOT_SEED_FILE)=([0-9a-f]{32})", line)
+    match = re.fullmatch(r"(STATE_PARENT|SEED_ROOT_DIR|ROOT_SEED_FILE|POLICY_FILE)=([0-9a-f]{32})", line)
     if match:
         script_values[match.group(1)] = match.group(2)
 if script_values.get("STATE_PARENT") != state_parent:
     raise SystemExit("postinst state parent does not match package layout")
 seed_root_dir = script_values.get("SEED_ROOT_DIR")
 root_seed_file = script_values.get("ROOT_SEED_FILE")
-if seed_root_dir is None or root_seed_file is None:
+policy_file = script_values.get("POLICY_FILE")
+if seed_root_dir is None or root_seed_file is None or policy_file is None:
     raise SystemExit("postinst is missing generated seed root names")
 seed_root = root / "var/jb/var/mobile/Library/Application Support" / state_parent / seed_root_dir
 if not seed_root.is_dir():
     raise SystemExit("package layout is missing generated seed root directory")
+helper_text = (root / "var/jb/usr/bin/lhctl").read_text(encoding="utf-8")
+if policy_file not in helper_text:
+    raise SystemExit("toggle helper does not reference generated policy file")
+if "awk" in helper_text:
+    raise SystemExit("toggle helper must not require awk")
 
 with filter_path.open("rb") as handle:
     data = plistlib.load(handle)
@@ -128,6 +134,11 @@ PY
 }
 
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.example.one >/dev/null
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mode strict >/dev/null
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default scope per-app >/dev/null
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mitigations identity.idfv.uidevice.scoped_uuid >/dev/null
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one scope per-vendor-group >/dev/null
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one mitigations system.boot_time.composite.synthetic storage.volume_creation_time.foundation.synthetic >/dev/null
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" toggle com.example.two >/dev/null
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" disable com.example.one >/dev/null
 bundles=$(bundles_from_filter)
@@ -136,11 +147,56 @@ if [ "$bundles" != "com.example.two" ]; then
   exit 1
 fi
 
+python3 - "$root" "$state_parent" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+state_parent = sys.argv[2]
+config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
+policy_files = [path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name)]
+if len(policy_files) != 1:
+    raise SystemExit("expected one generated policy file")
+
+entries = {}
+for line in policy_files[0].read_text(encoding="utf-8").splitlines():
+    fields = line.split("|")
+    if not fields:
+        continue
+    if fields[0] == "D":
+        entries["D"] = fields
+    elif fields[0] == "B" and len(fields) > 1:
+        entries[fields[1]] = fields
+
+if entries.get("D") != ["D", "0", "3", "1", "1", "1"]:
+    raise SystemExit(f"default policy mismatch: {entries.get('D')}")
+if entries.get("com.example.one") != ["B", "com.example.one", "0", "2", "2", "1", "2,3"]:
+    raise SystemExit(f"bundle one policy mismatch: {entries.get('com.example.one')}")
+if entries.get("com.example.two") != ["B", "com.example.two", "1", "3", "1", "1", "1"]:
+    raise SystemExit(f"bundle two policy mismatch: {entries.get('com.example.two')}")
+PY
+
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" clear >/dev/null
 bundles=$(bundles_from_filter)
 if [ -n "$bundles" ]; then
   printf '%s\n' "toggle helper did not clear filter allowlist"
   exit 1
 fi
+
+python3 - "$root" "$state_parent" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+state_parent = sys.argv[2]
+config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
+policy_file = next(path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name))
+for line in policy_file.read_text(encoding="utf-8").splitlines():
+    fields = line.split("|")
+    if fields and fields[0] == "B" and len(fields) > 2 and fields[2] != "0":
+        raise SystemExit("clear did not disable bundle policy entries")
+PY
 
 printf '%s\n' "package layout check passed"

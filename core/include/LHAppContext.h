@@ -11,9 +11,13 @@ extern "C" {
 
 typedef struct LHAppContext {
     LHScope scope;
+    char bundleIdentifier[128];
+    size_t bundleIdentifierLength;
 } LHAppContext;
 
 LH_INTERNAL bool LHAppContextInitCurrent(LHAppContext *context);
+LH_INTERNAL bool LHAppContextInitCurrentBundle(LHAppContext *context);
+LH_INTERNAL bool LHAppContextResolveScope(LHAppContext *context, LHScopeMode mode);
 LH_INTERNAL bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mode);
 
 #ifdef __cplusplus

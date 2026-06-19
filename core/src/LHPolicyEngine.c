@@ -1,4 +1,5 @@
 #include "LHPolicyEngine.h"
+#include "LHConfigProvider.h"
 #include "LHGeneratedPolicyValueRegistry.h"
 #include "LHSeedProvider.h"
 
@@ -11,7 +12,13 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
 
     memset(engine, 0, sizeof(*engine));
     engine->config = LHRuntimeConfigDefault();
-    if (!LHAppContextInitCurrentWithScopeMode(&engine->appContext, engine->config.scopeMode)) {
+    if (!LHAppContextInitCurrentBundle(&engine->appContext)) {
+        return false;
+    }
+    if (!LHConfigProviderApplyRuntimePolicy(&engine->config, &engine->appContext)) {
+        return false;
+    }
+    if (!LHAppContextResolveScope(&engine->appContext, engine->config.scopeMode)) {
         return false;
     }
     if (!LHSeedProviderResolveActiveSeed(&engine->config, &engine->appContext)) {
@@ -73,10 +80,20 @@ bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,
                                        result);
 }
 
+bool LHPolicyEngineIsModuleEnabled(const LHPolicyEngine *engine, uint32_t moduleID) {
+    if (engine == 0 || !engine->initialized) {
+        return false;
+    }
+    return LHRuntimeConfigIsModuleEnabled(&engine->config, moduleID);
+}
+
 bool LHPolicyEngineCopyValue(const LHPolicyEngine *engine,
                              const LHPolicyValueRequest *request,
                              LHPolicyValueResponse *response) {
     if (engine == 0 || request == 0 || !engine->initialized) {
+        return false;
+    }
+    if (!engine->config.policyEnabled) {
         return false;
     }
 

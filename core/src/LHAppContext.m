@@ -4,6 +4,7 @@
 #import <CoreFoundation/CoreFoundation.h>
 
 #include <dlfcn.h>
+#include <string.h>
 
 bool LHAppContextInitCurrent(LHAppContext *context) {
     return LHAppContextInitCurrentWithScopeMode(context, LHScopeModePerAppInstall);
@@ -76,12 +77,39 @@ static NSString *LHAppContextFirstApplicationGroup(void) {
 }
 
 bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mode) {
+    if (!LHAppContextInitCurrentBundle(context)) {
+        return false;
+    }
+    return LHAppContextResolveScope(context, mode);
+}
+
+bool LHAppContextInitCurrentBundle(LHAppContext *context) {
     if (context == 0) {
         return false;
     }
 
+    memset(context, 0, sizeof(*context));
     NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+    if (![bundleIdentifier isKindOfClass:[NSString class]] || [bundleIdentifier length] == 0) {
+        bundleIdentifier = [[NSProcessInfo processInfo] processName];
+    }
+
     const char *identifier = [bundleIdentifier UTF8String];
+    size_t identifierLength = identifier == 0 ? 0 : strlen(identifier);
+    if (identifierLength > 0 && identifierLength < sizeof(context->bundleIdentifier)) {
+        memcpy(context->bundleIdentifier, identifier, identifierLength);
+        context->bundleIdentifier[identifierLength] = '\0';
+        context->bundleIdentifierLength = identifierLength;
+    }
+    return true;
+}
+
+bool LHAppContextResolveScope(LHAppContext *context, LHScopeMode mode) {
+    if (context == 0) {
+        return false;
+    }
+
+    const char *identifier = context->bundleIdentifierLength == 0 ? 0 : context->bundleIdentifier;
 
     switch (mode) {
         case LHScopeModePerAppInstall:

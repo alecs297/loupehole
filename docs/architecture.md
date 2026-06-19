@@ -144,6 +144,21 @@ No remote config. No analytics.
 
 All spoofed values should flow through the config/profile layer. Hook modules should contain selectors and system API glue, not project-specific identifiers, unique salts, or hand-coded spoof return values.
 
+For the rootless package, keep injection and runtime behavior separate.
+`runtime.plist` is only the Substrate/loader filter that decides which bundles
+load the dylib. Runtime behavior comes from a package-owned policy file under a
+generated preferences directory. The policy path is derived from the build seed
+so the runtime can find it before loading the package root install seed. The
+root install seed remains the practical seed for scoped runtime values and
+state. The package policy contains a default behavior plus per-bundle overrides
+for enabled/off state, compatibility/standard/strict mode, scope mode, and the
+compiled mitigation module IDs to install.
+
+The package's list of available mitigations is generated from the same build
+selection that compiles the dylib. `lhctl` does not discover modules dynamically;
+the build generator emits the selected module ID/name map into the helper, and
+the runtime only gates the compiled registry by numeric module ID.
+
 ### State Scope and Storage
 
 Values should be generated for an explicit scope. The default scope is per app

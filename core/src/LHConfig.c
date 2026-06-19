@@ -10,7 +10,11 @@
 LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
         .scopeMode = LHScopeModePerAppInstall,
-        .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND
+        .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND,
+        .policyMode = LHPolicyModeStandard,
+        .policyEnabled = LH_DEFAULT_STATE_PROVIDER_KIND != LHStateProviderKindPackage,
+        .moduleFilterEnabled = false,
+        .enabledModuleIDCount = 0
     };
     if (LHGeneratedConfigHasInstanceSeed) {
         config.instanceSeed = LHGeneratedConfigInstanceSeed;
@@ -18,4 +22,20 @@ LHRuntimeConfig LHRuntimeConfigDefault(void) {
         arc4random_buf(config.instanceSeed.bytes, sizeof(config.instanceSeed.bytes));
     }
     return config;
+}
+
+bool LHRuntimeConfigIsModuleEnabled(const LHRuntimeConfig *config, uint32_t moduleID) {
+    if (config == 0 || !config->policyEnabled || moduleID == 0) {
+        return false;
+    }
+    if (!config->moduleFilterEnabled) {
+        return true;
+    }
+
+    for (size_t i = 0; i < config->enabledModuleIDCount; i++) {
+        if (config->enabledModuleIDs[i] == moduleID) {
+            return true;
+        }
+    }
+    return false;
 }

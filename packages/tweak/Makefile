@@ -21,6 +21,7 @@ runtime_FILES := \
 	../../core/generated/LHGeneratedPolicyValueRegistry.c \
 	../../core/src/LHAppContext.m \
 	../../core/src/LHConfig.c \
+	../../core/src/LHConfigProvider.m \
 	../../core/src/LHCompatibility.c \
 	../../core/src/LHHookBackend.c \
 	../../core/src/LHHookBackendTheos.c \

@@ -277,17 +277,18 @@ dylib with `LHStateProviderKindPackage`, verifies the `/var/jb` package layout,
 checks the package filter starts with an empty allowlist, and exercises the
 package toggle helper. The package includes install, upgrade, disable, and
 uninstall maintainer-script paths. The package layout, package-owned state parent
-directory, package seed root, and root seed filename are generated at build time
-and passed into the runtime config and maintainer scripts. `LHSeedProvider`
+directory, package seed root, root seed filename, and package policy file are
+generated at build time and passed into the runtime config and maintainer
+scripts. `LHSeedProvider`
 resolves package installs to a persisted root install seed used as the package
 practical seed. The default per-app-install scope uses an opaque random marker in
 app data so app reinstall rotates the active seed. The package state provider
 stores blobs under package-owned rootless storage outside target app containers,
 with derived opaque per-scope state directories and blob filenames. A generated
 `/var/jb/usr/bin/lhctl` helper
-provides a first CLI/menu flow for listing, enabling, disabling, toggling, and
-clearing per-bundle injection. Device install and behavioral validation remain
-manual.
+provides a CLI/menu flow for listing, enabling, disabling, toggling, clearing,
+and configuring per-bundle injection, mode, scope, and mitigation lists. Device
+install and behavioral validation remain manual.
 
 Package the same dylib for jailbreak installation.
 
@@ -303,6 +304,10 @@ Implementation tasks:
 - Add a first per-bundle toggle helper for the rootless filter plist.
 - Keep package-owned runtime state outside target app containers.
 - Keep target-process-visible state names seed-derived and opaque.
+- Derive the package policy config filename from the build seed so the runtime
+  can find it before loading the root install seed.
+- Remove package-owned policy config together with the generated preferences
+  directory on uninstall.
 
 Acceptance checks:
 
@@ -310,14 +315,25 @@ Acceptance checks:
 - Package layout installs under `/var/jb`.
 - Package root seed, per-app-install marker paths, and scoped state paths are
   generated and opaque.
-- Per-bundle filter toggling works against the packaged filter plist.
+- Per-bundle filter toggling and package policy edits work through `lhctl`.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
 - Reinstall after uninstall does not leave stale filter plists, generated names, or dangling package-owned preferences.
 
 ## Phase 6: Configuration and Preferences
 
-Status: pending.
+Status: in progress for package-owned CLI configuration.
+
+Implemented the first package-owned config provider and `lhctl` settings flow.
+The runtime reads the generated build-seed-derived package policy file before
+scope and seed resolution, applies the default policy plus the current bundle's
+override, and installs only the enabled compiled modules. The package default is
+off; local/plain dylib development defaults still enable compiled mitigations.
+The generated `lhctl mitigations` command exposes the selected compiled module
+ID/name map for the deb, and runtime policy stores numeric module IDs with room
+for up to 1024 enabled modules.
+Preference UI, seed reset/state rotation controls, and richer profile selection
+remain pending.
 
 Add configuration without moving policy into hooks.
 
@@ -328,10 +344,10 @@ Implementation tasks:
   - jailbreak preference UI profile
   - embedded build-time config
   - built-in default profile
-- Add per-app allowlist.
-- Add mitigation toggles.
-- Add profile selection.
-- Add scope mode selector:
+- Add per-app allowlist. Status: complete for the first `lhctl` package flow.
+- Add mitigation toggles. Status: complete for compiled module IDs through `lhctl`.
+- Add profile selection. Status: pending.
+- Add scope mode selector. Status: complete for `lhctl` package policy:
   - per app install
   - per app
   - per vendor group
@@ -340,7 +356,8 @@ Implementation tasks:
 - Add seed reset and state rotation controls on top of the existing
   `LHSeedProvider`.
 - Promote or replace the first `lhctl` bundle toggle helper with a full
-  preference/config provider flow.
+  preference/config provider flow. Status: complete for CLI/provider, pending
+  preference UI.
 - Use Swift only for preference UI if needed.
 
 Acceptance checks:
