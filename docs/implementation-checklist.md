@@ -4,7 +4,7 @@ This document is the actionable handoff plan for implementing Loupehole from the
 
 ## Settled Decisions
 
-- Build locally on macOS with Xcode 26+, Theos, `ldid`, `dpkg-deb`, and `fakeroot`.
+- Build locally on macOS with Xcode 26+, Theos, `ldid`, and `dpkg-deb`.
 - Start with a plain injectable arm64 iOS `.dylib`; package the same runtime into a rootless `.deb` later.
 - Real-device deployment and validation are manual: Sideloadly-style owned-app injection or rootless jailbreak package installation.
 - The injected runtime must use C, Objective-C, or Objective-C++. Do not use Swift in the dylib. Swift is allowed only for preferences UI or external tooling.
@@ -274,9 +274,10 @@ Status: complete for the first rootless package path.
 Implemented a rootless Theos package for the existing runtime. `make package`
 builds `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`, compiles the
 dylib with `LHStateProviderKindPackage`, verifies the `/var/jb` package layout,
-checks the package filter starts with an empty allowlist, and exercises the
-package toggle helper. The package includes install, upgrade, disable, and
-uninstall maintainer-script paths. The package layout, package-owned state parent
+checks the package filter starts empty, and exercises the package helper's
+default-on UIKit app-class filter plus per-bundle overrides. The package
+includes install, upgrade, disable, and uninstall maintainer-script paths. The
+package layout, package-owned state parent
 directory, package seed root, root seed filename, and package policy file are
 generated at build time and passed into the runtime config and maintainer
 scripts. `LHSeedProvider`
@@ -286,8 +287,9 @@ app data so app reinstall rotates the active seed. The package state provider
 stores blobs under package-owned rootless storage outside target app containers,
 with derived opaque per-scope state directories and blob filenames. A generated
 `/var/jb/usr/bin/lhctl` helper
-provides a CLI/menu flow for listing, enabling, disabling, toggling, clearing,
-and configuring per-bundle injection, scope, and mitigation lists. Device
+provides a CLI/menu flow for default third-party app targeting, listing,
+enabling, disabling, toggling, clearing, and configuring per-bundle scope and
+mitigation lists. Device
 install and behavioral validation remain manual.
 
 Package the same dylib for jailbreak installation.
@@ -301,7 +303,7 @@ Implementation tasks:
 - Implement `LHPackageStateProvider`.
 - Implement `LHSeedProvider` for practical seed resolution, package root seed,
   per-app-install markers, and stable scoped seeds.
-- Add a first per-bundle toggle helper for the rootless filter plist.
+- Add a first helper for the rootless filter plist and package policy.
 - Keep package-owned runtime state outside target app containers.
 - Keep target-process-visible state names seed-derived and opaque.
 - Derive the package policy config filename from the build seed so the runtime
@@ -311,11 +313,13 @@ Implementation tasks:
 
 Acceptance checks:
 
-- `.deb` builds locally with `dpkg-deb` and `fakeroot`.
+- `.deb` builds locally with `dpkg-deb --root-owner-group`; fakeroot is bypassed
+  for the package step to avoid host SYSV IPC failures.
 - Package layout installs under `/var/jb`.
 - Package root seed, per-app-install marker paths, and scoped state paths are
   generated and opaque.
-- Per-bundle filter toggling and package policy edits work through `lhctl`.
+- Default third-party app targeting, disabled per-bundle overrides, and package
+  policy edits work through `lhctl`.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
 - Reinstall after uninstall does not leave stale filter plists, generated names, or dangling package-owned preferences.
@@ -327,8 +331,11 @@ Status: in progress for package-owned CLI configuration.
 Implemented the first package-owned config provider and `lhctl` settings flow.
 The runtime reads the generated build-seed-derived package policy file before
 scope and seed resolution, applies the default policy plus the current bundle's
-override, and installs only the enabled compiled modules. The package default is
-off; local/plain dylib development defaults still enable compiled mitigations.
+override, and installs only the enabled compiled modules. Package runtime startup
+exits before scope/seed setup for system bundles, non-app processes, extensions,
+and effectively disabled policies. The package default is off on install; when
+enabled, the default profile targets the broad UIKit app class and per-bundle
+disabled overrides win. Local/plain dylib development defaults still enable compiled mitigations.
 The generated `lhctl mitigations` command exposes the selected compiled module
 ID/name map for the deb, and runtime policy stores numeric module IDs with room
 for up to 1024 enabled modules.
@@ -344,7 +351,8 @@ Implementation tasks:
   - jailbreak preference UI profile
   - embedded build-time config
   - built-in default profile
-- Add per-app allowlist. Status: complete for the first `lhctl` package flow.
+- Add default third-party app targeting with per-app overrides. Status: complete
+  for the first `lhctl` package flow.
 - Add mitigation toggles. Status: complete for compiled module IDs through `lhctl`.
 - Add profile selection. Status: pending.
 - Add scope mode selector. Status: complete for `lhctl` package policy:

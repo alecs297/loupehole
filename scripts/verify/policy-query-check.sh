@@ -181,11 +181,34 @@ state_parent=$1
 policy_file=$2
 policy_dir="$tmpdir/package/var/mobile/Library/Preferences/$state_parent"
 mkdir -p "$policy_dir"
+target_env() {
+  LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
+  LH_APP_CONTEXT_TEST_BUNDLE_ID=com.example.host \
+  LH_APP_CONTEXT_TEST_BUNDLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app \
+  LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/Host \
+    "$tmpdir/package_policy_check" "$@"
+}
 
 printf 'D|0|0|0|\n' > "$policy_dir/$policy_file"
-LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" "$tmpdir/package_policy_check" disabled
+target_env disabled
 
 printf 'D|1|0|0|\n' > "$policy_dir/$policy_file"
-LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" "$tmpdir/package_policy_check" enabled
+target_env enabled
+
+printf 'D|1|0|0|\nB|com.example.host|0|0|0|\n' > "$policy_dir/$policy_file"
+target_env disabled
+
+printf 'D|1|0|0|\n' > "$policy_dir/$policy_file"
+LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
+LH_APP_CONTEXT_TEST_BUNDLE_ID=com.apple.Maps \
+LH_APP_CONTEXT_TEST_BUNDLE_PATH=/Applications/Maps.app \
+LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/Applications/Maps.app/Maps \
+  "$tmpdir/package_policy_check" disabled
+
+LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
+LH_APP_CONTEXT_TEST_BUNDLE_ID=com.example.extension \
+LH_APP_CONTEXT_TEST_BUNDLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/PlugIns/Widget.appex \
+LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/PlugIns/Widget.appex/Widget \
+  "$tmpdir/package_policy_check" disabled
 
 printf '%s\n' "policy query check passed"

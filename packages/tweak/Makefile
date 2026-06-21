@@ -57,3 +57,7 @@ runtime_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
 runtime_LIBRARIES := $(LH_SELECTED_LIBRARIES)
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
+# dpkg-deb --root-owner-group makes fakeroot unnecessary for this deb, and
+# avoids host SYSV IPC failures from faked during local package builds.
+FAKEROOT = $(abspath ../../scripts/build/fakeroot-root-owner-group.sh)

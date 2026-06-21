@@ -16,14 +16,14 @@ The central design principle is not "make every device random." The safer target
 
 ## Development Environment
 
-The canonical local build environment is macOS with Xcode, Theos, `ldid`, `dpkg-deb`, and `fakeroot`. Development should start with a plain injectable `.dylib`, then wrap the same runtime in a rootless `.deb` once the hook and policy boundaries are stable. Real-device deployment and validation are intentionally out of band: the artifact may be injected into an owned app through Sideloadly or another sideloaded/test flow, or installed as a jailbreak package.
+The canonical local build environment is macOS with Xcode, Theos, `ldid`, and `dpkg-deb`. Development should start with a plain injectable `.dylib`, then wrap the same runtime in a rootless `.deb` once the hook and policy boundaries are stable. Real-device deployment and validation are intentionally out of band: the artifact may be injected into an owned app through Sideloadly or another sideloaded/test flow, or installed as a jailbreak package.
 
 Package work must support clean install, upgrade, disable, and uninstall paths. The `.deb` must remove or neutralize installed dynamic libraries, filter plists, preference bundles, launch helpers, generated caches, and package-owned configuration without touching protected app data unless the user explicitly chose that cleanup.
 
 Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
-- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for per-bundle injection, scope, and mitigation-list settings.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs `/var/jb/usr/bin/lhctl` for default third-party app targeting, per-bundle overrides, scope, and mitigation-list settings.
 
 ## Non-goals
 

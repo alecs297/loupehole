@@ -326,25 +326,32 @@ dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb
 ```
 
 The package build compiles the same runtime with `LHStateProviderKindPackage`,
-stages the tweak and empty allowlist filter under `/var/jb`, stages the
+stages the tweak and conservative empty filter under `/var/jb`, stages the
 generated package layout, and runs `scripts/verify/package-layout-check.sh`
 against the resulting `.deb`. The package-owned state parent directory, package
 seed root directory, package root seed filename, and package policy filename are
 derived at build time from the configured instance seed and emitted into the
 runtime config and maintainer scripts.
 
+Theos staging still drives the package layout, but local deb assembly uses
+`dpkg-deb --root-owner-group` through repo wrappers instead of fakeroot. This
+keeps package ownership as `root/root` while avoiding host `faked` SYSV IPC
+failures.
+
 On install, `postinst` creates package-owned state roots, a raw 16-byte root
 install seed under the generated package seed root, and a default-off package
 policy file under the generated package preferences directory. The policy path
 is derived from the build-selection seed so the runtime can find it before
-resolving the package root install seed. At runtime, `LHConfigProvider` reads the
-policy file, resolves the default policy plus any current-bundle override, and
-then scope and seed resolution continue. `LHSeedProvider` uses the root install
-seed as the package practical seed. The default per-app-install scope also
-creates an opaque random marker in the target app's application support data, at
-a path derived from the practical seed. Stable per-app, vendor-group,
-shared-app-group, and manual-linked-group scopes derive directly from the
-practical seed plus the resolved scope identifier.
+resolving the package root install seed. At runtime, package builds first reject
+non-targetable or system app processes, then `LHConfigProvider` reads the policy
+file and resolves the default policy plus any current-bundle override. If the
+effective policy is off, the runtime exits before scope, seed, or hook setup. If
+the effective policy is on, `LHSeedProvider` uses the root install seed as the
+package practical seed. The default per-app-install scope also creates an opaque
+random marker in the target app's application support data, at a path derived
+from the practical seed. Stable per-app, vendor-group, shared-app-group, and
+manual-linked-group scopes derive directly from the practical seed plus the
+resolved scope identifier.
 
 The package also installs `/var/jb/usr/bin/lhctl`, a small shell helper for the
 initial per-bundle filter and policy flow:
@@ -358,6 +365,7 @@ lhctl status com.example.app
 lhctl set com.example.app enabled off
 lhctl set com.example.app scope per-vendor-group
 lhctl set com.example.app mitigations identity.idfv.uidevice.scoped_uuid
+lhctl default enabled on
 lhctl default enabled off
 lhctl default scope per-app-install
 lhctl default mitigations all
@@ -370,8 +378,15 @@ The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist
 for injection and the generated package policy file for default/per-bundle
 runtime settings. Those runtime settings are enabled/off state, scope, and the
 compiled mitigation module list. The package starts from an empty `Bundles`
-allowlist and a default-off policy, so no app is injected until a bundle is
-explicitly enabled. It must be run as root because it writes rootless package
+filter and a default-off policy, so no app is injected on install. When
+`lhctl default enabled on` is set, the helper writes the broad UIKit app-class
+filter (`com.apple.UIKit`) instead of enumerating installed app bundles. The
+runtime then limits work to targetable third-party app processes, excluding
+system bundle IDs and non-app/extension processes before seed or hook setup.
+Per-bundle rows override the default policy, so `lhctl disable com.example.app`
+keeps the broad filter in place but makes that app an effective no-op. When the
+default policy is off, only explicitly enabled bundle rows are written directly
+to the filter. It must be run as root because it writes rootless package
 configuration. Restart the target app after changing filter or policy settings.
 
 The deb's available mitigation list is frozen at build time. The generator

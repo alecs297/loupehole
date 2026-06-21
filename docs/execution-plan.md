@@ -138,7 +138,7 @@ Required local tools:
 - Xcode 26+ with the iPhoneOS SDK.
 - Theos, updated regularly.
 - `ldid` for ad hoc signing jailbreak/test artifacts.
-- `dpkg-deb` and `fakeroot` for rootless `.deb` assembly.
+- `dpkg-deb` for rootless `.deb` assembly.
 - `make`, `clang`, `xcrun`, `plutil`, `otool`, `nm`, `strings`, `strip`, `file`, `jq`, `rg`, and `git`.
 - Node.js/npm for the later custom build website.
 - Ruby/Bundler/Fastlane only when working on upstream Loupe App Store automation or if the builder adopts Fastlane for screenshots/metadata; it is not required for the tweak MVP.
@@ -152,7 +152,9 @@ Verified local baseline as of 2026-06-17:
 
 - Xcode 26.5 and iPhoneOS SDK 26.5 are installed.
 - Theos is expected through `THEOS`, `THEOS_HOME`, or the default `$(HOME)/theos` path.
-- `ldid`, `dpkg-deb`, and `fakeroot` are installed.
+- `ldid`, `dpkg-deb`, and `fakeroot` are installed. The current package build
+  path uses `dpkg-deb --root-owner-group` and does not require fakeroot's
+  `faked` daemon.
 - A minimal arm64 iOS dylib can be compiled with Xcode clang and signed with `ldid`.
 - The upstream Loupe project is cloned in `.research/upstream/loupe` and remains ignored by Git.
 

@@ -88,7 +88,8 @@ Verified local environment on 2026-06-17:
 - Apple clang 21.0.0 and Swift 6.3.2 are available through Xcode.
 - Theos is expected through `THEOS`, `THEOS_HOME`, or the default `$(HOME)/theos` path.
 - `ldid` 2.1.5_1 is installed.
-- `dpkg-deb` 1.23.7 and `fakeroot` 1.38.1 are installed for `.deb` package assembly.
+- `dpkg-deb` 1.23.7 and `fakeroot` 1.38.1 are installed; package assembly now
+  uses `dpkg-deb --root-owner-group` and bypasses fakeroot's `faked` daemon.
 - Binary audit tools are available: `file`, `otool`, `nm`, `strings`, and `strip`.
 - A minimal arm64 iOS dynamic library can be compiled locally with `xcrun -sdk iphoneos clang -arch arm64 -miphoneos-version-min=15.0 -dynamiclib` and signed with `ldid -S`.
 - The upstream Loupe Xcode project can be inspected with `xcodebuild -list`; simulator access may be noisy or unavailable in sandboxed automation, but simulator testing is not required for the initial Loupehole workflow.

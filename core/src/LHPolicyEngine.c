@@ -15,18 +15,31 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     if (!LHAppContextInitCurrentBundle(&engine->appContext)) {
         return false;
     }
+
+    engine->profile = LHProfileDefault();
+    if (engine->profile == 0 || engine->profile->version == 0) {
+        return false;
+    }
+
+    if (engine->config.stateProviderKind == LHStateProviderKindPackage &&
+        !LHAppContextIsTargetableThirdPartyApplication(&engine->appContext)) {
+        engine->config.policyEnabled = false;
+        engine->initialized = true;
+        return true;
+    }
+
     if (!LHConfigProviderApplyRuntimePolicy(&engine->config, &engine->appContext)) {
         return false;
     }
+    if (!engine->config.policyEnabled) {
+        engine->initialized = true;
+        return true;
+    }
+
     if (!LHAppContextResolveScope(&engine->appContext, engine->config.scopeMode)) {
         return false;
     }
     if (!LHSeedProviderResolveActiveSeed(&engine->config, &engine->appContext)) {
-        return false;
-    }
-
-    engine->profile = LHProfileDefault();
-    if (engine->profile == 0 || engine->profile->version == 0) {
         return false;
     }
 

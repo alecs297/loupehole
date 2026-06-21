@@ -105,6 +105,8 @@ if policy_file not in helper_text:
     raise SystemExit("toggle helper does not reference generated policy file")
 if "awk" in helper_text:
     raise SystemExit("toggle helper must not require awk")
+if re.search(r'\$\(field "\$\((default_line|effective_bundle_line)', helper_text):
+    raise SystemExit("toggle helper must avoid nested quoted command substitutions")
 old_selector_pattern = r"\bmo" "de\\b|\\bmo" "des\\b|compat" "ibility|stan" "dard|str" "ict"
 if re.search(old_selector_pattern, helper_text):
     raise SystemExit("toggle helper must not expose the old profile selector")
@@ -149,6 +151,11 @@ if [ "$bundles" != "com.example.two" ]; then
   exit 1
 fi
 
+if LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.apple.Maps >/dev/null 2>&1; then
+  printf '%s\n' "toggle helper allowed a system bundle"
+  exit 1
+fi
+
 python3 - "$root" "$state_parent" <<'PY'
 import re
 import sys
@@ -179,6 +186,29 @@ if entries.get("com.example.two") != ["B", "com.example.two", "1", "1", "1", "1"
     raise SystemExit(f"bundle two policy mismatch: {entries.get('com.example.two')}")
 PY
 
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default enabled on >/dev/null
+bundles=$(bundles_from_filter)
+if [ "$bundles" != "com.apple.UIKit" ]; then
+  printf '%s\n' "default-on policy did not switch to the UIKit app filter"
+  exit 1
+fi
+
+LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" disable com.example.two >/dev/null
+bundles=$(bundles_from_filter)
+if [ "$bundles" != "com.apple.UIKit" ]; then
+  printf '%s\n' "disabled override should not remove the broad UIKit filter"
+  exit 1
+fi
+
+status=$(LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" status com.example.two)
+case "$status" in
+  *"effective: disabled"*) ;;
+  *)
+    printf '%s\n' "status did not report disabled override"
+    exit 1
+    ;;
+esac
+
 LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" clear >/dev/null
 bundles=$(bundles_from_filter)
 if [ -n "$bundles" ]; then
@@ -197,6 +227,8 @@ config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
 policy_file = next(path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name))
 for line in policy_file.read_text(encoding="utf-8").splitlines():
     fields = line.split("|")
+    if fields and fields[0] == "D" and len(fields) > 1 and fields[1] != "0":
+        raise SystemExit("clear did not disable default policy")
     if fields and fields[0] == "B" and len(fields) > 2 and fields[2] != "0":
         raise SystemExit("clear did not disable bundle policy entries")
 PY
