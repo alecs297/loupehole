@@ -6,4 +6,4 @@ Description: Privacy-preserving fingerprinting surface normalizer for selected a
 Maintainer: alecs297 <alex@palmes.dev>
 Author: alecs297
 Section: Tweaks
-Depends: mobilesubstrate | ellekit, preferenceloader
+Depends: mobilesubstrate, preferenceloader
