@@ -109,7 +109,7 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return specifier;
 }
 
-@interface LHValueTableCell : PSTableCell
+@interface LHValueTableCell : PSTableCell <UIContextMenuInteractionDelegate>
 @property (nonatomic, copy) NSString *lhCopyValue;
 @end
 
@@ -124,16 +124,14 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         self.detailTextLabel.text = self.lhCopyValue;
         self.detailTextLabel.numberOfLines = 0;
         self.detailTextLabel.lineBreakMode = NSLineBreakByCharWrapping;
-        self.selectionStyle = UITableViewCellSelectionStyleDefault;
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        [self.contentView addInteraction:[[UIContextMenuInteraction alloc] initWithDelegate:self]];
     }
     return self;
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
     [super setSelected:selected animated:animated];
-    if (selected && [self.lhCopyValue length] > 0) {
-        [UIPasteboard generalPasteboard].string = self.lhCopyValue;
-    }
 }
 
 - (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
@@ -146,6 +144,26 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 + (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
     NSString *value = [specifier propertyForKey:@"value"] ?: @"";
     return LHValueHeightForValue(value);
+}
+
+- (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
+    (void)interaction;
+    (void)location;
+
+    NSString *copyValue = [self.lhCopyValue copy];
+    if ([copyValue length] == 0) {
+        return nil;
+    }
+
+    return [UIContextMenuConfiguration configurationWithIdentifier:nil
+                                                   previewProvider:nil
+                                                    actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> *suggestedActions) {
+        (void)suggestedActions;
+        UIAction *copyAction = [UIAction actionWithTitle:@"Copy" image:nil identifier:nil handler:^(__unused UIAction *action) {
+            [UIPasteboard generalPasteboard].string = copyValue;
+        }];
+        return [UIMenu menuWithTitle:@"" children:@[copyAction]];
+    }];
 }
 
 @end
@@ -1465,6 +1483,8 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
             LHValueSpecifier(@"Policy", [store policyPath]),
             LHValueSpecifier(@"Loader", [store loaderDylibPath]),
             LHValueSpecifier(@"Filter", [store filterPath]),
+            LHValueSpecifier(@"Root seed directory", [[store rootSeedPath] stringByDeletingLastPathComponent]),
+            LHValueSpecifier(@"Root seed file", [store rootSeedPath]),
             LHValueSpecifier(@"Support", [store supportDirectoryPath]),
             LHValueSpecifier(@"Preferences", [store preferencesDirectoryPath]),
             LHValueSpecifier(@"Caches", [store cacheDirectoryPath])
