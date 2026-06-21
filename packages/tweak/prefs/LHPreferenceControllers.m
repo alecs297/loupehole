@@ -2,25 +2,19 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <UIKit/UIImage+Private.h>
+#import <MobileCoreServices/LSApplicationProxy.h>
+#import <MobileCoreServices/LSApplicationWorkspace.h>
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
+#import <Preferences/PSTableCell.h>
 
 @interface PSSpecifier (LoupeholeValues)
 @property (nonatomic, retain) NSArray *values;
 @property (nonatomic, retain) NSArray *titles;
 @end
 
-@interface LSApplicationWorkspace : NSObject
-+ (instancetype)defaultWorkspace;
-- (NSArray *)allApplications;
-@end
-
-@interface LSApplicationProxy : NSObject
-@property (nonatomic, readonly) NSString *bundleIdentifier;
-@property (nonatomic, readonly) NSString *localizedName;
-@property (nonatomic, readonly) NSURL *bundleURL;
-@property (nonatomic, readonly) NSString *applicationType;
-@end
+static const NSInteger LHCustomSeedScopeMode = 3;
 
 static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
     NSString *state = policy.enabled ? @"On" : @"Off";
@@ -28,6 +22,21 @@ static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
         return [NSString stringWithFormat:@"Override: %@", state];
     }
     return [NSString stringWithFormat:@"Default: %@", state];
+}
+
+static NSDictionary<NSString *, NSString *> *LHApplicationNamesByBundleIdentifier(void) {
+    NSMutableDictionary<NSString *, NSString *> *names = [NSMutableDictionary dictionary];
+    Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
+    id workspace = [workspaceClass respondsToSelector:@selector(defaultWorkspace)] ? [workspaceClass defaultWorkspace] : nil;
+    NSArray *proxies = [workspace respondsToSelector:@selector(allApplications)] ? [workspace allApplications] : @[];
+    for (id proxy in proxies) {
+        NSString *bundleID = [proxy respondsToSelector:@selector(bundleIdentifier)] ? [proxy bundleIdentifier] : nil;
+        NSString *name = [proxy respondsToSelector:@selector(localizedName)] ? [proxy localizedName] : bundleID;
+        if ([bundleID length] > 0 && [name length] > 0) {
+            names[bundleID] = name;
+        }
+    }
+    return names;
 }
 
 static void LHPresentError(UIViewController *controller, NSError *error) {
@@ -63,15 +72,339 @@ static PSSpecifier *LHButtonSpecifier(NSString *label, id target, SEL action) {
     return specifier;
 }
 
+static PSSpecifier *LHDestructiveButtonSpecifier(NSString *label, id target, SEL action) {
+    PSSpecifier *specifier = LHButtonSpecifier(label, target, action);
+    [specifier setProperty:NSClassFromString(@"LHDestructiveButtonCell") forKey:@"cellClass"];
+    [specifier setProperty:@60.0 forKey:@"height"];
+    return specifier;
+}
+
 static PSSpecifier *LHLinkSpecifier(NSString *label, id target, Class detail, SEL preview) {
     return [PSSpecifier preferenceSpecifierNamed:label target:target set:nil get:preview detail:detail cell:PSLinkListCell edit:nil];
+}
+
+static CGFloat LHValueHeightForValue(NSString *value) {
+    NSUInteger length = [(value ?: @"") length];
+    if (length > 150) {
+        return 144.0;
+    }
+    if (length > 90) {
+        return 116.0;
+    }
+    if (length > 48) {
+        return 88.0;
+    }
+    return 60.0;
 }
 
 static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label target:nil set:nil get:nil detail:nil cell:PSTitleValueCell edit:nil];
     [specifier setProperty:value ?: @"" forKey:@"value"];
+    [specifier setProperty:NSClassFromString(@"LHValueTableCell") forKey:@"cellClass"];
+    [specifier setProperty:@(LHValueHeightForValue(value)) forKey:@"height"];
     return specifier;
 }
+
+@interface LHValueTableCell : PSTableCell
+@property (nonatomic, copy) NSString *lhCopyValue;
+@end
+
+@implementation LHValueTableCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        self.textLabel.text = specifier.name;
+        self.textLabel.numberOfLines = 1;
+        self.lhCopyValue = [specifier propertyForKey:@"value"] ?: @"";
+        self.detailTextLabel.text = self.lhCopyValue;
+        self.detailTextLabel.numberOfLines = 0;
+        self.detailTextLabel.lineBreakMode = NSLineBreakByCharWrapping;
+        self.selectionStyle = UITableViewCellSelectionStyleDefault;
+    }
+    return self;
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:selected animated:animated];
+    if (selected && [self.lhCopyValue length] > 0) {
+        [UIPasteboard generalPasteboard].string = self.lhCopyValue;
+    }
+}
+
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+    [super refreshCellContentsWithSpecifier:specifier];
+    self.textLabel.text = specifier.name;
+    self.lhCopyValue = [specifier propertyForKey:@"value"] ?: @"";
+    self.detailTextLabel.text = self.lhCopyValue;
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    NSString *value = [specifier propertyForKey:@"value"] ?: @"";
+    return LHValueHeightForValue(value);
+}
+
+@end
+
+@interface LHDestructiveButtonCell : PSTableCell
+@end
+
+@implementation LHDestructiveButtonCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        self.textLabel.text = specifier.name;
+        self.textLabel.textAlignment = NSTextAlignmentCenter;
+        self.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
+        self.textLabel.adjustsFontForContentSizeCategory = YES;
+        self.textLabel.textColor = [UIColor systemRedColor] ?: [UIColor redColor];
+    }
+    return self;
+}
+
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+    [super refreshCellContentsWithSpecifier:specifier];
+    self.textLabel.text = specifier.name;
+    self.textLabel.textAlignment = NSTextAlignmentCenter;
+    self.textLabel.textColor = [UIColor systemRedColor] ?: [UIColor redColor];
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    return 60.0;
+}
+
+@end
+
+@interface LHAppOverrideCell : PSTableCell
+@property (nonatomic, strong) UIImageView *lhIconView;
+@property (nonatomic, strong) UILabel *lhTitleLabel;
+@property (nonatomic, strong) UILabel *lhSubtitleLabel;
+@property (nonatomic, strong) UILabel *lhPreviewLabel;
+@end
+
+@implementation LHAppOverrideCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        self.textLabel.hidden = YES;
+        self.detailTextLabel.hidden = YES;
+
+        _lhIconView = [[UIImageView alloc] initWithImage:[specifier propertyForKey:@"LHIconImage"]];
+        _lhIconView.contentMode = UIViewContentModeScaleAspectFit;
+        _lhIconView.layer.cornerRadius = 8.0;
+        _lhIconView.layer.masksToBounds = YES;
+        [self.contentView addSubview:_lhIconView];
+
+        _lhTitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        _lhTitleLabel.text = specifier.name;
+        _lhTitleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+        _lhTitleLabel.adjustsFontForContentSizeCategory = YES;
+        _lhTitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        [self.contentView addSubview:_lhTitleLabel];
+
+        _lhSubtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        _lhSubtitleLabel.text = [specifier propertyForKey:@"subtitle"] ?: @"";
+        _lhSubtitleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
+        _lhSubtitleLabel.textColor = [UIColor secondaryLabelColor] ?: [UIColor grayColor];
+        _lhSubtitleLabel.adjustsFontForContentSizeCategory = YES;
+        _lhSubtitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        [self.contentView addSubview:_lhSubtitleLabel];
+
+        _lhPreviewLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        _lhPreviewLabel.text = [specifier propertyForKey:@"preview"] ?: @"";
+        _lhPreviewLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
+        _lhPreviewLabel.textColor = [UIColor secondaryLabelColor] ?: [UIColor grayColor];
+        _lhPreviewLabel.adjustsFontForContentSizeCategory = YES;
+        _lhPreviewLabel.textAlignment = NSTextAlignmentLeft;
+        _lhPreviewLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+        [self.contentView addSubview:_lhPreviewLabel];
+        self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    }
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+
+    CGFloat iconSide = 40.0;
+    CGFloat left = 15.0;
+    CGFloat midY = CGRectGetMidY(self.contentView.bounds);
+    self.lhIconView.frame = CGRectMake(left, midY - iconSide / 2.0, iconSide, iconSide);
+
+    CGFloat textLeft = CGRectGetMaxX(self.lhIconView.frame) + 12.0;
+    CGFloat rightInset = 32.0;
+    CGFloat availableWidth = CGRectGetWidth(self.contentView.bounds) - textLeft - rightInset;
+    if (availableWidth < 90.0) {
+        availableWidth = CGRectGetWidth(self.contentView.bounds) - textLeft - 12.0;
+    }
+
+    self.lhTitleLabel.frame = CGRectMake(textLeft, 8.0, availableWidth, 22.0);
+    self.lhSubtitleLabel.frame = CGRectMake(textLeft, 31.0, availableWidth, 19.0);
+    self.lhPreviewLabel.frame = CGRectMake(textLeft, 52.0, availableWidth, 18.0);
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    return 82.0;
+}
+
+@end
+
+@interface LHScopeOptionCell : PSTableCell
+@end
+
+@implementation LHScopeOptionCell
+
+- (void)applyScopeSpecifier:(PSSpecifier *)specifier {
+    self.textLabel.text = specifier.name;
+    self.textLabel.numberOfLines = 1;
+    self.detailTextLabel.text = [specifier propertyForKey:@"subtitle"] ?: @"";
+    self.detailTextLabel.numberOfLines = 2;
+    self.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    BOOL checked = [[specifier propertyForKey:@"checked"] boolValue];
+    if ([self respondsToSelector:@selector(setChecked:)]) {
+        [self setChecked:checked];
+    }
+    self.accessoryType = checked ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        [self applyScopeSpecifier:specifier];
+    }
+    return self;
+}
+
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+    [super refreshCellContentsWithSpecifier:specifier];
+    [self applyScopeSpecifier:specifier];
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    return 74.0;
+}
+
+@end
+
+@interface LHCustomSeedCell : PSTableCell
+@property (nonatomic, strong) UITextField *lhTextField;
+@property (nonatomic, strong) UIButton *lhRandomButton;
+@end
+
+@implementation LHCustomSeedCell
+
+- (id)targetForSpecifier:(PSSpecifier *)specifier {
+    return [[specifier propertyForKey:@"targetController"] nonretainedObjectValue];
+}
+
+- (void)configureWithSpecifier:(PSSpecifier *)specifier {
+    self.textLabel.hidden = YES;
+    self.detailTextLabel.hidden = YES;
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    id target = [self targetForSpecifier:specifier];
+    if (self.lhTextField == nil) {
+        self.lhTextField = [[UITextField alloc] initWithFrame:CGRectZero];
+        self.lhTextField.borderStyle = UITextBorderStyleRoundedRect;
+        self.lhTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        self.lhTextField.autocorrectionType = UITextAutocorrectionTypeNo;
+        self.lhTextField.clearButtonMode = UITextFieldViewModeWhileEditing;
+        self.lhTextField.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
+        self.lhTextField.adjustsFontForContentSizeCategory = YES;
+        self.lhTextField.placeholder = @"UUID seed";
+        [self.contentView addSubview:self.lhTextField];
+    }
+    [self.lhTextField removeTarget:nil action:NULL forControlEvents:UIControlEventEditingChanged | UIControlEventEditingDidEnd];
+    [self.lhTextField addTarget:target action:@selector(customSeedTextChanged:) forControlEvents:UIControlEventEditingChanged];
+    [self.lhTextField addTarget:target action:@selector(customSeedEditingDidEnd:) forControlEvents:UIControlEventEditingDidEnd];
+    if (![self.lhTextField isFirstResponder]) {
+        self.lhTextField.text = [specifier propertyForKey:@"customSeed"] ?: @"";
+    }
+
+    if (self.lhRandomButton == nil) {
+        self.lhRandomButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        [self.lhRandomButton setTitle:@"Random" forState:UIControlStateNormal];
+        self.lhRandomButton.titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleCallout];
+        self.lhRandomButton.titleLabel.adjustsFontForContentSizeCategory = YES;
+        [self.contentView addSubview:self.lhRandomButton];
+    }
+    [self.lhRandomButton removeTarget:nil action:NULL forControlEvents:UIControlEventTouchUpInside];
+    [self.lhRandomButton addTarget:target action:@selector(randomizeCustomSeed) forControlEvents:UIControlEventTouchUpInside];
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        [self configureWithSpecifier:specifier];
+    }
+    return self;
+}
+
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+    [super refreshCellContentsWithSpecifier:specifier];
+    [self configureWithSpecifier:specifier];
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    CGFloat inset = 15.0;
+    CGFloat buttonWidth = 84.0;
+    CGFloat gap = 10.0;
+    CGFloat height = 36.0;
+    CGFloat y = (CGRectGetHeight(self.contentView.bounds) - height) / 2.0;
+    CGFloat width = CGRectGetWidth(self.contentView.bounds) - inset * 2.0;
+    self.lhRandomButton.frame = CGRectMake(CGRectGetMaxX(self.contentView.bounds) - inset - buttonWidth, y, buttonWidth, height);
+    self.lhTextField.frame = CGRectMake(inset, y, width - buttonWidth - gap, height);
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    return 64.0;
+}
+
+@end
+
+@interface LHSeedAssociationCell : PSTableCell
+@end
+
+@implementation LHSeedAssociationCell
+
+- (void)applySeedSpecifier:(PSSpecifier *)specifier {
+    self.textLabel.text = specifier.name;
+    self.textLabel.numberOfLines = 1;
+    self.textLabel.font = [UIFont monospacedSystemFontOfSize:[UIFont preferredFontForTextStyle:UIFontTextStyleFootnote].pointSize weight:UIFontWeightRegular];
+    self.detailTextLabel.text = [specifier propertyForKey:@"associatedApps"] ?: @"";
+    self.detailTextLabel.numberOfLines = 0;
+    self.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
+    self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        [self applySeedSpecifier:specifier];
+    }
+    return self;
+}
+
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+    [super refreshCellContentsWithSpecifier:specifier];
+    [self applySeedSpecifier:specifier];
+}
+
++ (CGFloat)preferredHeightForSpecifier:(PSSpecifier *)specifier {
+    NSNumber *count = [specifier propertyForKey:@"associatedAppCount"];
+    return 58.0 + MAX(1, [count integerValue]) * 38.0;
+}
+
+@end
+
+@class LHScopeSelectionController;
 
 @interface LHPolicyListController : PSListController
 @property (nonatomic, readonly) LHPreferenceStore *store;
@@ -80,6 +413,8 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 - (BOOL)showsOverrideReset;
 - (void)resetOverride;
 - (NSString *)moduleKeyForID:(NSNumber *)moduleID;
+- (NSString *)scopeSelectionBundleIdentifier;
+- (NSString *)scopeSelectionAppName;
 @end
 
 @implementation LHPolicyListController
@@ -109,19 +444,33 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return [@"module." stringByAppendingString:[moduleID stringValue]];
 }
 
+- (NSString *)scopeSelectionBundleIdentifier {
+    return nil;
+}
+
+- (NSString *)scopeSelectionAppName {
+    return nil;
+}
+
 - (PSSpecifier *)scopeSpecifier {
     LHPreferencePolicy *policy = [self policy];
-    NSString *label = [NSString stringWithFormat:@"Scope: %@", [LHPreferenceStore scopeLabelForMode:policy.scopeMode]];
-    PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label
-                                                           target:self
-                                                              set:nil
-                                                              get:nil
-                                                           detail:nil
-                                                             cell:PSButtonCell
-                                                             edit:nil];
+    PSSpecifier *specifier = LHLinkSpecifier(@"Scope", self, NSClassFromString(@"LHScopeSelectionController"), @selector(scopePreviewForSpecifier:));
     [specifier setProperty:@"scope" forKey:@"key"];
-    specifier.buttonAction = @selector(cycleScope);
+    [specifier setProperty:@(policy.scopeMode) forKey:@"scopeMode"];
+    NSString *bundleID = [self scopeSelectionBundleIdentifier];
+    NSString *appName = [self scopeSelectionAppName];
+    if ([bundleID length] > 0) {
+        [specifier setProperty:bundleID forKey:@"bundleIdentifier"];
+    }
+    if ([appName length] > 0) {
+        [specifier setProperty:appName forKey:@"appName"];
+    }
     return specifier;
+}
+
+- (NSString *)scopePreviewForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    return [LHPreferenceStore scopeLabelForMode:[self policy].scopeMode];
 }
 
 - (NSMutableArray *)specifiers {
@@ -155,6 +504,12 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return _specifiers;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    _specifiers = nil;
+    [self reloadSpecifiers];
+}
+
 - (void)confirmResetOverride {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Override"
                                                                    message:@"This app will inherit the default profile again."
@@ -168,7 +523,10 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 - (void)cycleScope {
     LHPreferencePolicy *policy = [[self policy] copy];
-    policy.scopeMode = (policy.scopeMode + 1) % 5;
+    policy.scopeMode = (policy.scopeMode + 1) % (LHCustomSeedScopeMode + 1);
+    if (policy.scopeMode == LHCustomSeedScopeMode && ![LHPreferenceStore isValidSeedString:policy.customSeed]) {
+        policy.customSeed = [LHPreferenceStore randomSeedString];
+    }
     NSError *error = nil;
     if (![self writePolicy:policy error:&error]) {
         LHPresentError(self, error);
@@ -234,6 +592,369 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 @end
 
+@interface LHScopeSelectionController : PSListController
+@property (nonatomic, strong) LHPreferencePolicy *entryPolicy;
+@property (nonatomic, copy) NSString *draftCustomSeed;
+@end
+
+@implementation LHScopeSelectionController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.entryPolicy = [[self policy] copy];
+    self.draftCustomSeed = self.entryPolicy.customSeed ?: @"";
+}
+
+- (NSString *)title {
+    NSString *appName = [[self specifier] propertyForKey:@"appName"];
+    return [appName length] > 0 ? @"App Scope" : @"Scope";
+}
+
+- (LHPreferencePolicy *)policy {
+    LHPreferenceStore *store = [LHPreferenceStore sharedStore];
+    NSString *bundleID = [[self specifier] propertyForKey:@"bundleIdentifier"];
+    if ([bundleID length] > 0) {
+        return [store effectivePolicyForBundleIdentifier:bundleID];
+    }
+    return [store defaultPolicy];
+}
+
+- (BOOL)writePolicy:(LHPreferencePolicy *)policy error:(NSError **)error {
+    LHPreferenceStore *store = [LHPreferenceStore sharedStore];
+    NSString *bundleID = [[self specifier] propertyForKey:@"bundleIdentifier"];
+    if ([bundleID length] > 0) {
+        return [store setOverridePolicy:policy forBundleIdentifier:bundleID error:error];
+    }
+    return [store setDefaultPolicy:policy error:error];
+}
+
+- (NSString *)bundleIdentifier {
+    return [[self specifier] propertyForKey:@"bundleIdentifier"];
+}
+
+- (NSArray<NSString *> *)bundleIdentifiersUsingSeed:(NSString *)seed {
+    NSString *normalizedSeed = [LHPreferenceStore normalizedSeedString:seed];
+    if (normalizedSeed == nil) {
+        return @[];
+    }
+
+    NSString *currentBundle = [self bundleIdentifier];
+    NSDictionary<NSString *, LHPreferencePolicy *> *overrides = [[LHPreferenceStore sharedStore] overridePolicies];
+    NSMutableArray<NSString *> *bundleIDs = [NSMutableArray array];
+    for (NSString *bundleID in [[overrides allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)]) {
+        LHPreferencePolicy *policy = overrides[bundleID];
+        if ([bundleID isEqualToString:currentBundle]) {
+            continue;
+        }
+        if (policy.scopeMode == LHCustomSeedScopeMode &&
+            [[LHPreferenceStore normalizedSeedString:policy.customSeed] isEqualToString:normalizedSeed]) {
+            [bundleIDs addObject:bundleID];
+        }
+    }
+    return bundleIDs;
+}
+
+- (PSSpecifier *)customSeedSpecifierForPolicy:(LHPreferencePolicy *)policy {
+    PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:@"Custom Seed"
+                                                            target:self
+                                                               set:nil
+                                                               get:nil
+                                                            detail:nil
+                                                              cell:PSTitleValueCell
+                                                              edit:nil];
+    [specifier setProperty:NSClassFromString(@"LHCustomSeedCell") forKey:@"cellClass"];
+    [specifier setProperty:@64.0 forKey:@"height"];
+    [specifier setProperty:[NSValue valueWithNonretainedObject:self] forKey:@"targetController"];
+    [specifier setProperty:self.draftCustomSeed ?: policy.customSeed ?: @"" forKey:@"customSeed"];
+    return specifier;
+}
+
+- (NSString *)selectedSeedPreviewForSpecifier:(PSSpecifier *)specifier {
+    (void)specifier;
+    NSString *seed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed ?: [self policy].customSeed];
+    return seed ?: @"None";
+}
+
+- (NSMutableArray *)specifiers {
+    if (!_specifiers) {
+        NSMutableArray *items = [NSMutableArray array];
+        [items addObject:LHGroupSpecifier(@"Scope", @"Scope controls which apps share the same generated replacement values.")];
+        LHPreferencePolicy *policy = [self policy];
+        NSInteger currentMode = policy.scopeMode;
+        for (NSInteger mode = 0; mode <= LHCustomSeedScopeMode; mode++) {
+            NSString *label = [LHPreferenceStore scopeLabelForMode:mode];
+            PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label
+                                                                    target:self
+                                                                       set:nil
+                                                                       get:nil
+                                                                    detail:nil
+                                                                      cell:PSListItemCell
+                                                                      edit:nil];
+            [specifier setProperty:@(mode) forKey:@"scopeMode"];
+            [specifier setProperty:[LHPreferenceStore scopeDescriptionForMode:mode] forKey:@"subtitle"];
+            [specifier setProperty:@(mode == currentMode) forKey:@"checked"];
+            [specifier setProperty:NSClassFromString(@"LHScopeOptionCell") forKey:@"cellClass"];
+            [specifier setProperty:@74.0 forKey:@"height"];
+            [specifier setProperty:@YES forKey:@"enabled"];
+            [items addObject:specifier];
+        }
+        if (currentMode == LHCustomSeedScopeMode) {
+            [items addObject:LHGroupSpecifier(@"Custom Seed", @"The UUID seed below replaces the package root seed for this scope.")];
+            [items addObject:[self customSeedSpecifierForPolicy:policy]];
+            if ([[self bundleIdentifier] length] > 0) {
+                PSSpecifier *choose = LHLinkSpecifier(@"Choose Existing Seed", self, NSClassFromString(@"LHCustomSeedListController"), @selector(selectedSeedPreviewForSpecifier:));
+                [choose setProperty:[self bundleIdentifier] forKey:@"bundleIdentifier"];
+                NSString *appName = [[self specifier] propertyForKey:@"appName"];
+                if ([appName length] > 0) {
+                    [choose setProperty:appName forKey:@"appName"];
+                }
+                [items addObject:choose];
+            }
+        }
+        _specifiers = items;
+    }
+    return _specifiers;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    self.draftCustomSeed = [self policy].customSeed ?: self.draftCustomSeed ?: @"";
+    _specifiers = nil;
+    [self reloadSpecifiers];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    if (self.isMovingFromParentViewController || self.navigationController.isBeingDismissed) {
+        [self commitCustomSeedBeforeLeaving];
+    }
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PSSpecifier *specifier = [self specifierAtIndexPath:indexPath];
+    if ([specifier propertyForKey:@"scopeMode"] != nil) {
+        [self selectScope:specifier];
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        return;
+    }
+    [super tableView:tableView didSelectRowAtIndexPath:indexPath];
+}
+
+- (void)selectScope:(PSSpecifier *)specifier {
+    LHPreferencePolicy *policy = [[self policy] copy];
+    policy.scopeMode = [[specifier propertyForKey:@"scopeMode"] integerValue];
+    if (policy.scopeMode == LHCustomSeedScopeMode) {
+        NSString *seed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed ?: policy.customSeed];
+        if (seed == nil) {
+            seed = [LHPreferenceStore randomSeedString];
+        }
+        policy.customSeed = seed;
+        self.draftCustomSeed = seed;
+    }
+    NSError *error = nil;
+    if (![self writePolicy:policy error:&error]) {
+        LHPresentError(self, error);
+        return;
+    }
+    _specifiers = nil;
+    [self reloadSpecifiers];
+}
+
+- (void)customSeedTextChanged:(UITextField *)textField {
+    self.draftCustomSeed = textField.text ?: @"";
+}
+
+- (void)customSeedEditingDidEnd:(UITextField *)textField {
+    self.draftCustomSeed = textField.text ?: @"";
+    NSString *seed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed];
+    if (seed == nil) {
+        return;
+    }
+    [self applyCustomSeed:seed updateAssociatedBundles:NO];
+}
+
+- (void)commitCustomSeedBeforeLeaving {
+    LHPreferencePolicy *policy = [self policy];
+    if (policy.scopeMode != LHCustomSeedScopeMode) {
+        return;
+    }
+
+    NSString *seed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed];
+    if (seed != nil) {
+        [self applyCustomSeed:seed updateAssociatedBundles:NO];
+        return;
+    }
+
+    NSError *writeError = nil;
+    [self writePolicy:self.entryPolicy error:&writeError];
+    UIViewController *presenter = self.navigationController.topViewController ?: self.navigationController;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        LHPresentError(presenter, [NSError errorWithDomain:@"com.loupehole.preferences"
+                                                      code:1
+                                                  userInfo:@{NSLocalizedDescriptionKey: @"Custom seed must be a UUID. The previous scope settings were restored."}]);
+    });
+}
+
+- (void)applyCustomSeed:(NSString *)seed updateAssociatedBundles:(BOOL)updateAssociatedBundles {
+    NSString *normalizedSeed = [LHPreferenceStore normalizedSeedString:seed];
+    if (normalizedSeed == nil) {
+        LHPresentError(self, [NSError errorWithDomain:@"com.loupehole.preferences"
+                                                code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Custom seed must be a UUID."}]);
+        return;
+    }
+
+    NSError *error = nil;
+    NSString *currentBundle = [self bundleIdentifier];
+    if (updateAssociatedBundles && [currentBundle length] > 0) {
+        NSString *oldSeed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed ?: [self policy].customSeed];
+        if (oldSeed != nil && ![[LHPreferenceStore sharedStore] replaceCustomSeed:oldSeed withSeed:normalizedSeed includingBundleIdentifier:currentBundle error:&error]) {
+            LHPresentError(self, error);
+            return;
+        }
+    } else {
+        LHPreferencePolicy *policy = [[self policy] copy];
+        policy.scopeMode = LHCustomSeedScopeMode;
+        policy.customSeed = normalizedSeed;
+        if (![self writePolicy:policy error:&error]) {
+            LHPresentError(self, error);
+            return;
+        }
+    }
+
+    self.draftCustomSeed = normalizedSeed;
+    _specifiers = nil;
+    [self reloadSpecifiers];
+}
+
+- (void)randomizeCustomSeed {
+    NSString *newSeed = [LHPreferenceStore randomSeedString];
+    NSString *currentSeed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed ?: [self policy].customSeed];
+    NSArray<NSString *> *associatedBundles = [self bundleIdentifiersUsingSeed:currentSeed];
+    if ([[self bundleIdentifier] length] > 0 && [associatedBundles count] > 0) {
+        NSString *message = [NSString stringWithFormat:@"This seed is also used by %lu other app%@.",
+                             (unsigned long)[associatedBundles count],
+                             [associatedBundles count] == 1 ? @"" : @"s"];
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Randomize Seed"
+                                                                       message:message
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Only This App" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+            [self applyCustomSeed:newSeed updateAssociatedBundles:NO];
+        }]];
+        [alert addAction:[UIAlertAction actionWithTitle:@"All Apps Using This Seed" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+            [self applyCustomSeed:newSeed updateAssociatedBundles:YES];
+        }]];
+        [self presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+
+    [self applyCustomSeed:newSeed updateAssociatedBundles:NO];
+}
+
+@end
+
+@interface LHCustomSeedListController : PSListController
+@end
+
+@implementation LHCustomSeedListController
+
+- (NSString *)title {
+    return @"Existing Seeds";
+}
+
+- (NSString *)bundleIdentifier {
+    return [[self specifier] propertyForKey:@"bundleIdentifier"];
+}
+
+- (NSArray<NSDictionary<NSString *, id> *> *)seedAssociations {
+    NSString *currentBundle = [self bundleIdentifier];
+    NSDictionary<NSString *, NSString *> *appNames = LHApplicationNamesByBundleIdentifier();
+    NSDictionary<NSString *, LHPreferencePolicy *> *overrides = [[LHPreferenceStore sharedStore] overridePolicies];
+    NSMutableDictionary<NSString *, NSMutableArray<NSDictionary<NSString *, NSString *> *> *> *groups = [NSMutableDictionary dictionary];
+    for (NSString *bundleID in [[overrides allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)]) {
+        if ([bundleID isEqualToString:currentBundle]) {
+            continue;
+        }
+        LHPreferencePolicy *policy = overrides[bundleID];
+        NSString *seed = [LHPreferenceStore normalizedSeedString:policy.customSeed];
+        if (policy.scopeMode != LHCustomSeedScopeMode || seed == nil) {
+            continue;
+        }
+        NSMutableArray *apps = groups[seed];
+        if (apps == nil) {
+            apps = [NSMutableArray array];
+            groups[seed] = apps;
+        }
+        NSString *name = appNames[bundleID] ?: bundleID;
+        [apps addObject:@{@"name": name, @"bundleIdentifier": bundleID}];
+    }
+
+    NSMutableArray<NSDictionary<NSString *, id> *> *items = [NSMutableArray array];
+    for (NSString *seed in [[groups allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)]) {
+        NSArray *apps = groups[seed];
+        [items addObject:@{@"seed": seed, @"apps": apps}];
+    }
+    return items;
+}
+
+- (NSString *)associatedAppsText:(NSArray<NSDictionary<NSString *, NSString *> *> *)apps {
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    for (NSDictionary<NSString *, NSString *> *app in apps) {
+        [lines addObject:[NSString stringWithFormat:@"%@\n%@", app[@"name"] ?: @"Unknown", app[@"bundleIdentifier"] ?: @""]];
+    }
+    return [lines componentsJoinedByString:@"\n\n"];
+}
+
+- (NSMutableArray *)specifiers {
+    if (!_specifiers) {
+        NSMutableArray *items = [NSMutableArray array];
+        NSArray<NSDictionary<NSString *, id> *> *associations = [self seedAssociations];
+        [items addObject:LHGroupSpecifier(@"Seeds", [associations count] == 0 ? @"No other app override uses a custom seed yet." : @"Selecting a seed copies it into this app override.")];
+        for (NSDictionary<NSString *, id> *association in associations) {
+            NSString *seed = association[@"seed"];
+            NSArray *apps = association[@"apps"] ?: @[];
+            PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:seed
+                                                                    target:self
+                                                                       set:nil
+                                                                       get:nil
+                                                                    detail:nil
+                                                                      cell:PSLinkListCell
+                                                                      edit:nil];
+            [specifier setProperty:seed forKey:@"customSeed"];
+            [specifier setProperty:[self associatedAppsText:apps] forKey:@"associatedApps"];
+            [specifier setProperty:@([apps count]) forKey:@"associatedAppCount"];
+            [specifier setProperty:NSClassFromString(@"LHSeedAssociationCell") forKey:@"cellClass"];
+            [specifier setProperty:@([LHSeedAssociationCell preferredHeightForSpecifier:specifier]) forKey:@"height"];
+            [items addObject:specifier];
+        }
+        _specifiers = items;
+    }
+    return _specifiers;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    PSSpecifier *specifier = [self specifierAtIndexPath:indexPath];
+    NSString *seed = [specifier propertyForKey:@"customSeed"];
+    if ([LHPreferenceStore isValidSeedString:seed]) {
+        LHPreferenceStore *store = [LHPreferenceStore sharedStore];
+        NSString *bundleID = [self bundleIdentifier];
+        LHPreferencePolicy *policy = [[store effectivePolicyForBundleIdentifier:bundleID] copy];
+        policy.scopeMode = LHCustomSeedScopeMode;
+        policy.customSeed = [LHPreferenceStore normalizedSeedString:seed];
+        NSError *error = nil;
+        if (![store setOverridePolicy:policy forBundleIdentifier:bundleID error:&error]) {
+            LHPresentError(self, error);
+            return;
+        }
+        [self.navigationController popViewControllerAnimated:YES];
+        return;
+    }
+    [super tableView:tableView didSelectRowAtIndexPath:indexPath];
+}
+
+@end
+
 @interface LHDefaultProfileController : LHPolicyListController
 @end
 
@@ -267,6 +988,14 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 - (NSString *)title {
     NSString *name = [[self specifier] propertyForKey:@"appName"];
     return [name length] > 0 ? name : self.bundleIdentifier;
+}
+
+- (NSString *)scopeSelectionBundleIdentifier {
+    return self.bundleIdentifier ?: [[self specifier] propertyForKey:@"bundleIdentifier"];
+}
+
+- (NSString *)scopeSelectionAppName {
+    return [[self specifier] propertyForKey:@"appName"];
 }
 
 - (LHPreferencePolicy *)policy {
@@ -327,12 +1056,8 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     UISearchController *searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
     searchController.searchResultsUpdater = self;
     searchController.obscuresBackgroundDuringPresentation = NO;
-    if (@available(iOS 11.0, *)) {
-        self.navigationItem.searchController = searchController;
-        self.navigationItem.hidesSearchBarWhenScrolling = NO;
-    } else {
-        self.table.tableHeaderView = searchController.searchBar;
-    }
+    self.navigationItem.searchController = searchController;
+    self.navigationItem.hidesSearchBarWhenScrolling = NO;
 }
 
 - (NSArray<NSDictionary<NSString *, id> *> *)loadApplications {
@@ -347,7 +1072,7 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         if (![self isThirdPartyBundleIdentifier:bundleID bundleURL:bundleURL]) {
             continue;
         }
-        UIImage *icon = [self iconForApplicationProxy:proxy];
+        UIImage *icon = [self iconForApplicationProxy:proxy bundleIdentifier:bundleID bundleURL:bundleURL];
         [apps addObject:@{
             @"bundleIdentifier": bundleID,
             @"name": [name length] > 0 ? name : bundleID,
@@ -375,26 +1100,132 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return [path length] == 0 || [path containsString:@".app"];
 }
 
-- (UIImage *)iconForApplicationProxy:(id)proxy {
+- (UIImage *)iconForBundleIdentifier:(NSString *)bundleID {
+    if ([bundleID length] == 0) {
+        return nil;
+    }
+
+    CGFloat scale = [UIScreen mainScreen].scale ?: 2.0;
+    NSArray<NSNumber *> *formats = @[@(MIIconVariantSmall), @(MIIconVariantSpotlight), @(MIIconVariantDefault)];
+    if ([[UIImage class] respondsToSelector:@selector(_applicationIconImageForBundleIdentifier:format:scale:)]) {
+        for (NSNumber *format in formats) {
+            UIImage *image = [UIImage _applicationIconImageForBundleIdentifier:bundleID format:(MIIconVariant)[format unsignedIntegerValue] scale:scale];
+            if ([image isKindOfClass:[UIImage class]]) {
+                return image;
+            }
+        }
+    }
+
+    return nil;
+}
+
+- (UIImage *)iconFromBundleURL:(NSURL *)bundleURL {
+    if (bundleURL == nil) {
+        return nil;
+    }
+
+    NSBundle *bundle = [NSBundle bundleWithURL:bundleURL];
+    NSDictionary *info = [NSDictionary dictionaryWithContentsOfURL:[bundleURL URLByAppendingPathComponent:@"Info.plist"]];
+    NSMutableArray<NSString *> *names = [NSMutableArray array];
+    void (^addName)(id) = ^(id value) {
+        if ([value isKindOfClass:[NSString class]] && [value length] > 0 && ![names containsObject:value]) {
+            [names addObject:value];
+        }
+    };
+    void (^addNamesFromIcons)(NSDictionary *) = ^(NSDictionary *icons) {
+        NSDictionary *primaryIcon = [icons isKindOfClass:[NSDictionary class]] ? icons[@"CFBundlePrimaryIcon"] : nil;
+        NSArray *iconFiles = [primaryIcon[@"CFBundleIconFiles"] isKindOfClass:[NSArray class]] ? primaryIcon[@"CFBundleIconFiles"] : nil;
+        for (NSString *name in [iconFiles reverseObjectEnumerator]) {
+            addName(name);
+        }
+        addName(primaryIcon[@"CFBundleIconName"]);
+    };
+
+    addNamesFromIcons(info[@"CFBundleIcons"]);
+    addNamesFromIcons(info[@"CFBundleIcons~ipad"]);
+    NSArray *legacyIconFiles = [info[@"CFBundleIconFiles"] isKindOfClass:[NSArray class]] ? info[@"CFBundleIconFiles"] : nil;
+    for (NSString *name in [legacyIconFiles reverseObjectEnumerator]) {
+        addName(name);
+    }
+    addName(info[@"CFBundleIconFile"]);
+
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    for (NSString *name in names) {
+        UIImage *image = [UIImage imageNamed:name inBundle:bundle compatibleWithTraitCollection:nil];
+        if ([image isKindOfClass:[UIImage class]]) {
+            return image;
+        }
+
+        NSMutableArray<NSString *> *candidates = [NSMutableArray array];
+        NSString *extension = [name pathExtension];
+        if ([extension length] > 0) {
+            [candidates addObject:name];
+        } else {
+            [candidates addObject:[name stringByAppendingString:@"@3x.png"]];
+            [candidates addObject:[name stringByAppendingString:@"@2x.png"]];
+            [candidates addObject:[name stringByAppendingPathExtension:@"png"]];
+            [candidates addObject:name];
+        }
+        for (NSString *candidate in candidates) {
+            NSString *path = [[bundleURL path] stringByAppendingPathComponent:candidate];
+            if (![fileManager fileExistsAtPath:path]) {
+                continue;
+            }
+            image = [UIImage imageWithContentsOfFile:path];
+            if ([image isKindOfClass:[UIImage class]]) {
+                return image;
+            }
+        }
+    }
+
+    return nil;
+}
+
+- (UIImage *)iconForApplicationProxy:(LSApplicationProxy *)proxy bundleIdentifier:(NSString *)bundleID bundleURL:(NSURL *)bundleURL {
+    NSArray<NSNumber *> *formats = @[@(MIIconVariantSmall), @(MIIconVariantSpotlight), @(MIIconVariantDefault)];
+    if ([[UIImage class] respondsToSelector:@selector(_iconForResourceProxy:format:)]) {
+        for (NSNumber *format in formats) {
+            UIImage *image = [UIImage _iconForResourceProxy:proxy format:(MIIconVariant)[format unsignedIntegerValue]];
+            if ([image isKindOfClass:[UIImage class]]) {
+                return image;
+            }
+        }
+    }
+
+    UIImage *image = [self iconForBundleIdentifier:bundleID];
+    if (image != nil) {
+        return image;
+    }
+
     SEL imageSelector = NSSelectorFromString(@"iconImageForVariant:");
     if ([proxy respondsToSelector:imageSelector]) {
         UIImage *(*imp)(id, SEL, NSInteger) = (UIImage *(*)(id, SEL, NSInteger))[proxy methodForSelector:imageSelector];
-        UIImage *image = imp(proxy, imageSelector, 2);
-        if ([image isKindOfClass:[UIImage class]]) {
-            return image;
+        for (NSNumber *variant in @[@2, @1, @0, @3]) {
+            UIImage *image = imp(proxy, imageSelector, [variant integerValue]);
+            if ([image isKindOfClass:[UIImage class]]) {
+                return image;
+            }
         }
     }
     SEL dataSelector = NSSelectorFromString(@"iconDataForVariant:");
     if ([proxy respondsToSelector:dataSelector]) {
         NSData *(*imp)(id, SEL, NSInteger) = (NSData *(*)(id, SEL, NSInteger))[proxy methodForSelector:dataSelector];
-        NSData *data = imp(proxy, dataSelector, 2);
-        if ([data isKindOfClass:[NSData class]]) {
-            UIImage *image = [UIImage imageWithData:data];
-            if (image != nil) {
-                return image;
+        for (NSNumber *variant in @[@2, @1, @0, @3]) {
+            NSData *data = imp(proxy, dataSelector, [variant integerValue]);
+            if ([data isKindOfClass:[NSData class]]) {
+                UIImage *image = [UIImage imageWithData:data];
+                if (image != nil) {
+                    return image;
+                }
             }
         }
     }
+
+    image = [self iconFromBundleURL:bundleURL];
+    if (image != nil) {
+        return image;
+    }
+
     return nil;
 }
 
@@ -402,13 +1233,13 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     static UIImage *image;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        CGSize size = CGSizeMake(29.0, 29.0);
+        CGSize size = CGSizeMake(40.0, 40.0);
         UIGraphicsBeginImageContextWithOptions(size, NO, 0.0);
         [[UIColor colorWithWhite:0.86 alpha:1.0] setFill];
-        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, size.width, size.height) cornerRadius:6.0];
+        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, size.width, size.height) cornerRadius:9.0];
         [path fill];
         [[UIColor colorWithWhite:0.45 alpha:1.0] setStroke];
-        UIBezierPath *circle = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(8.0, 8.0, 13.0, 13.0)];
+        UIBezierPath *circle = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(12.0, 12.0, 16.0, 16.0)];
         circle.lineWidth = 2.0;
         [circle stroke];
         image = UIGraphicsGetImageFromCurrentImageContext();
@@ -443,11 +1274,14 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
                 [[bundleID lowercaseString] rangeOfString:query].location == NSNotFound) {
                 continue;
             }
-            NSString *label = [NSString stringWithFormat:@"%@ (%@)", name, bundleID];
-            PSSpecifier *specifier = LHLinkSpecifier(label, self, [LHAppOverrideController class], @selector(previewStringForSpecifier:));
+            PSSpecifier *specifier = LHLinkSpecifier(name, self, [LHAppOverrideController class], @selector(previewStringForSpecifier:));
             [specifier setProperty:bundleID forKey:@"bundleIdentifier"];
             [specifier setProperty:name forKey:@"appName"];
-            [specifier setProperty:app[@"icon"] forKey:@"iconImage"];
+            [specifier setProperty:bundleID forKey:@"subtitle"];
+            [specifier setProperty:[self previewStringForBundleIdentifier:bundleID] forKey:@"preview"];
+            [specifier setProperty:app[@"icon"] forKey:@"LHIconImage"];
+            [specifier setProperty:NSClassFromString(@"LHAppOverrideCell") forKey:@"cellClass"];
+            [specifier setProperty:@82.0 forKey:@"height"];
             [items addObject:specifier];
         }
         _specifiers = items;
@@ -455,12 +1289,15 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return _specifiers;
 }
 
-- (NSString *)previewStringForSpecifier:(PSSpecifier *)specifier {
-    NSString *bundleID = [specifier propertyForKey:@"bundleIdentifier"];
+- (NSString *)previewStringForBundleIdentifier:(NSString *)bundleID {
     LHPreferenceStore *store = [LHPreferenceStore sharedStore];
     BOOL override = [store hasOverrideForBundleIdentifier:bundleID];
     LHPreferencePolicy *policy = [store effectivePolicyForBundleIdentifier:bundleID];
     return LHPolicySummary(policy, override);
+}
+
+- (NSString *)previewStringForSpecifier:(PSSpecifier *)specifier {
+    return [self previewStringForBundleIdentifier:[specifier propertyForKey:@"bundleIdentifier"]];
 }
 
 @end
@@ -478,11 +1315,18 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     if (!_specifiers) {
         LHPreferenceStore *store = [LHPreferenceStore sharedStore];
         _specifiers = [@[
-            LHGroupSpecifier(@"Seeds", nil),
+            LHGroupSpecifier(@"Seeds", @"Seeds shown here are internal Loupehole inputs, not values returned to protected apps."),
             LHValueSpecifier(@"Build seed", [store buildSeedString]),
+            LHValueSpecifier(@"Build seed role", @"Compile-time UUID used to derive generated package paths, loader/filter names, and seed-derivation labels. It is not the package runtime seed."),
             LHValueSpecifier(@"Root seed", [store rootSeedHexString]),
+            LHValueSpecifier(@"Root seed role", @"Random per-install package seed used as the practical runtime seed. Resetting it rotates generated values and seed-derived state paths for enabled apps."),
+            LHValueSpecifier(@"Active scoped seed", @"Derived inside each target app from the root seed plus the selected scope. Custom seed scope uses its configured UUID instead of the root seed."),
+            LHValueSpecifier(@"App-install marker", @"Per-app-install scope adds a random marker stored in that app's data. Deleting and reinstalling the app creates a new marker and rotates that app's seed."),
+            LHGroupSpecifier(@"Seed Actions", nil),
+            LHDestructiveButtonSpecifier(@"Reset Root Seed", self, @selector(confirmResetRootSeed)),
             LHGroupSpecifier(@"Paths", @"Paths are derived from generated package names at runtime."),
             LHValueSpecifier(@"Policy", [store policyPath]),
+            LHValueSpecifier(@"Loader", [store loaderDylibPath]),
             LHValueSpecifier(@"Filter", [store filterPath]),
             LHValueSpecifier(@"Support", [store supportDirectoryPath]),
             LHValueSpecifier(@"Preferences", [store preferencesDirectoryPath]),
@@ -490,6 +1334,24 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         ] mutableCopy];
     }
     return _specifiers;
+}
+
+- (void)confirmResetRootSeed {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Root Seed"
+                                                                   message:@"This writes a new random root seed. All enabled apps will derive new replacement values and new seed-derived state paths after they restart. Existing state is not migrated or deleted, and this cannot be undone unless you kept the old seed."
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    UIAlertAction *resetAction = [UIAlertAction actionWithTitle:@"Reset Root Seed" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+        NSError *error = nil;
+        if (![[LHPreferenceStore sharedStore] resetRootSeedWithError:&error]) {
+            LHPresentError(self, error);
+            return;
+        }
+        _specifiers = nil;
+        [self reloadSpecifiers];
+    }];
+    [alert addAction:resetAction];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 @end
@@ -509,7 +1371,6 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
             LHGroupSpecifier(@"Configuration", nil),
             LHLinkSpecifier(@"Default Profile", self, [LHDefaultProfileController class], @selector(defaultPreviewForSpecifier:)),
             LHLinkSpecifier(@"App Overrides", self, [LHAppOverrideListController class], nil),
-            LHButtonSpecifier(@"Export Settings", self, @selector(exportSettings)),
             LHGroupSpecifier(@"Reset", nil),
             LHButtonSpecifier(@"Reset Configuration", self, @selector(confirmResetAll)),
             LHGroupSpecifier(@"Diagnostics", nil),
@@ -540,18 +1401,6 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         [self reloadSpecifiers];
     }]];
     [self presentViewController:alert animated:YES completion:nil];
-}
-
-- (void)exportSettings {
-    NSError *error = nil;
-    NSURL *url = [[LHPreferenceStore sharedStore] exportSettingsWithError:&error];
-    if (url == nil) {
-        LHPresentError(self, error);
-        return;
-    }
-    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[url] applicationActivities:nil];
-    activity.popoverPresentationController.sourceView = self.view;
-    [self presentViewController:activity animated:YES completion:nil];
 }
 
 @end

@@ -14,7 +14,10 @@ This document is the actionable handoff plan for implementing Loupehole from the
 - Store mutable values through state providers. First providers: `LHEmbeddedStateProvider` and `LHLocalStateProvider`. Later providers: `LHPackageStateProvider`, `LHAppGroupStateProvider`, and `LHKeychainGroupStateProvider`.
 - Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Opaque derivation labels are inputs to derivation only and must not be stored next to derived names.
 - Default mutable state encoding: binary property list with a schema version. JSON is acceptable only for debug export/import tools, not target-process runtime state.
-- Default scope is per app install. Design scope APIs for per-app, per-vendor group, per-shared-app-group, and manual linked group even if policy UI is not complete yet.
+- Default scope is per app install. Supported policy scopes are
+  per-app-install, per-app, per-vendor group, and custom seed/manual linked
+  group. Shared app-group behavior will be modeled later as manual linked groups
+  over custom seeds, not as a separate runtime scope.
 - Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value.
 - First mitigation group: `UIDevice.identifierForVendor`, device boot time, and volume initialization or creation time.
 - The first mitigation group must be complete enough to evaluate limits: hook Objective-C/Foundation and C/Darwin layers that expose the same values.
@@ -105,12 +108,10 @@ Implementation tasks:
   - per app install
   - per app
   - per vendor group
-  - per shared app group
-  - manual linked group
+  - custom seed/manual linked group
 - Implement per-app-install scope resolution first, with an opaque random marker
   in app data.
 - Resolve vendor-group scope from original pre-spoof IDFV when available.
-- Resolve shared-app-group scope from app group entitlements when available.
 - Use fresh random alphanumeric scope identifiers when scope input is missing,
   empty, or too long to copy safely.
 - Implement UUID instance seed parsing and validation without restricting the UUID version.
@@ -278,18 +279,21 @@ checks the package filter starts empty, and exercises the Settings store's
 default-on UIKit app-class filter plus per-bundle overrides. The package
 includes install, upgrade, disable, and uninstall maintainer-script paths. The
 package layout, package-owned state parent
-directory, package seed root, root seed filename, and package policy file are
-generated at build time and passed into the runtime config and maintainer
-scripts. `LHSeedProvider`
+directory, package seed root, root seed filename, package policy file, and
+loader dylib/filter basename are generated at build time and passed into the
+runtime config and maintainer scripts. `LHSeedProvider`
 resolves package installs to a persisted root install seed used as the package
 practical seed. The default per-app-install scope uses an opaque random marker in
-app data so app reinstall rotates the active seed. The package state provider
+app data so app reinstall rotates the active seed. Custom seed scope uses a
+configured UUID as the active seed directly, letting the user deliberately link
+the default profile or multiple bundle overrides without relying on app-group
+entitlements. The package state provider
 stores blobs under package-owned rootless storage outside target app containers,
 with derived opaque per-scope state directories and blob filenames. The package
 includes `LoupeholePreferences.bundle` as the built-in Settings menu for default
 profile settings, per-app overrides, mitigation toggles, global reset, debug
-paths/seeds, and `.lh` export. Device install and behavioral validation remain
-manual.
+paths/seeds, root seed reset, and scope selection. Device install and behavioral validation
+remain manual.
 
 Package the same dylib for jailbreak installation.
 
@@ -315,8 +319,8 @@ Acceptance checks:
 - `.deb` builds locally with `dpkg-deb --root-owner-group`; fakeroot is bypassed
   for the package step to avoid host SYSV IPC failures.
 - Package layout installs under `/var/jb`.
-- Package root seed, per-app-install marker paths, and scoped state paths are
-  generated and opaque.
+- Package loader basename, package root seed, per-app-install marker paths, and
+  scoped state paths are generated and opaque.
 - Default third-party app targeting, disabled per-bundle overrides, and package
   policy edits work through the Settings store verifier.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
@@ -338,9 +342,8 @@ disabled overrides win. Local/plain dylib development defaults still enable comp
 Generated Settings metadata exposes the selected compiled module ID/name map for
 the deb, and runtime policy stores numeric module IDs with room for up to 1024
 enabled modules. The Settings menu also supports global reset, per-app override
-reset, debug seed/path display, and `.lh` export using dotted mitigation IDs for
-cross-install readability. Seed reset/state rotation controls and richer profile
-selection remain pending.
+reset, debug seed/path explanations, scope selection, and destructively confirmed
+root seed reset. Richer profile selection remains pending.
 
 Add configuration without moving policy into hooks.
 
@@ -360,10 +363,12 @@ Implementation tasks:
   - per app install
   - per app
   - per vendor group
-  - per shared app group
-  - manual linked group
+  - custom seed/manual linked group
+  Future manual linked-group UX should reuse custom seeds dynamically instead of
+  adding stored group/link entities.
 - Add seed reset and state rotation controls on top of the existing
-  `LHSeedProvider`.
+  `LHSeedProvider`. Status: complete for package root seed reset in Settings;
+  per-app marker and scoped-state cleanup controls remain pending.
 - Promote or replace the first bundle toggle helper with a full
   preference/config provider flow. Status: complete for the built-in Settings
   menu.
@@ -439,6 +444,9 @@ Implementation tasks:
 - Implement `LHAppGroupStateProvider` for apps signed with a common App Group entitlement.
 - Implement `LHKeychainGroupStateProvider` for apps signed with a common Keychain Access Group entitlement.
 - Keep state names opaque and seed-derived.
+- Keep app linking in the policy layer: any shared-app behavior should use
+  manual linked groups/custom seeds rather than reintroducing an app-group
+  runtime scope.
 - If neither entitlement exists, use local per-app state or embedded config only.
 
 Acceptance checks:

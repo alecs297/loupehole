@@ -56,16 +56,11 @@ bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier) {
                        vendorIdentifier == 0 ? 0 : strlen(vendorIdentifier));
 }
 
-bool LHScopeInitPerSharedAppGroup(LHScope *scope, const char *appGroupIdentifier) {
-    return LHScopeInit(scope,
-                       LHScopeModePerSharedAppGroup,
-                       (const uint8_t *)appGroupIdentifier,
-                       appGroupIdentifier == 0 ? 0 : strlen(appGroupIdentifier));
-}
-
 bool LHScopeInitManualLinkedGroup(LHScope *scope, const char *groupIdentifier) {
+    static const uint8_t staticIdentifier[] = { 0 };
+    (void)groupIdentifier;
     return LHScopeInit(scope,
                        LHScopeModeManualLinkedGroup,
-                       (const uint8_t *)groupIdentifier,
-                       groupIdentifier == 0 ? 0 : strlen(groupIdentifier));
+                       staticIdentifier,
+                       sizeof(staticIdentifier));
 }

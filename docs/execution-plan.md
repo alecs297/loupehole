@@ -359,7 +359,10 @@ Exit criteria:
 
 - Config priority is emergency bypass, preference profile, embedded build config, then built-in default.
 - Per-app allowlist, profile/cohort selection, mitigation toggles, scope mode, and seed reset work through the config provider.
-- Scope mode supports per-app default, per-vendor group, per-shared-app-group, and manual linked groups.
+- Scope mode supports per-app-install default, per-app, per-vendor group, and
+  custom seed/manual linked groups. Shared app-group-style behavior should be
+  implemented later as manual linked groups that reuse custom seeds, not as a
+  separate app-group runtime scope.
 - `LHPackageStateProvider` stores jailbreak package state outside target app containers.
 - `LHAppGroupStateProvider` and `LHKeychainGroupStateProvider` are deferred until sideloaded signing entitlements are known.
 - Preference identifiers, storage paths, filenames, and Keychain service/account names are derived from the instance seed and do not expose project names or module names to target app processes.

@@ -60,8 +60,8 @@ package names, and deterministic dylib/local practical seed material. For debs,
 the package root install seed is the practical seed used for runtime value
 derivation. The practical seed should derive:
 
-- Scoped per-app-install, per-app, per-vendor, per-shared-group, and
-  manual-group seeds.
+- Scoped per-app-install, per-app, per-vendor, and custom/manual-linked seeds.
+  Custom seed scope uses the configured UUID as the active seed directly.
 - State record identifiers.
 - Shared-container filenames.
 - Keychain service/account names.
@@ -75,7 +75,7 @@ Storage-name rules:
 - Do not use readable project names, module names, mitigation names, or obvious prefixes in filenames, preference keys, Keychain service names, Keychain account names, or shared-container records that may be visible from a target app process.
 - Derive storage names with a keyed hash or KDF from the practical seed, purpose label, scope mode, and stable scope identifier.
 - Keep purpose labels internal to derivation code; do not store them next to the derived value.
-- Reusing the same practical seed and stable scope inputs should recreate the same derived paths and keys, except per-app-install scope, which also depends on a random app-container marker.
+- Reusing the same practical seed and stable scope inputs should recreate the same derived paths and keys, except per-app-install scope, which also depends on a random app-container marker. Reusing the same custom seed intentionally recreates the same active seed across selected apps or installs.
 - Rotating the practical seed should rotate every derived storage name and scoped value unless the user explicitly migrates state.
 - Release audits must search binaries, scripts, generated config, and package layouts for accidental project-identifying storage names.
 - Mutable state field names inside target-process runtime storage should avoid readable project, module, or mitigation names. Short generic binary-plist keys are acceptable for the initial local provider, but a later hardening pass should evaluate generated/keyed field names or a compact binary record format to reduce static markers.

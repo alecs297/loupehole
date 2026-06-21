@@ -13,7 +13,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 
 root="$tmpdir/root"
 control="$tmpdir/control"
-filter="$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist"
+dynamic_dir="$root/var/jb/Library/MobileSubstrate/DynamicLibraries"
 preference_bundle="$root/var/jb/Library/PreferenceBundles/LoupeholePreferences.bundle"
 preference_loader="$root/var/jb/Library/PreferenceLoader/Preferences/Loupehole.plist"
 toggle_helper="$root/var/jb/usr/bin/lhctl"
@@ -35,7 +35,29 @@ require_dir() {
   fi
 }
 
-require_file "$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.dylib"
+require_dir "$dynamic_dir"
+loader_basename=$(python3 - "$dynamic_dir" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+dynamic_dir = Path(sys.argv[1])
+dylibs = {path.stem for path in dynamic_dir.glob("*.dylib")}
+plists = {path.stem for path in dynamic_dir.glob("*.plist")}
+if "runtime" in dylibs or "runtime" in plists:
+    raise SystemExit("legacy runtime loader basename must not be packaged")
+if dylibs != plists or len(dylibs) != 1:
+    raise SystemExit("expected one matching generated loader dylib/plist pair")
+loader = next(iter(dylibs))
+if not re.fullmatch(r"x[0-9a-f]{31}", loader):
+    raise SystemExit("loader basename is not generated/opaque")
+print(loader)
+PY
+)
+loader_dylib="$dynamic_dir/$loader_basename.dylib"
+filter="$dynamic_dir/$loader_basename.plist"
+
+require_file "$loader_dylib"
 require_file "$filter"
 require_dir "$preference_bundle"
 require_file "$preference_bundle/Info.plist"
@@ -54,7 +76,7 @@ for script in preinst postinst prerm postrm; do
   fi
 done
 
-state_parent=$(python3 - "$root" "$control" "$filter" "$preference_loader" <<'PY'
+state_parent=$(python3 - "$root" "$control" "$filter" "$preference_loader" "$loader_basename" <<'PY'
 import plistlib
 import re
 import sys
@@ -64,6 +86,7 @@ root = Path(sys.argv[1])
 control = Path(sys.argv[2])
 filter_path = Path(sys.argv[3])
 preference_loader = Path(sys.argv[4])
+loader_basename = sys.argv[5]
 hex_name = re.compile(r"^[0-9a-f]{32}$")
 
 parents = []
@@ -85,18 +108,29 @@ if len(set(parents)) != 1:
 
 state_parent = parents[0]
 postinst_text = (control / "postinst").read_text(encoding="utf-8")
+prerm_text = (control / "prerm").read_text(encoding="utf-8")
 postrm_text = (control / "postrm").read_text(encoding="utf-8")
 for script_name, script_text in (("postinst", postinst_text), ("postrm", postrm_text)):
     if state_parent not in script_text:
         raise SystemExit(f"{script_name} does not reference generated state parent")
+for script_name, script_text in (("postinst", postinst_text), ("prerm", prerm_text), ("postrm", postrm_text)):
+    if loader_basename not in script_text:
+        raise SystemExit(f"{script_name} does not reference generated loader basename")
+    if "runtime.plist" in script_text or "runtime.dylib" in script_text:
+        raise SystemExit(f"{script_name} still references the legacy runtime loader basename")
 
 script_values = {}
 for line in postinst_text.splitlines():
     match = re.fullmatch(r"(STATE_PARENT|SEED_ROOT_DIR|ROOT_SEED_FILE|POLICY_FILE)=([0-9a-f]{32})", line)
     if match:
         script_values[match.group(1)] = match.group(2)
+    match = re.fullmatch(r"LOADER_BASENAME=(x[0-9a-f]{31})", line)
+    if match:
+        script_values["LOADER_BASENAME"] = match.group(1)
 if script_values.get("STATE_PARENT") != state_parent:
     raise SystemExit("postinst state parent does not match package layout")
+if script_values.get("LOADER_BASENAME") != loader_basename:
+    raise SystemExit("postinst loader basename does not match package layout")
 seed_root_dir = script_values.get("SEED_ROOT_DIR")
 root_seed_file = script_values.get("ROOT_SEED_FILE")
 policy_file = script_values.get("POLICY_FILE")
@@ -138,6 +172,8 @@ cat >"$tmpdir/preference_store_check.m" <<'SOURCE'
 
 #import <Foundation/Foundation.h>
 
+#include <sys/stat.h>
+
 static NSArray *bundlesAtPath(NSString *path) {
     NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:path];
     return plist[@"Filter"][@"Bundles"] ?: @[];
@@ -160,6 +196,18 @@ int main(void) {
         NSError *error = nil;
         if (![store ensurePolicyWithError:&error]) {
             return 1;
+        }
+        if ([[[store filterPath] lastPathComponent] isEqualToString:@"runtime.plist"]) {
+            return 15;
+        }
+        if (![[[store filterPath] lastPathComponent] hasSuffix:@".plist"]) {
+            return 16;
+        }
+        if ([[[store loaderDylibPath] lastPathComponent] isEqualToString:@"runtime.dylib"]) {
+            return 17;
+        }
+        if (![[[store loaderDylibPath] lastPathComponent] hasSuffix:@".dylib"]) {
+            return 18;
         }
 
         LHPreferencePolicy *defaultPolicy = [LHPreferencePolicy defaultPolicy];
@@ -186,17 +234,25 @@ int main(void) {
             return 5;
         }
 
-        NSURL *exportURL = [store exportSettingsWithError:&error];
-        if (exportURL == nil) {
-            return 6;
+        NSString *firstSeed = @"11111111-1111-1111-1111-111111111111";
+        NSString *secondSeed = @"22222222-2222-2222-2222-222222222222";
+        bundlePolicy.scopeMode = 3;
+        bundlePolicy.customSeed = firstSeed;
+        if (![store setOverridePolicy:bundlePolicy forBundleIdentifier:@"com.example.one" error:&error]) {
+            return 24;
         }
-        NSDictionary *exported = [NSDictionary dictionaryWithContentsOfURL:exportURL];
-        if (![exported[@"format"] isEqualToString:@"com.loupehole.settings"]) {
-            return 7;
+        if (![store replaceCustomSeed:firstSeed withSeed:secondSeed includingBundleIdentifier:@"com.example.two" error:&error]) {
+            return 25;
         }
-        NSArray *exportedModules = exported[@"overrides"][@"com.example.one"][@"mitigations"];
-        if (![exportedModules isEqualToArray:@[@"system.boot_time.composite.synthetic", @"storage.volume_creation_time.foundation.synthetic"]]) {
-            return 8;
+        if (![[store overridePolicyForBundleIdentifier:@"com.example.one"].customSeed isEqualToString:secondSeed]) {
+            return 26;
+        }
+        LHPreferencePolicy *linkedPolicy = [store overridePolicyForBundleIdentifier:@"com.example.two"];
+        if (linkedPolicy.scopeMode != 3 || ![linkedPolicy.customSeed isEqualToString:secondSeed]) {
+            return 27;
+        }
+        if (![store removeOverrideForBundleIdentifier:@"com.example.two" error:&error]) {
+            return 28;
         }
 
         defaultPolicy.enabled = NO;
@@ -220,8 +276,26 @@ int main(void) {
             return 13;
         }
         NSArray *lines = policyLinesAtPath([store policyPath]);
-        if (![lines isEqualToArray:@[@"D|0|0|0|"]]) {
+        if (![lines isEqualToArray:@[@"D|0|0|0||"]]) {
             return 14;
+        }
+        if (![store resetRootSeedWithError:&error]) {
+            return 19;
+        }
+        NSData *firstRootSeed = [NSData dataWithContentsOfFile:[store rootSeedPath]];
+        if ([firstRootSeed length] != 16) {
+            return 20;
+        }
+        struct stat st;
+        if (stat([[store rootSeedPath] fileSystemRepresentation], &st) != 0 || (st.st_mode & 0777) != 0600) {
+            return 21;
+        }
+        if (![store resetRootSeedWithError:&error]) {
+            return 22;
+        }
+        NSData *secondRootSeed = [NSData dataWithContentsOfFile:[store rootSeedPath]];
+        if ([secondRootSeed length] != 16 || [firstRootSeed isEqualToData:secondRootSeed]) {
+            return 23;
         }
     }
     return 0;

@@ -5,6 +5,7 @@
 @property (nonatomic, assign) NSInteger scopeMode;
 @property (nonatomic, assign) BOOL moduleFilterEnabled;
 @property (nonatomic, copy) NSArray<NSNumber *> *moduleIDs;
+@property (nonatomic, copy) NSString *customSeed;
 + (instancetype)defaultPolicy;
 @end
 
@@ -14,9 +15,10 @@
 + (NSArray<NSDictionary<NSString *, id> *> *)availableModules;
 + (NSArray<NSNumber *> *)allModuleIDs;
 + (NSString *)scopeLabelForMode:(NSInteger)mode;
-+ (NSString *)scopeExportLabelForMode:(NSInteger)mode;
-+ (NSInteger)scopeModeForExportLabel:(NSString *)label;
-+ (NSString *)moduleIdentifierForID:(NSNumber *)moduleID;
++ (NSString *)scopeDescriptionForMode:(NSInteger)mode;
++ (BOOL)isValidSeedString:(NSString *)seed;
++ (NSString *)normalizedSeedString:(NSString *)seed;
++ (NSString *)randomSeedString;
 
 - (instancetype)initWithRootPrefix:(NSString *)rootPrefix;
 - (BOOL)ensurePolicyWithError:(NSError **)error;
@@ -29,10 +31,12 @@
 - (BOOL)setOverridePolicy:(LHPreferencePolicy *)policy forBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error;
 - (BOOL)removeOverrideForBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error;
 - (BOOL)resetAllWithError:(NSError **)error;
+- (BOOL)resetRootSeedWithError:(NSError **)error;
+- (BOOL)replaceCustomSeed:(NSString *)oldSeed withSeed:(NSString *)newSeed includingBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error;
 - (BOOL)refreshFilterWithError:(NSError **)error;
-- (NSURL *)exportSettingsWithError:(NSError **)error;
 
 - (NSString *)policyPath;
+- (NSString *)loaderDylibPath;
 - (NSString *)filterPath;
 - (NSString *)preferencesDirectoryPath;
 - (NSString *)supportDirectoryPath;

@@ -72,8 +72,8 @@ int main(void) {
     unsigned char other[32] = {0};
     unsigned char install[32] = {0};
     unsigned char vendor[32] = {0};
-    unsigned char shared[32] = {0};
     unsigned char manual[32] = {0};
+    unsigned char manualOther[32] = {0};
     unsigned char contextFirst[32] = {0};
     unsigned char contextSecond[32] = {0};
     unsigned char contextOther[32] = {0};
@@ -114,11 +114,11 @@ int main(void) {
     if (derive(LHScopeInitPerVendorGroup, "example.one", vendor) != 0) {
         return 4;
     }
-    if (derive(LHScopeInitPerSharedAppGroup, "example.one", shared) != 0) {
-        return 5;
-    }
     if (derive(LHScopeInitManualLinkedGroup, "example.one", manual) != 0) {
         return 6;
+    }
+    if (derive(LHScopeInitManualLinkedGroup, "example.two", manualOther) != 0) {
+        return 5;
     }
     if (derive_name(LHScopeInitPerApp, "example.one", firstName) != 0) {
         return 7;
@@ -139,11 +139,11 @@ int main(void) {
     if (memcmp(first, vendor, sizeof(first)) == 0) {
         return 11;
     }
-    if (memcmp(first, shared, sizeof(first)) == 0) {
-        return 12;
-    }
     if (memcmp(first, manual, sizeof(first)) == 0) {
         return 13;
+    }
+    if (memcmp(manual, manualOther, sizeof(manual)) != 0) {
+        return 12;
     }
     if (strcmp(firstName, secondName) != 0 || strlen(firstName) != 32) {
         return 14;
@@ -183,7 +183,6 @@ int main(void) {
     if (memcmp(fallbackNilFirst.identifier, fallbackNilSecond.identifier, fallbackNilFirst.identifierLength) == 0) {
         return 24;
     }
-
     return 0;
 }
 SOURCE

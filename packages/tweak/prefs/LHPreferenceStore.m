@@ -3,6 +3,7 @@
 #include "LHGeneratedConfig.h"
 #include "LHGeneratedPreferenceMetadata.h"
 
+#include <stdlib.h>
 #include <sys/stat.h>
 
 #ifndef THEOS_PACKAGE_INSTALL_PREFIX
@@ -22,6 +23,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     policy.scopeMode = 0;
     policy.moduleFilterEnabled = NO;
     policy.moduleIDs = @[];
+    policy.customSeed = @"";
     return policy;
 }
 
@@ -31,6 +33,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     copy.scopeMode = self.scopeMode;
     copy.moduleFilterEnabled = self.moduleFilterEnabled;
     copy.moduleIDs = self.moduleIDs ?: @[];
+    copy.customSeed = self.customSeed ?: @"";
     return copy;
 }
 
@@ -98,39 +101,39 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
         case 0: return @"Per app install";
         case 1: return @"Per app";
         case 2: return @"Per vendor group";
-        case 3: return @"Per shared app group";
-        case 4: return @"Manual linked group";
+        case 3: return @"Custom seed";
         default: return @"Unknown";
     }
 }
 
-+ (NSString *)scopeExportLabelForMode:(NSInteger)mode {
++ (NSString *)scopeDescriptionForMode:(NSInteger)mode {
     switch (mode) {
-        case 0: return @"per-app-install";
-        case 1: return @"per-app";
-        case 2: return @"per-vendor-group";
-        case 3: return @"per-shared-app-group";
-        case 4: return @"manual-linked-group";
-        default: return @"unknown";
+        case 0: return @"Values stay stable for the current app install and reset when that app is reinstalled.";
+        case 1: return @"Values stay stable for the app bundle identifier on this device.";
+        case 2: return @"Apps from the same vendor share one value set when a vendor identifier is available.";
+        case 3: return @"Use a static UUID seed. Apps with the same custom seed share one value set.";
+        default: return @"Unknown scope mode.";
     }
 }
 
-+ (NSInteger)scopeModeForExportLabel:(NSString *)label {
-    if ([label isEqualToString:@"per-app-install"]) return 0;
-    if ([label isEqualToString:@"per-app"]) return 1;
-    if ([label isEqualToString:@"per-vendor-group"]) return 2;
-    if ([label isEqualToString:@"per-shared-app-group"]) return 3;
-    if ([label isEqualToString:@"manual-linked-group"]) return 4;
-    return 0;
++ (BOOL)isValidSeedString:(NSString *)seed {
+    return [self normalizedSeedString:seed] != nil;
 }
 
-+ (NSString *)moduleIdentifierForID:(NSNumber *)moduleID {
-    for (NSDictionary<NSString *, id> *module in [self availableModules]) {
-        if ([module[@"moduleID"] isEqualToNumber:moduleID]) {
-            return module[@"identifier"];
-        }
++ (NSString *)normalizedSeedString:(NSString *)seed {
+    if (![seed isKindOfClass:[NSString class]]) {
+        return nil;
     }
-    return [moduleID stringValue];
+    NSString *trimmed = [seed stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([trimmed length] != 36) {
+        return nil;
+    }
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:trimmed];
+    return uuid == nil ? nil : [uuid UUIDString];
+}
+
++ (NSString *)randomSeedString {
+    return [[NSUUID UUID] UUIDString];
 }
 
 - (NSString *)pathByAppendingRootlessComponent:(NSString *)component {
@@ -161,8 +164,16 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [[self preferencesDirectoryPath] stringByAppendingPathComponent:fileName];
 }
 
+- (NSString *)loaderDylibPath {
+    NSString *loaderBaseName = [NSString stringWithUTF8String:LHGeneratedConfigPackageLoaderBaseName];
+    NSString *fileName = [loaderBaseName stringByAppendingPathExtension:@"dylib"];
+    return [[self pathByAppendingRootlessComponent:@"/Library/MobileSubstrate/DynamicLibraries"] stringByAppendingPathComponent:fileName];
+}
+
 - (NSString *)filterPath {
-    return [self pathByAppendingRootlessComponent:@"/Library/MobileSubstrate/DynamicLibraries/runtime.plist"];
+    NSString *loaderBaseName = [NSString stringWithUTF8String:LHGeneratedConfigPackageLoaderBaseName];
+    NSString *fileName = [loaderBaseName stringByAppendingPathExtension:@"plist"];
+    return [[self pathByAppendingRootlessComponent:@"/Library/MobileSubstrate/DynamicLibraries"] stringByAppendingPathComponent:fileName];
 }
 
 - (NSString *)rootSeedPath {
@@ -180,7 +191,21 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:error]) {
         return NO;
     }
+    chmod([directory fileSystemRepresentation], S_IRWXU);
     if (![string writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:error]) {
+        return NO;
+    }
+    chmod([path fileSystemRepresentation], S_IRUSR | S_IWUSR);
+    return YES;
+}
+
+- (BOOL)writeData:(NSData *)data toPath:(NSString *)path error:(NSError **)error {
+    NSString *directory = [path stringByDeletingLastPathComponent];
+    if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:error]) {
+        return NO;
+    }
+    chmod([directory fileSystemRepresentation], S_IRWXU);
+    if (![data writeToFile:path options:NSDataWritingAtomic error:error]) {
         return NO;
     }
     chmod([path fileSystemRepresentation], S_IRUSR | S_IWUSR);
@@ -193,7 +218,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
         chmod([path fileSystemRepresentation], S_IRUSR | S_IWUSR);
         return YES;
     }
-    return [self writeString:@"D|0|0|0|\n" toPath:path error:error];
+    return [self writeString:@"D|0|0|0||\n" toPath:path error:error];
 }
 
 - (NSArray<NSString *> *)policyLinesWithError:(NSError **)error {
@@ -215,13 +240,13 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 }
 
 - (LHPreferencePolicy *)policyFromFields:(NSArray<NSString *> *)fields offset:(NSUInteger)offset {
-    if ([fields count] < offset + 4) {
+    if ([fields count] < offset + 5) {
         return nil;
     }
     NSInteger enabled = [fields[offset] integerValue];
     NSInteger scope = [fields[offset + 1] integerValue];
     NSInteger hasModules = [fields[offset + 2] integerValue];
-    if ((enabled != 0 && enabled != 1) || scope < 0 || scope > 4 || (hasModules != 0 && hasModules != 1)) {
+    if ((enabled != 0 && enabled != 1) || scope < 0 || scope > 3 || (hasModules != 0 && hasModules != 1)) {
         return nil;
     }
 
@@ -248,6 +273,11 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     policy.scopeMode = scope;
     policy.moduleFilterEnabled = hasModules == 1;
     policy.moduleIDs = moduleIDs;
+    NSString *customSeed = [LHPreferenceStore normalizedSeedString:fields[offset + 4]];
+    if (scope == 3 && customSeed == nil) {
+        return nil;
+    }
+    policy.customSeed = customSeed ?: @"";
     return policy;
 }
 
@@ -262,7 +292,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
             if (policy != nil) {
                 parsedDefault = policy;
             }
-        } else if ([kind isEqualToString:@"B"] && [fields count] >= 6) {
+        } else if ([kind isEqualToString:@"B"] && [fields count] >= 7) {
             NSString *bundleIdentifier = fields[1];
             LHPreferencePolicy *policy = [self policyFromFields:fields offset:2];
             if (policy != nil && [self isValidConfigurableBundleIdentifier:bundleIdentifier]) {
@@ -305,20 +335,22 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 }
 
 - (NSString *)lineForDefaultPolicy:(LHPreferencePolicy *)policy {
-    return [NSString stringWithFormat:@"D|%d|%ld|%d|%@",
+    return [NSString stringWithFormat:@"D|%d|%ld|%d|%@|%@",
             policy.enabled ? 1 : 0,
             (long)policy.scopeMode,
             policy.moduleFilterEnabled ? 1 : 0,
-            [self modulesTextForPolicy:policy]];
+            [self modulesTextForPolicy:policy],
+            [LHPreferenceStore normalizedSeedString:policy.customSeed] ?: @""];
 }
 
 - (NSString *)lineForBundleIdentifier:(NSString *)bundleIdentifier policy:(LHPreferencePolicy *)policy {
-    return [NSString stringWithFormat:@"B|%@|%d|%ld|%d|%@",
+    return [NSString stringWithFormat:@"B|%@|%d|%ld|%d|%@|%@",
             bundleIdentifier,
             policy.enabled ? 1 : 0,
             (long)policy.scopeMode,
             policy.moduleFilterEnabled ? 1 : 0,
-            [self modulesTextForPolicy:policy]];
+            [self modulesTextForPolicy:policy],
+            [LHPreferenceStore normalizedSeedString:policy.customSeed] ?: @""];
 }
 
 - (NSString *)modulesTextForPolicy:(LHPreferencePolicy *)policy {
@@ -332,12 +364,35 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [items componentsJoinedByString:@","];
 }
 
+- (BOOL)validatePolicy:(LHPreferencePolicy *)policy error:(NSError **)error {
+    if (policy.scopeMode < 0 || policy.scopeMode > 3) {
+        if (error != NULL) {
+            *error = [self errorWithDescription:@"Invalid scope."];
+        }
+        return NO;
+    }
+    if (policy.scopeMode == 3 && ![LHPreferenceStore isValidSeedString:policy.customSeed]) {
+        if (error != NULL) {
+            *error = [self errorWithDescription:@"Custom seed must be a UUID."];
+        }
+        return NO;
+    }
+    return YES;
+}
+
 - (BOOL)writeDefaultPolicy:(LHPreferencePolicy *)defaultPolicy overrides:(NSDictionary<NSString *, LHPreferencePolicy *> *)overrides error:(NSError **)error {
-    NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithObject:[self lineForDefaultPolicy:defaultPolicy ?: [LHPreferencePolicy defaultPolicy]]];
+    LHPreferencePolicy *defaultToWrite = defaultPolicy ?: [LHPreferencePolicy defaultPolicy];
+    if (![self validatePolicy:defaultToWrite error:error]) {
+        return NO;
+    }
+    NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithObject:[self lineForDefaultPolicy:defaultToWrite]];
     NSArray<NSString *> *bundleIDs = [[overrides allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
     for (NSString *bundleID in bundleIDs) {
         LHPreferencePolicy *policy = overrides[bundleID];
         if (policy != nil && [self isValidConfigurableBundleIdentifier:bundleID]) {
+            if (![self validatePolicy:policy error:error]) {
+                return NO;
+            }
             [lines addObject:[self lineForBundleIdentifier:bundleID policy:policy]];
         }
     }
@@ -399,6 +454,52 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+- (BOOL)resetRootSeedWithError:(NSError **)error {
+    uint8_t bytes[16] = { 0 };
+    arc4random_buf(bytes, sizeof(bytes));
+    NSData *data = [NSData dataWithBytes:bytes length:sizeof(bytes)];
+    return [self writeData:data toPath:[self rootSeedPath] error:error];
+}
+
+- (BOOL)replaceCustomSeed:(NSString *)oldSeed withSeed:(NSString *)newSeed includingBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error {
+    NSString *normalizedOld = [LHPreferenceStore normalizedSeedString:oldSeed];
+    NSString *normalizedNew = [LHPreferenceStore normalizedSeedString:newSeed];
+    if (normalizedOld == nil || normalizedNew == nil) {
+        if (error != NULL) {
+            *error = [self errorWithDescription:@"Invalid custom seed."];
+        }
+        return NO;
+    }
+
+    NSArray<NSString *> *lines = [self policyLinesWithError:error];
+    if (lines == nil) {
+        return NO;
+    }
+
+    LHPreferencePolicy *defaultPolicy = nil;
+    NSMutableDictionary<NSString *, LHPreferencePolicy *> *overrides = [self mutableOverridesFromLines:lines defaultPolicy:&defaultPolicy];
+    NSArray<NSString *> *bundleIDs = [[overrides allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)];
+    for (NSString *bundleID in bundleIDs) {
+        LHPreferencePolicy *policy = [overrides[bundleID] copy];
+        if (policy.scopeMode == 3 && [[LHPreferenceStore normalizedSeedString:policy.customSeed] isEqualToString:normalizedOld]) {
+            policy.customSeed = normalizedNew;
+            overrides[bundleID] = policy;
+        }
+    }
+
+    if ([bundleIdentifier length] > 0 && [self isValidConfigurableBundleIdentifier:bundleIdentifier]) {
+        LHPreferencePolicy *policy = [overrides[bundleIdentifier] ?: defaultPolicy ?: [LHPreferencePolicy defaultPolicy] copy];
+        policy.scopeMode = 3;
+        policy.customSeed = normalizedNew;
+        overrides[bundleIdentifier] = policy;
+    }
+
+    if (![self writeDefaultPolicy:defaultPolicy overrides:overrides error:error]) {
+        return NO;
+    }
+    return [self refreshFilterWithError:error];
+}
+
 - (BOOL)refreshFilterWithError:(NSError **)error {
     LHPreferencePolicy *defaultPolicy = [self defaultPolicy];
     NSDictionary<NSString *, LHPreferencePolicy *> *overrides = [self overridePolicies];
@@ -449,70 +550,6 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     }
     unichar first = [bundleIdentifier characterAtIndex:0];
     return [[NSCharacterSet alphanumericCharacterSet] characterIsMember:first];
-}
-
-- (NSDictionary *)exportDictionaryForPolicy:(LHPreferencePolicy *)policy {
-    id mitigations = @"all";
-    if (policy.moduleFilterEnabled) {
-        NSMutableArray<NSString *> *identifiers = [NSMutableArray array];
-        for (NSNumber *moduleID in policy.moduleIDs) {
-            [identifiers addObject:[[self class] moduleIdentifierForID:moduleID]];
-        }
-        mitigations = identifiers;
-    }
-    return @{
-        @"enabled": @(policy.enabled),
-        @"scope": [[self class] scopeExportLabelForMode:policy.scopeMode],
-        @"mitigations": mitigations
-    };
-}
-
-- (NSURL *)exportSettingsWithError:(NSError **)error {
-    LHPreferencePolicy *defaultPolicy = [self defaultPolicy];
-    NSDictionary<NSString *, LHPreferencePolicy *> *overrides = [self overridePolicies];
-    NSMutableDictionary *exportedOverrides = [NSMutableDictionary dictionary];
-    for (NSString *bundleID in [[overrides allKeys] sortedArrayUsingSelector:@selector(localizedStandardCompare:)]) {
-        exportedOverrides[bundleID] = [self exportDictionaryForPolicy:overrides[bundleID]];
-    }
-
-    NSMutableArray *modules = [NSMutableArray array];
-    for (NSDictionary *module in [[self class] availableModules]) {
-        [modules addObject:@{
-            @"id": module[@"identifier"],
-            @"moduleID": module[@"moduleID"]
-        }];
-    }
-
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    formatter.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
-    formatter.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss'Z'";
-    NSDictionary *export = @{
-        @"format": @"com.loupehole.settings",
-        @"schemaVersion": @1,
-        @"exportedAt": [formatter stringFromDate:[NSDate date]],
-        @"buildSeed": [self buildSeedString] ?: @"",
-        @"modules": modules,
-        @"default": [self exportDictionaryForPolicy:defaultPolicy],
-        @"overrides": exportedOverrides
-    };
-
-    NSData *data = [NSPropertyListSerialization dataWithPropertyList:export format:NSPropertyListXMLFormat_v1_0 options:0 error:error];
-    if (data == nil) {
-        return nil;
-    }
-
-    NSArray<NSString *> *documents = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *directory = [documents firstObject] ?: NSTemporaryDirectory();
-    NSDateFormatter *nameFormatter = [[NSDateFormatter alloc] init];
-    nameFormatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    nameFormatter.dateFormat = @"yyyyMMdd-HHmmss";
-    NSString *fileName = [NSString stringWithFormat:@"Loupehole-Settings-%@.lh", [nameFormatter stringFromDate:[NSDate date]]];
-    NSString *path = [directory stringByAppendingPathComponent:fileName];
-    if (![data writeToFile:path options:NSDataWritingAtomic error:error]) {
-        return nil;
-    }
-    return [NSURL fileURLWithPath:path];
 }
 
 - (NSString *)buildSeedString {

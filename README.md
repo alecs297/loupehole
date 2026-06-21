@@ -23,7 +23,7 @@ Package work must support clean install, upgrade, disable, and uninstall paths. 
 Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
-- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs a PreferenceLoader Settings bundle for default third-party app targeting, per-bundle overrides, scope, mitigation-list settings, debug paths/seeds, global reset, and `.lh` settings export.
+- `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs a PreferenceLoader Settings bundle for default third-party app targeting, per-bundle overrides, scope/custom-seed settings, mitigation-list settings, debug paths/seeds, root seed reset, and global reset.
 
 ## Non-goals
 

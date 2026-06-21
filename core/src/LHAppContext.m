@@ -1,9 +1,7 @@
 #import "LHAppContext.h"
 
 #import <Foundation/Foundation.h>
-#import <CoreFoundation/CoreFoundation.h>
 
-#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -92,51 +90,6 @@ static NSString *LHAppContextOriginalIDFVString(void) {
     return uuidString;
 }
 
-typedef CFTypeRef (*LHSecTaskCreateFromSelfFn)(CFAllocatorRef allocator);
-typedef CFTypeRef (*LHSecTaskCopyValueForEntitlementFn)(CFTypeRef task, CFStringRef entitlement, CFErrorRef *error);
-
-static void *LHAppContextSecuritySymbol(const char *name) {
-    void *symbol = dlsym(RTLD_DEFAULT, name);
-    if (symbol != 0) {
-        return symbol;
-    }
-
-    void *security = dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY | RTLD_LOCAL);
-    if (security == 0) {
-        return 0;
-    }
-    return dlsym(security, name);
-}
-
-static NSString *LHAppContextFirstApplicationGroup(void) {
-    LHSecTaskCreateFromSelfFn createTask = (LHSecTaskCreateFromSelfFn)LHAppContextSecuritySymbol("SecTaskCreateFromSelf");
-    LHSecTaskCopyValueForEntitlementFn copyEntitlement = (LHSecTaskCopyValueForEntitlementFn)LHAppContextSecuritySymbol("SecTaskCopyValueForEntitlement");
-    if (createTask == 0 || copyEntitlement == 0) {
-        return nil;
-    }
-
-    CFTypeRef task = createTask(kCFAllocatorDefault);
-    if (task == 0) {
-        return nil;
-    }
-
-    CFTypeRef value = copyEntitlement(task, CFSTR("com.apple.security.application-groups"), 0);
-    CFRelease(task);
-    if (value == 0) {
-        return nil;
-    }
-
-    NSString *result = nil;
-    if (CFGetTypeID(value) == CFArrayGetTypeID() && CFArrayGetCount((CFArrayRef)value) > 0) {
-        CFTypeRef first = CFArrayGetValueAtIndex((CFArrayRef)value, 0);
-        if (first != 0 && CFGetTypeID(first) == CFStringGetTypeID()) {
-            result = [(NSString *)first copy];
-        }
-    }
-    CFRelease(value);
-    return result;
-}
-
 bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mode) {
     if (!LHAppContextInitCurrentBundle(context)) {
         return false;
@@ -201,10 +154,6 @@ bool LHAppContextResolveScope(LHAppContext *context, LHScopeMode mode) {
         case LHScopeModePerVendorGroup: {
             NSString *vendorIdentifier = LHAppContextOriginalIDFVString();
             return LHScopeInitPerVendorGroup(&context->scope, [vendorIdentifier UTF8String] ?: identifier);
-        }
-        case LHScopeModePerSharedAppGroup: {
-            NSString *appGroupIdentifier = LHAppContextFirstApplicationGroup();
-            return LHScopeInitPerSharedAppGroup(&context->scope, [appGroupIdentifier UTF8String] ?: identifier);
         }
         case LHScopeModeManualLinkedGroup:
             return LHScopeInitManualLinkedGroup(&context->scope, identifier);

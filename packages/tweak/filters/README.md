@@ -1,8 +1,10 @@
 # Filters
 
-`../runtime.plist` is the package injection filter. It intentionally contains an
-empty `Bundles` allowlist so the rootless package starts with no global
-injection.
+`../Filter.plist` is the source template for the package injection filter. The
+rootless package installs it next to the tweak dylib as
+`<generated-loader-basename>.plist`, with the same generated basename as the
+dylib. The template intentionally contains an empty `Bundles` allowlist so the
+rootless package starts with no global injection.
 
 The generated package installs `LoupeholePreferences.bundle`, whose Settings
 store edits package policy entries and recomputes this filter. When the default

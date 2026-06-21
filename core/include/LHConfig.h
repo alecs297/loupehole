@@ -27,6 +27,8 @@ typedef struct LHRuntimeConfig {
     bool moduleFilterEnabled;
     uint32_t enabledModuleIDs[LHRuntimeConfigMaxEnabledModules];
     size_t enabledModuleIDCount;
+    bool customSeedEnabled;
+    LHSeed customSeed;
     LHSeed instanceSeed;
 } LHRuntimeConfig;
 

@@ -29,6 +29,19 @@ static int is_hex_name(const char *name) {
     return 1;
 }
 
+static int is_loader_basename(const char *name) {
+    if (strlen(name) != 32 || name[0] != 'x') {
+        return 0;
+    }
+    for (size_t i = 1; i < 32; i++) {
+        char c = name[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) {
+            return 0;
+        }
+    }
+    return strcmp(name, "runtime") != 0;
+}
+
 static int seed_file_size_is_16(const char *path) {
     struct stat st;
     return stat(path, &st) == 0 && st.st_size == 16;
@@ -141,6 +154,7 @@ static int resolve_for_scope(LHScopeMode mode, const char *identifier, const LHS
     config.instanceSeed = *buildSeed;
 
     LHAppContext context;
+    memset(&context, 0, sizeof(context));
     if (!LHScopeInit(&context.scope, mode, (const uint8_t *)identifier, strlen(identifier))) {
         return 0;
     }
@@ -152,7 +166,34 @@ static int resolve_for_scope(LHScopeMode mode, const char *identifier, const LHS
     return 1;
 }
 
+static int resolve_for_custom_seed(const char *seedString, const char *identifier, const LHSeed *buildSeed, LHSeed *activeSeed) {
+    LHRuntimeConfig config = LHRuntimeConfigDefault();
+    config.stateProviderKind = LHStateProviderKindPackage;
+    config.instanceSeed = *buildSeed;
+    config.scopeMode = LHScopeModeManualLinkedGroup;
+    config.customSeedEnabled = true;
+    if (!LHSeedParseUUID(seedString, &config.customSeed)) {
+        return 0;
+    }
+
+    LHAppContext context;
+    memset(&context, 0, sizeof(context));
+    if (!LHScopeInitManualLinkedGroup(&context.scope, identifier)) {
+        return 0;
+    }
+    if (!LHSeedProviderResolveActiveSeed(&config, &context)) {
+        return 0;
+    }
+
+    *activeSeed = config.instanceSeed;
+    return 1;
+}
+
 int main(void) {
+    if (!is_loader_basename(LHGeneratedConfigPackageLoaderBaseName)) {
+        return 29;
+    }
+
     LHRuntimeConfig buildConfig = LHRuntimeConfigDefault();
     LHSeed buildSeed = buildConfig.instanceSeed;
     LHSeed installFirst = {0};
@@ -161,8 +202,9 @@ int main(void) {
     LHSeed appFirst = {0};
     LHSeed appSecond = {0};
     LHSeed otherApp = {0};
-    LHSeed sharedFirst = {0};
-    LHSeed sharedSecond = {0};
+    LHSeed customFirst = {0};
+    LHSeed customSecond = {0};
+    LHSeed customOtherSeed = {0};
 
     if (!select_app_install_home("install-one")) {
         return 20;
@@ -212,17 +254,26 @@ int main(void) {
         return 6;
     }
 
-    if (!resolve_for_scope(LHScopeModePerSharedAppGroup, "group.example.shared", &buildSeed, &sharedFirst)) {
-        return 7;
+    if (!resolve_for_custom_seed("11111111-1111-1111-1111-111111111111", "com.example.one", &buildSeed, &customFirst)) {
+        return 30;
     }
-    if (!resolve_for_scope(LHScopeModePerSharedAppGroup, "group.example.shared", &buildSeed, &sharedSecond)) {
-        return 8;
+    if (!resolve_for_custom_seed("11111111-1111-1111-1111-111111111111", "com.example.two", &buildSeed, &customSecond)) {
+        return 31;
     }
-    if (memcmp(sharedFirst.bytes, sharedSecond.bytes, sizeof(sharedFirst.bytes)) != 0) {
-        return 9;
+    if (memcmp(customFirst.bytes, customSecond.bytes, sizeof(customFirst.bytes)) != 0) {
+        return 32;
     }
-    if (memcmp(appFirst.bytes, sharedFirst.bytes, sizeof(appFirst.bytes)) == 0) {
-        return 10;
+    if (memcmp(customFirst.bytes, appFirst.bytes, sizeof(customFirst.bytes)) == 0) {
+        return 33;
+    }
+    if (memcmp(customFirst.bytes, buildSeed.bytes, sizeof(customFirst.bytes)) == 0) {
+        return 34;
+    }
+    if (!resolve_for_custom_seed("22222222-2222-2222-2222-222222222222", "com.example.one", &buildSeed, &customOtherSeed)) {
+        return 35;
+    }
+    if (memcmp(customFirst.bytes, customOtherSeed.bytes, sizeof(customFirst.bytes)) == 0) {
+        return 36;
     }
 
     if (!has_root_seed_file()) {

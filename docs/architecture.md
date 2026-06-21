@@ -145,14 +145,16 @@ No remote config. No analytics.
 All spoofed values should flow through the config/profile layer. Hook modules should contain selectors and system API glue, not project-specific identifiers, unique salts, or hand-coded spoof return values.
 
 For the rootless package, keep injection and runtime behavior separate.
-`runtime.plist` is only the Substrate/loader filter that decides which bundles
-load the dylib. Runtime behavior comes from a package-owned policy file under a
-generated preferences directory. The policy path is derived from the build seed
-so the runtime can find it before loading the package root install seed. The
-root install seed remains the practical seed for scoped runtime values and
-state. The package policy contains a default behavior plus per-bundle overrides
-for enabled/off state, scope mode, and the compiled mitigation module IDs to
-install.
+The Substrate/loader filter decides which bundles load the dylib; runtime
+behavior comes from a package-owned policy file under a generated preferences
+directory. The loader directory remains the standard
+`MobileSubstrate/DynamicLibraries` location, but the installed dylib and filter
+plist share a generated seed-derived basename. The policy path and loader
+basename are derived from the build seed so the runtime and Settings bundle can
+find them before loading the package root install seed. The root install seed
+remains the practical seed for scoped runtime values and state. The package
+policy contains a default behavior plus per-bundle overrides for enabled/off
+state, scope mode, and the compiled mitigation module IDs to install.
 
 The package installs with an empty filter and a default-off policy. When the
 default profile is enabled, the Settings store uses the UIKit app-class filter
@@ -185,13 +187,14 @@ Supported scope modes:
 - Per app: one stable namespace per bundle ID.
 - Per vendor group: one namespace shared by apps that report the same original
   pre-spoof `identifierForVendor`, or by explicit vendor policy when configured.
-- Per shared app group: one namespace shared by apps with a real application
-  group entitlement, or by explicit package policy when configured.
-- Manual linked group: an explicit user-created group identifier or preshared
-  secret used across containers.
+- Custom seed/manual linked group: an explicit user-provided UUID used as the
+  active seed. The Settings UI exposes this today as Custom seed. Future manual
+  linked groups should be implemented as a grouping UI over the same custom seed
+  value, without storing separate group entities or app-group-derived runtime
+  scope state.
 
 If a scope resolver cannot provide a usable identifier, such as a missing,
-empty, or oversized bundle/vendor/group string, the scope layer must use a fresh
+empty, or oversized bundle/vendor string, the scope layer must use a fresh
 random alphanumeric fallback identifier. This fallback is intentionally
 ephemeral and non-descriptive; it should not use readable constants such as
 `app`, `vendor`, or project names.
@@ -253,8 +256,11 @@ scope:
   random app-container marker. The marker path is opaque and seed-derived; the
   marker content is generated with system randomness and intentionally lives in
   app data so app reinstall rotates the seed.
-- Per app, vendor group, shared app group, and manual linked group derive from
-  the practical seed plus scope mode and scope identifier.
+- Per app and vendor group derive from the practical seed plus scope mode and
+  scope identifier.
+- Custom seed/manual linked group uses the configured UUID as the active seed
+  directly. In package builds this deliberately overrides the package root seed
+  for the selected profile or bundle.
 - Hook and resolver code ask policy/state APIs for values and never inspect
   where seed material came from.
 
@@ -263,7 +269,8 @@ seed only. They do not eagerly generate app-specific seeds, because install time
 does not know every authoritative scope. Per-app-install marker creation stays
 tied to the same scope resolver used at runtime. Future preference UI or package
 helpers can rotate/reset app markers, scoped state, or the root install seed
-explicitly.
+explicitly. The built-in Settings debug panel can rotate the root install seed
+after a destructive confirmation; existing state is not migrated or deleted.
 
 ### Storage Guard Hardening
 
@@ -278,7 +285,7 @@ Keychain guard behavior:
 - Allow Loupehole's own state provider to read, write, update, and delete through an explicit reentrancy bypass.
 - Leave the app's storage call unfiltered when ownership is uncertain.
 
-Shared App Group or file-backed guard behavior is optional and stricter because the API surface is broader. It may require filtering `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value paths. Prefer opaque filenames and avoid shared containers unless shared scope is explicitly needed.
+Shared App Group or file-backed guard behavior is optional and stricter because the API surface is broader. It may require filtering `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value paths. Prefer opaque filenames and avoid shared containers unless shared storage is explicitly needed.
 
 This module is separate from `KeychainHooks`. `KeychainHooks` mitigates app reinstall tracking and app-generated persistent identifiers. `StorageGuardHooks` protects Loupehole's own state from discovery or accidental deletion when that state must live in a target-visible backend.
 

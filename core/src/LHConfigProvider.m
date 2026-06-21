@@ -18,6 +18,8 @@ typedef struct LHParsedPolicy {
     bool moduleFilterEnabled;
     uint32_t moduleIDs[LHRuntimeConfigMaxEnabledModules];
     size_t moduleIDCount;
+    bool customSeedEnabled;
+    LHSeed customSeed;
 } LHParsedPolicy;
 
 static NSString *LHConfigProviderPackagePreferencesBasePath(void) {
@@ -119,7 +121,7 @@ static bool LHConfigProviderParseModules(NSString *text, LHParsedPolicy *policy)
 }
 
 static bool LHConfigProviderParsePolicyFields(NSArray<NSString *> *fields, NSUInteger offset, LHParsedPolicy *policy) {
-    if (fields == nil || policy == 0 || [fields count] < offset + 4) {
+    if (fields == nil || policy == 0 || [fields count] < offset + 5) {
         return false;
     }
 
@@ -140,6 +142,16 @@ static bool LHConfigProviderParsePolicyFields(NSArray<NSString *> *fields, NSUIn
     if (!LHConfigProviderParseModules(fields[offset + 3], &parsed)) {
         return false;
     }
+    NSString *customSeedText = fields[offset + 4];
+    if ([customSeedText length] > 0) {
+        if (!LHSeedParseUUID([customSeedText UTF8String], &parsed.customSeed)) {
+            return false;
+        }
+        parsed.customSeedEnabled = true;
+    }
+    if (scopeMode == LHScopeModeManualLinkedGroup && !parsed.customSeedEnabled) {
+        return false;
+    }
 
     *policy = parsed;
     return true;
@@ -154,6 +166,8 @@ static void LHConfigProviderApplyParsedPolicy(LHRuntimeConfig *config, const LHP
     config->scopeMode = policy->scopeMode;
     config->moduleFilterEnabled = policy->moduleFilterEnabled;
     config->enabledModuleIDCount = policy->moduleIDCount;
+    config->customSeedEnabled = policy->customSeedEnabled;
+    config->customSeed = policy->customSeed;
     memset(config->enabledModuleIDs, 0, sizeof(config->enabledModuleIDs));
     if (policy->moduleIDCount > 0) {
         memcpy(config->enabledModuleIDs, policy->moduleIDs, policy->moduleIDCount * sizeof(policy->moduleIDs[0]));
@@ -189,7 +203,9 @@ bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppCont
             .enabled = config->policyEnabled,
             .scopeMode = config->scopeMode,
             .moduleFilterEnabled = config->moduleFilterEnabled,
-            .moduleIDCount = config->enabledModuleIDCount
+            .moduleIDCount = config->enabledModuleIDCount,
+            .customSeedEnabled = config->customSeedEnabled,
+            .customSeed = config->customSeed
         };
         if (effective.moduleIDCount > 0) {
             memcpy(effective.moduleIDs, config->enabledModuleIDs, effective.moduleIDCount * sizeof(effective.moduleIDs[0]));
@@ -209,7 +225,7 @@ bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppCont
                 if (LHConfigProviderParsePolicyFields(fields, 1, &parsed)) {
                     effective = parsed;
                 }
-            } else if ([kind isEqualToString:@"B"] && bundleIdentifier != nil && [fields count] >= 6 && [fields[1] isEqualToString:bundleIdentifier]) {
+            } else if ([kind isEqualToString:@"B"] && bundleIdentifier != nil && [fields count] >= 7 && [fields[1] isEqualToString:bundleIdentifier]) {
                 LHParsedPolicy parsed;
                 if (LHConfigProviderParsePolicyFields(fields, 2, &parsed)) {
                     effective = parsed;

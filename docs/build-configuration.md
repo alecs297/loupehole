@@ -330,10 +330,14 @@ dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb
 The package build compiles the same runtime with `LHStateProviderKindPackage`,
 stages the tweak and conservative empty filter under `/var/jb`, stages the
 generated package layout, and runs `scripts/verify/package-layout-check.sh`
-against the resulting `.deb`. The package-owned state parent directory, package
-seed root directory, package root seed filename, and package policy filename are
-derived at build time from the configured instance seed and emitted into the
-runtime config and maintainer scripts.
+against the resulting `.deb`. The Substrate loader directory is fixed by the
+loader, but the package loader basename is derived from the configured instance
+seed. The installed pair is therefore
+`/var/jb/Library/MobileSubstrate/DynamicLibraries/<generated>.dylib` and
+`/var/jb/Library/MobileSubstrate/DynamicLibraries/<generated>.plist`. The
+package-owned state parent directory, package seed root directory, package root
+seed filename, package policy filename, and package loader basename are emitted
+into the runtime config and maintainer scripts.
 
 Theos staging still drives the package layout, but local deb assembly uses
 `dpkg-deb --root-owner-group` through repo wrappers instead of fakeroot. This
@@ -351,16 +355,17 @@ effective policy is off, the runtime exits before scope, seed, or hook setup. If
 the effective policy is on, `LHSeedProvider` uses the root install seed as the
 package practical seed. The default per-app-install scope also creates an opaque
 random marker in the target app's application support data, at a path derived
-from the practical seed. Stable per-app, vendor-group, shared-app-group, and
-manual-linked-group scopes derive directly from the practical seed plus the
-resolved scope identifier.
+from the practical seed. Stable per-app and vendor-group scopes derive directly
+from the practical seed plus the resolved scope identifier. Custom seed scope
+uses the configured UUID as the active seed directly, so it deliberately
+overrides the package root seed for the selected default profile or bundle.
 
 The package also installs `LoupeholePreferences.bundle` plus a PreferenceLoader
-entry for the built-in Settings menu. The menu edits
-`/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist` for injection
-and the generated package policy file for default/per-bundle runtime settings.
-Those runtime settings are enabled/off state, scope, and the compiled mitigation
-module list. The package starts from an empty `Bundles` filter and a default-off
+entry for the built-in Settings menu. The menu derives and edits the generated
+loader filter plist for injection and the generated package policy file for
+default/per-bundle runtime settings.
+Those runtime settings are enabled/off state, scope, custom seed, and the
+compiled mitigation module list. The package starts from an empty `Bundles` filter and a default-off
 policy, so no app is injected on install. When the default profile is enabled,
 the Settings store writes the broad UIKit app-class filter (`com.apple.UIKit`)
 instead of enumerating installed app bundles. The runtime then limits work to
@@ -371,11 +376,10 @@ makes that app an effective no-op. When the default policy is off, only
 explicitly enabled bundle rows are written directly to the filter. Restart the
 target app after changing filter or policy settings.
 
-The Settings menu exposes default profile enabled/off state, scope, mitigation
-toggles, a third-party app override list, per-app override reset, global reset,
-debug seed/path display, and `.lh` export. The export is an XML property list
-using dotted mitigation IDs so exports remain meaningful across installs where
-numeric module IDs could differ.
+The Settings menu exposes default profile enabled/off state, scope, custom seed
+editing/linking, mitigation toggles, a third-party app override list, per-app
+override reset, global reset, debug seed/path explanations, and a destructively
+confirmed root seed reset.
 
 On install, `postinst` keeps the generated policy file and loader filter
 non-world-readable and owned by `mobile` so the Settings app can update them

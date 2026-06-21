@@ -9,10 +9,11 @@ LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
 
-TWEAK_NAME := runtime
+LH_LOADER_BASENAME ?= runtime
+TWEAK_NAME := $(LH_LOADER_BASENAME)
 BUNDLE_NAME := LoupeholePreferences
 
-runtime_FILES := \
+$(LH_LOADER_BASENAME)_FILES := \
 	sources/Runtime.mm \
 	$(LH_SELECTED_MITIGATION_SOURCES) \
 	$(LH_SELECTED_POLICY_VALUE_SOURCES) \
@@ -36,7 +37,7 @@ runtime_FILES := \
 	../../core/src/LHStateProvider.m \
 	../../core/src/LHValueQuantizer.c
 
-runtime_CFLAGS += \
+$(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \
 	-I../../core/generated \
 	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
@@ -50,12 +51,12 @@ runtime_CFLAGS += \
 	-DLH_ENABLE_DIAGNOSTICS=$(LH_ENABLE_DIAGNOSTICS) \
 	-DLH_DEFAULT_STATE_PROVIDER_KIND=$(LH_STATE_PROVIDER_KIND)
 
-runtime_CCFLAGS += $(runtime_CFLAGS) -fvisibility-inlines-hidden
-runtime_OBJCFLAGS += $(runtime_CFLAGS)
-runtime_LDFLAGS += -Wl,-dead_strip -Wl,-x -Wl,-install_name,@rpath/runtime.dylib
-runtime_FRAMEWORKS := Foundation $(LH_SELECTED_FRAMEWORKS)
-runtime_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
-runtime_LIBRARIES := $(LH_SELECTED_LIBRARIES)
+$(LH_LOADER_BASENAME)_CCFLAGS += $($(LH_LOADER_BASENAME)_CFLAGS) -fvisibility-inlines-hidden
+$(LH_LOADER_BASENAME)_OBJCFLAGS += $($(LH_LOADER_BASENAME)_CFLAGS)
+$(LH_LOADER_BASENAME)_LDFLAGS += -Wl,-dead_strip -Wl,-x -Wl,-install_name,@rpath/$(LH_LOADER_BASENAME).dylib
+$(LH_LOADER_BASENAME)_FRAMEWORKS := Foundation $(LH_SELECTED_FRAMEWORKS)
+$(LH_LOADER_BASENAME)_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
+$(LH_LOADER_BASENAME)_LIBRARIES := $(LH_SELECTED_LIBRARIES)
 
 LoupeholePreferences_FILES := \
 	prefs/LHPreferenceStore.m \

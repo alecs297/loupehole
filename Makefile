@@ -15,7 +15,8 @@ THEOS_FINALPACKAGE := 1
 THEOS_OBJ_CONFIG := release
 endif
 
-TARGET_DYLIB ?= packages/tweak/.theos/obj/runtime.dylib
+LOADER_BASENAME = $(shell awk -F'"' '/LHGeneratedConfigPackageLoaderBaseName/ { print $$2; found = 1 } END { if (!found) print "runtime" }' core/generated/LHGeneratedConfig.c 2>/dev/null || printf runtime)
+TARGET_DYLIB ?= packages/tweak/.theos/obj/$(LOADER_BASENAME).dylib
 ARTIFACT_DIR ?= dist
 FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 PACKAGE_NAME ?= com.loupehole.runtime

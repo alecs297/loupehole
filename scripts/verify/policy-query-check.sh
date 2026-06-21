@@ -189,16 +189,22 @@ target_env() {
     "$tmpdir/package_policy_check" "$@"
 }
 
-printf 'D|0|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|0|0|0||\n' > "$policy_dir/$policy_file"
 target_env disabled
 
-printf 'D|1|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|1|0|0||\n' > "$policy_dir/$policy_file"
 target_env enabled
 
-printf 'D|1|0|0|\nB|com.example.host|0|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|1|3|0||11111111-1111-1111-1111-111111111111\n' > "$policy_dir/$policy_file"
+target_env enabled
+
+printf 'D|1|3|0||not-a-uuid\n' > "$policy_dir/$policy_file"
 target_env disabled
 
-printf 'D|1|0|0|\n' > "$policy_dir/$policy_file"
+printf 'D|1|0|0||\nB|com.example.host|0|0|0||\n' > "$policy_dir/$policy_file"
+target_env disabled
+
+printf 'D|1|0|0||\n' > "$policy_dir/$policy_file"
 LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
 LH_APP_CONTEXT_TEST_BUNDLE_ID=com.apple.Maps \
 LH_APP_CONTEXT_TEST_BUNDLE_PATH=/Applications/Maps.app \

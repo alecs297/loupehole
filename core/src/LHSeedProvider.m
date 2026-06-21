@@ -45,6 +45,7 @@ static bool LHSeedProviderWriteSeedAtPath(NSString *path, const LHSeed *seed) {
     if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil]) {
         return false;
     }
+    chmod([directory fileSystemRepresentation], S_IRWXU);
 
     NSData *data = LHSeedProviderDataFromSeed(seed);
     if (![data writeToFile:path options:NSDataWritingAtomic error:nil]) {
@@ -156,6 +157,11 @@ static bool LHSeedProviderResolvePracticalSeed(const LHRuntimeConfig *config, LH
         return false;
     }
 
+    if (config->scopeMode == LHScopeModeManualLinkedGroup && config->customSeedEnabled) {
+        *practicalSeed = config->customSeed;
+        return true;
+    }
+
     *practicalSeed = config->instanceSeed;
     if (config->stateProviderKind != LHStateProviderKindPackage) {
         return true;
@@ -205,6 +211,8 @@ bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext
             if (!LHSeedProviderResolveAppInstallSeed(&practicalSeed, context, &activeSeed)) {
                 return false;
             }
+        } else if (context->scope.mode == LHScopeModeManualLinkedGroup && config->customSeedEnabled) {
+            activeSeed = practicalSeed;
         } else if (!LHSeedProviderResolveDeterministicScopedSeed(&practicalSeed, context, &activeSeed)) {
             return false;
         }
