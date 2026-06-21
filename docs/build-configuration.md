@@ -358,7 +358,8 @@ random marker in the target app's application support data, at a path derived
 from the practical seed. Stable per-app and vendor-group scopes derive directly
 from the practical seed plus the resolved scope identifier. Custom seed scope
 uses the configured UUID as the active seed directly, so it deliberately
-overrides the package root seed for the selected default profile or bundle.
+overrides the package root seed for the selected default policy or bundle
+override.
 
 The package also installs `LoupeholePreferences.bundle` plus a PreferenceLoader
 entry for the built-in Settings menu. The menu derives and edits the generated
@@ -366,7 +367,7 @@ loader filter plist for injection and the generated package policy file for
 default/per-bundle runtime settings.
 Those runtime settings are enabled/off state, scope, custom seed, and the
 compiled mitigation module list. The package starts from an empty `Bundles` filter and a default-off
-policy, so no app is injected on install. When the default profile is enabled,
+policy, so no app is injected on install. When the default policy is enabled,
 the Settings store writes the broad UIKit app-class filter (`com.apple.UIKit`)
 instead of enumerating installed app bundles. The runtime then limits work to
 targetable third-party app processes, excluding system bundle IDs and
@@ -376,7 +377,7 @@ makes that app an effective no-op. When the default policy is off, only
 explicitly enabled bundle rows are written directly to the filter. Restart the
 target app after changing filter or policy settings.
 
-The Settings menu exposes default profile enabled/off state, scope, custom seed
+The Settings menu exposes default policy enabled/off state, scope, custom seed
 editing/linking, mitigation toggles, a third-party app override list, per-app
 override reset, global reset, debug seed/path explanations, and a destructively
 confirmed root seed reset.

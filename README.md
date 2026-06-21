@@ -16,7 +16,7 @@ The central design principle is not "make every device random." The safer target
 
 ## Development Environment
 
-The canonical local build environment is macOS with Xcode, Theos, `ldid`, and `dpkg-deb`. Development should start with a plain injectable `.dylib`, then wrap the same runtime in a rootless `.deb` once the hook and policy boundaries are stable. Real-device deployment and validation are intentionally out of band: the artifact may be injected into an owned app through Sideloadly or another sideloaded/test flow, or installed as a jailbreak package.
+The canonical local build environment is macOS with Xcode, Theos, `ldid`, and `dpkg-deb`. The current tree builds both the plain injectable `.dylib` and a rootless `.deb` from the same runtime. Real-device deployment and validation are intentionally out of band: the artifact may be injected into an owned app through Sideloadly or another sideloaded/test flow, or installed as a jailbreak package.
 
 Package work must support clean install, upgrade, disable, and uninstall paths. The `.deb` must remove or neutralize installed dynamic libraries, filter plists, preference bundles, launch helpers, generated caches, and package-owned configuration without touching protected app data unless the user explicitly chose that cleanup.
 
@@ -24,6 +24,7 @@ Current local artifacts:
 
 - `make audit` builds and verifies `dist/runtime.dylib`.
 - `make package` builds and verifies `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`; the package installs a PreferenceLoader Settings bundle for default third-party app targeting, per-bundle overrides, scope/custom-seed settings, mitigation-list settings, debug paths/seeds, root seed reset, and global reset.
+- The implementation checklist treats Phases 0-6 as implemented for the current package/configuration baseline. Remaining work starts with broader mitigation coverage, manual hardening, automation, and custom build profiles.
 
 ## Non-goals
 

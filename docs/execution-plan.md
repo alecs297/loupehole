@@ -17,7 +17,7 @@ The project must balance privacy, app compatibility, and non-uniqueness. The bes
 7. Do not ship hardcoded values that identify the tweak, project, or custom build from inside target app processes.
 8. Prefer common defaults found on normal devices and networks when a spoofed value needs a default.
 9. Document every option and suboption in detail before treating it as implemented, both in the codebase and the end user documentation, everywhere
-10. If possible, have new installations of the application clear the previously stored data when first launched (this should be configurable, and extended to shared app bundles. tweak should win the race and perform the cleanup before the app is really launched)
+10. Reset or cleanup behavior must be explicit, configurable, and conservative; package/runtime defaults must not delete protected app data without user intent.
 11. Target iOS 15 -> iOS 26 (even if later not jailbrakable)
 
 ## Threat Model
@@ -53,7 +53,7 @@ Outputs:
 - Rootless `.deb`.
 - Optional rootful `.deb` if legacy support is justified.
 - A plain `.dylib` artifact for research/test hosts.
-- Default profile: "Cohort Standard."
+- Built-in cohort defaults.
 
 Behavior:
 
@@ -67,7 +67,7 @@ Behavior:
 
 Purpose:
 
-- Allow users/researchers to compile variants with selected mitigation modules and profiles.
+- Allow users/researchers to compile variants with selected mitigation modules and build profiles.
 - Avoid every build having the same static signature.
 - Allow an interactive way of exploring each anti-fingerprinting method 
 
@@ -83,7 +83,7 @@ Outputs:
 Controls:
 
 - Module toggles.
-- Profile choice.
+- Build profile choice.
 - Bundle filter allowlist.
 - Optional preference pane inclusion.
 - Build metadata stripping.
@@ -98,7 +98,7 @@ Purpose:
 Components:
 
 - Settings bundle or preference pane.
-- Per-app profile assignment.
+- Per-app enable/disable, scope, custom seed, and mitigation controls.
 - Quick toggles for passive, WebView, storage/Keychain, permissioned, and network modules.
 - Diagnostics screen for the user's own test app only.
 
@@ -114,7 +114,7 @@ Brainstormed menu structure:
 
 - Global defaults: enabled state, scope, and mitigation presets.
 - Protected apps: per-bundle allowlist with search, presets, and emergency bypass.
-- Profile: device cohort, locale cohort, WebView cohort, identifier lifetime.
+- Build profile: device cohort, locale cohort, WebView cohort, and identifier lifetime are selected at compilation time.
 - Passive surfaces: identity, system, storage, display, battery, locale, accessibility, pasteboard, network, fonts/voices, GPU, telephony.
 - WebView: navigator, screen, canvas, WebGL, audio, storage quota, timing, media devices.
 - Permissioned surfaces: location, camera, Bluetooth, local network, contacts, photos, calendar, reminders, music, motion/fitness.
@@ -127,7 +127,7 @@ Good defaults:
 
 - New installs start with no app selected.
 - App-specific aggressive blocking warns that functionality may break.
-- Changing profile values requires confirmation because it may rotate identifiers.
+- Changing scope or custom seed values requires confirmation because it may rotate identifiers.
 
 ## Development Environment
 
@@ -246,7 +246,7 @@ When defaults are needed, prefer common real-world values. Examples:
 
 Use a layered design:
 
-1. Policy engine: decides what each API should return for a given app, profile, and context.
+1. Policy engine: decides what each API should return for a given app, build profile, and context.
 2. Generation invariants: value generators share seed-derived anchors where related device, OS, screen, CPU, GPU, camera, RAM, WebKit, or temporal values must agree.
 3. Hook modules: small isolated modules per mitigation method.
 4. Persistence guard: mediates app-generated stable identifiers where feasible.
@@ -307,7 +307,7 @@ Exit criteria:
 - The dylib builds locally, signs with `ldid`, strips release symbols, and passes a string/symbol audit.
 - No project-identifying strings are present in the injected runtime except unavoidable development-only artifacts.
 - Hook modules can be compiled in or out through the static mitigation catalog and generated registry without changing observable API behavior.
-- `LHHookBackend` exists with a Theos/Logos MobileSubstrate-compatible implementation first; alternate ElleKit/libhooker-specific backends are deferred behind build flags.
+- `LHHookBackend` exists with the Theos/Logos MobileSubstrate-compatible implementation used by the current runtime.
 
 ### Step 2: Policy Engine and First Mitigation
 
@@ -318,7 +318,7 @@ Goal:
 Exit criteria:
 
 - Hook code calls the policy engine instead of embedding spoofed values.
-- The selected mitigations have option documentation, default profile data, temporal/value dependency notes, and harness probes.
+- The selected mitigations have option documentation, default cohort data, temporal/value dependency notes, and harness probes.
 - Temporal generators produce ordered values by construction: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and related dates must form a plausible timeline.
 - `LHEmbeddedStateProvider` and `LHLocalStateProvider` exist so early dylib tests can run before package state is available.
 - A UUID configuration instance seed exists and is used through a KDF to derive scoped seeds and opaque state identifiers, without restricting callers to one UUID version.
@@ -334,7 +334,7 @@ Exit criteria:
 
 - The dylib covers an initial Loupe-style passive subset.
 - Runtime overhead, crash behavior, exported symbols, strings, and debug logs are audited.
-- The default embedded profile is coherent across implemented surfaces.
+- The default embedded build profile is coherent across implemented surfaces.
 - Build variability is controlled by build flags, with readable development builds and stricter generated names/audits for release or custom builds.
 
 ### Step 4: Rootless Deb Package
@@ -357,17 +357,15 @@ Goal:
 
 Exit criteria:
 
-- Config priority is emergency bypass, preference profile, embedded build config, then built-in default.
-- Per-app allowlist, profile/cohort selection, mitigation toggles, scope mode, and seed reset work through the config provider.
+- Config priority is emergency bypass, package policy override/default, embedded build config, then built-in default policy.
+- Per-app targeting, mitigation toggles, scope mode, custom seed, and seed reset work through the config provider.
 - Scope mode supports per-app-install default, per-app, per-vendor group, and
-  custom seed/manual linked groups. Shared app-group-style behavior should be
-  implemented later as manual linked groups that reuse custom seeds, not as a
-  separate app-group runtime scope.
+  custom seed/manual linked groups. Manual linked behavior reuses custom seeds
+  instead of adding another runtime scope.
 - `LHPackageStateProvider` stores jailbreak package state outside target app containers.
-- `LHAppGroupStateProvider` and `LHKeychainGroupStateProvider` are deferred until sideloaded signing entitlements are known.
 - Preference identifiers, storage paths, filenames, and Keychain service/account names are derived from the instance seed and do not expose project names or module names to target app processes.
 
-### Step 6: Full Mitigation Coverage
+### Post-Phase 6: More Mitigations
 
 Goal:
 
@@ -379,7 +377,7 @@ Exit criteria:
 - Loupe-style reports show fewer high-entropy values without obvious contradictions.
 - Aggressive blocking behavior is documented as breakage-tolerant and opt-in.
 
-### Step 6.5: Storage Guard Hardening
+### Manual Hardening: Storage Guard and Static Markers
 
 Goal:
 
@@ -387,12 +385,12 @@ Goal:
 
 Exit criteria:
 
-- Shared Keychain state is hidden from broad target-app `SecItemCopyMatching` queries and protected from target-app update/delete calls when ownership is certain.
+- Target-visible Keychain state is hidden from broad target-app `SecItemCopyMatching` queries and protected from target-app update/delete calls when ownership is certain.
 - Loupehole state providers have an explicit reentrancy bypass so they can access their own blobs or records.
-- File/App Group storage guards are optional and hardening-oriented because filesystem enumeration has a broad API surface.
+- Filesystem storage guards are optional and hardening-oriented because filesystem enumeration has a broad API surface.
 - Guard hooks never hide unrelated app data and leave the app's storage call unfiltered when ownership is uncertain.
 
-### Step 7: Custom Build Website
+### Later: Custom Build Website
 
 Goal:
 
@@ -400,145 +398,80 @@ Goal:
 
 Exit criteria:
 
-- Users can choose profiles, modules, and filters from predefined options.
+- Users can choose build profiles, modules, and filters from predefined options.
 - Users can create a new configuration instance seed or provide an existing one to reproduce matching generated paths, keys, and scoped values.
 - The website warns about uniqueness risk and steers users toward shared cohorts.
 - Build variability affects static markers, not observable API behavior.
 
 ## Roadmap
 
-### Phase 0: Governance and Scope
+The actionable phase tracker is [implementation-checklist.md](implementation-checklist.md). This roadmap mirrors that status so the broader plan does not conflict with the handoff checklist.
 
-Deliverables:
+### Phase 0: Source Skeleton
 
-- Project charter and non-goals.
-- Supported iOS/jailbreak matrix.
-- Legal/ethical usage policy.
-- Initial profile definitions.
-- Decision on hook backend.
-- Initial spoofing option documentation template.
-- Release-binary marker audit checklist.
+Status: implemented.
 
-Exit criteria:
+The repo layout, root build entry point, Theos tweak target, generated build inputs, and local binary audit scripts exist.
 
-- The project can explain what it will and will not do.
-- A first device/iOS target is selected.
-- No module can be marked stable without option/suboption docs.
+### Phase 1: Core Types and Hook Backend
 
-### Phase 1: Research Harness
+Status: implemented.
 
-Deliverables:
+The policy engine boundary, generated mitigation registry, seed/scope helpers, named scope modes, and MobileSubstrate-compatible hook backend exist.
 
-- A Loupe-inspired local probe app that records every covered API before and after injection.
-- WKWebView fingerprint test page.
-- Snapshot format for comparing signals.
-- Basic entropy/invariant report.
+### Phase 2: Profile and State Providers
 
-Exit criteria:
+Status: implemented for embedded, local, and package providers.
 
-- Running the harness produces a matrix of real values, protected values, and inconsistencies.
+The runtime has compiled cohort metadata, local/embedded/package state provider paths, binary plist state blobs, seed-derived filenames, generated derivation labels, and generic fallback support.
 
-### Phase 2: Passive Native Core
+### Phase 3: First Mitigation Group
 
-Deliverables:
+Status: implemented and manually validated.
 
-- Hooks for IDFV/device identity, sysctl/uname, ProcessInfo, storage resource values, display traits, battery, locale, accessibility flags, pasteboard shape, network interface summaries, fonts, voices, app bundle install date, Apple account/storefront, Metal, and telephony.
-- Cohort profile catalog with at least three common device profiles.
-- Per-app stable seed derivation.
-- Option docs for every passive hook and suboption.
-- Binary string/symbol audit to confirm no identifying constants are embedded in the injected runtime.
+The first policy-driven mitigation group covers IDFV, boot-time surfaces, and Foundation volume creation date APIs with temporal ordering across generated values.
 
-Exit criteria:
+### Phase 4: Package Readiness Baseline
 
-- Loupe passive categories show normalized, coherent, low-entropy outputs.
-- Common apps run without obvious breakage.
+Status: implemented.
 
-### Phase 3: Advanced Native Surfaces
+The plain dylib build, generated registries, seed-derived names, release/debug build split, and package build inputs support the rootless package path. Open-ended static-marker audits are tracked as manual hardening.
 
-Deliverables:
+### Phase 5: Rootless Deb Package
 
-- URL scheme probe policy for `canOpenURL`.
-- Keychain reinstall tracking mitigation strategy.
-- App container install-date normalization.
-- Guardrails for persistent app-generated IDs in Keychain/UserDefaults/files where feasible.
-- Detailed docs for each persistence and URL-scheme policy.
+Status: implemented for the first rootless package path.
 
-Exit criteria:
+The package builds locally, stages under `/var/jb`, starts with an empty loader filter and default-off policy, includes maintainer scripts, and removes package-owned artifacts on uninstall.
 
-- Loupe advanced categories are reduced without breaking legitimate URL opening in compatibility profile.
+### Phase 6: Configuration and Preferences
 
-### Phase 4: WebView Protection
+Status: implemented for package-owned Settings configuration.
 
-Deliverables:
+The built-in Settings menu and package policy flow cover default targeting, per-bundle overrides, scope/custom-seed settings, mitigation toggles, debug seed/path explanations, root seed reset, and global reset.
 
-- WKWebView user script injection.
-- JS API normalization for navigator, screen, Intl/timezone, canvas, WebGL, audio, fonts, hardware concurrency, storage quota, and timing.
-- Native WebKit configuration hooks where needed.
-- No project-specific JS globals, function names, comments, or error strings visible to page scripts.
-- Detailed docs for every JS and native WebKit suboption.
+### Phase 7: More Mitigations
 
-Exit criteria:
+Status: backlog after the package/configuration baseline.
 
-- A browser-style fingerprint test page sees the selected cohort profile.
-- Canvas/WebGL results are stable within an app but shared by cohort.
+Broader passive, advanced, WebView, persistence, and permissioned surfaces should be added with option docs, generic fallbacks, rollback behavior, and temporal/value dependency notes.
 
-### Phase 5: Permissioned APIs
+### Phase 8: Manual Hardening and Compatibility
 
-Deliverables:
+Status: manual hardening backlog.
 
-- Per-surface policy behaviors for location, camera enumeration, Bluetooth, local network, contacts, photos, calendars, reminders, music, motion/fitness.
-- Default pass-through or coarse policy.
-- Optional aggressive deny/coarsen policy for high-risk apps.
-- Per-app user override UI.
-- Detailed docs covering original permission/API behavior, fingerprinting risk, mitigation, and drawbacks for every permissioned suboption.
+This area covers deeper static-marker audits, crash-safety work, performance budgeting, compatibility testing, and optional storage guards for target-visible storage paths.
 
-Exit criteria:
+### Phase 9: Automated Harness
 
-- Permissioned APIs can be passed through, coarsened, summarized, or denied by policy.
-- Apps that need permissions can be assigned pass-through or coarse per-surface settings.
+Status: backlog.
 
-### Phase 6: Jailbreak Package and Preferences
+The harness should compare real, protected, and expected cohort values using Loupe-style native and WKWebView probes.
 
-Deliverables:
+### Phase 10: Custom Build Website
 
-- Rootless `.deb`.
-- Bundle filter allowlist.
-- Preference UI.
-- Per-app profile storage.
-- Logging/diagnostics disabled by default.
+Status: backlog.
 
-Exit criteria:
-
-- Install, respring, configure, inject, and uninstall flow works on a test device.
-
-### Phase 7: Custom Build Website
-
-Deliverables:
-
-- Web UI for mitigation module selection and profile choice.
-- macOS build worker.
-- Build reproducibility and artifact signing for project-owned packages.
-- Build variability that changes static markers without creating unique observable behavior.
-- Anonymous build option with no retention.
-
-Exit criteria:
-
-- Users can build from shared templates.
-- The UI warns when a custom combination becomes too unique.
-
-### Phase 8: Hardening and Compatibility
-
-Deliverables:
-
-- Crash-safe hooks.
-- App allowlist/denylist recommendations.
-- Performance budget per module.
-- Test matrix across iOS versions and device classes.
-- Regression suite using harness snapshots.
-
-Exit criteria:
-
-- Release candidate passes compatibility tests and Loupe-style verification.
+The website and macOS worker pipeline should compile shared-template `.dylib` and `.deb` artifacts with build profile choice, module selection, filter selection, reproducible manifests, and uniqueness warnings.
 
 ## Milestone Plan
 
@@ -561,7 +494,7 @@ M3 - Jailbreak MVP:
 
 - Rootless `.deb`.
 - Inject into selected bundles.
-- Per-app profile/cohort selection.
+- Per-app policy, scope, and mitigation controls.
 
 M4 - WebView MVP:
 
@@ -598,8 +531,8 @@ Keep the injected core small and boring:
 
 The "perfect" practical approach is herd privacy:
 
-- Each app sees a stable profile for that app.
-- Many users share the same profile values.
+- Each app sees stable scoped cohort values.
+- Many users share the same cohort values.
 - Values are plausible for a real Apple device.
 - Cross-API contradictions are avoided.
 - Values that must vary over time vary in broad buckets.

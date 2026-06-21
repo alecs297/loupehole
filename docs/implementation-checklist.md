@@ -1,29 +1,29 @@
 # Implementation Checklist
 
-This document is the actionable handoff plan for implementing Loupehole from the current planning state. It assumes the decisions in [architecture.md](architecture.md), [execution-plan.md](execution-plan.md), [fingerprinting-surfaces.md](fingerprinting-surfaces.md), and [spoofing-option-policy.md](spoofing-option-policy.md).
+This document is the actionable handoff plan for implementing Loupehole from the current package/configuration baseline. It assumes the decisions in [architecture.md](architecture.md), [execution-plan.md](execution-plan.md), [fingerprinting-surfaces.md](fingerprinting-surfaces.md), and [spoofing-option-policy.md](spoofing-option-policy.md).
 
 ## Settled Decisions
 
 - Build locally on macOS with Xcode 26+, Theos, `ldid`, and `dpkg-deb`.
-- Start with a plain injectable arm64 iOS `.dylib`; package the same runtime into a rootless `.deb` later.
+- Build a plain injectable arm64 iOS `.dylib` and package the same runtime into a rootless `.deb`.
 - Real-device deployment and validation are manual: Sideloadly-style owned-app injection or rootless jailbreak package installation.
 - The injected runtime must use C, Objective-C, or Objective-C++. Do not use Swift in the dylib. Swift is allowed only for preferences UI or external tooling.
-- Use `LHHookBackend` from the first source commit. First implementation is Theos/Logos with MobileSubstrate-compatible hooks. ElleKit/libhooker-specific backends are postponed behind build flags.
+- Use `LHHookBackend` from the first source commit. The current implementation is Theos/Logos with MobileSubstrate-compatible hooks.
 - Use a configuration instance seed supplied as any valid UUID. Feed it through a KDF to derive scoped seeds, opaque storage identifiers, state filenames, Keychain service/account names, generated internal names, and optional build variability.
 - Compile cohort profile values into the binary for v1, preferably as generated C/Objective-C data under `core/profiles`.
-- Store mutable values through state providers. First providers: `LHEmbeddedStateProvider` and `LHLocalStateProvider`. Later providers: `LHPackageStateProvider`, `LHAppGroupStateProvider`, and `LHKeychainGroupStateProvider`.
+- Store mutable values through state providers. Current providers: `LHEmbeddedStateProvider`, `LHLocalStateProvider`, and `LHPackageStateProvider`.
 - Default KDF: HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Opaque derivation labels are inputs to derivation only and must not be stored next to derived names.
 - Default mutable state encoding: binary property list with a schema version. JSON is acceptable only for debug export/import tools, not target-process runtime state.
 - Default scope is per app install. Supported policy scopes are
   per-app-install, per-app, per-vendor group, and custom seed/manual linked
-  group. Shared app-group behavior will be modeled later as manual linked groups
-  over custom seeds, not as a separate runtime scope.
+  group. Manual linked behavior is represented by reusing custom seeds, not by
+  adding another runtime scope.
 - Never disable all hooks as the normal response to one failure. Every mitigation needs a documented generic fallback. If no coherent fallback is available, pass through only the affected value.
 - First mitigation group: `UIDevice.identifierForVendor`, device boot time, and volume initialization or creation time.
 - The first mitigation group must be complete enough to evaluate limits: hook Objective-C/Foundation and C/Darwin layers that expose the same values.
 - Temporal ordering is mandatory: synthetic volume initialization or creation time must be earlier than synthetic last boot time, and generated dates must form a plausible timeline by construction.
-- Storage guard hooks are postponed hardening. Opaque seed-derived names are the primary defense.
-- Testing automation is postponed. Initial validation uses manual Loupe comparisons.
+- Storage guard hooks are manual hardening backlog. Opaque seed-derived names are the primary defense.
+- Testing automation is backlog. Initial validation uses manual Loupe comparisons.
 - Custom build website is last, after local deterministic dylib and `.deb` builds work.
 
 ## Phase 0: Source Skeleton
@@ -131,35 +131,33 @@ Acceptance checks:
 
 ## Phase 2: Profile and State Providers
 
-Status: complete for the current embedded/local providers.
+Status: complete for the current embedded, local, and package providers.
 
-Implemented embedded profile metadata, runtime scope configuration, local and
-embedded state-provider paths, binary property-list state encoding, opaque
-seed-derived state filenames, seed-derived timeline values, and mitigation-owned
-state blobs. `make state-check` validates local persistence, embedded fallback,
-binary plist round-trip behavior, generic blob loading, and opaque state
-filenames. Phase 3 manual Loupe validation confirmed these providers support the
-current first mitigation group. Package, App Group, and Keychain-backed providers
-remain postponed to their later phases.
+Implemented embedded profile metadata, runtime scope configuration, local,
+embedded, and package state-provider paths, binary property-list state encoding,
+opaque seed-derived state filenames, seed-derived timeline values, and
+mitigation-owned state blobs. `make state-check` validates local persistence,
+embedded fallback, binary plist round-trip behavior, generic blob loading, and
+opaque state filenames. Phase 3 manual Loupe validation confirmed these
+providers support the current first mitigation group, and Phase 5 package checks
+validate the package-owned state path.
 
-Implement profile data and state access with future storage backends in mind.
+Implement profile data and state access without coupling mitigation code to a
+specific storage backend.
 
 Providers:
 
 - `LHEmbeddedStateProvider`: deterministic, read-only defaults.
 - `LHLocalStateProvider`: per-app sandbox/local testing state.
-- `LHPackageStateProvider`: postponed until `.deb` phase.
-- `LHAppGroupStateProvider`: postponed until sideloading entitlements are known.
-- `LHKeychainGroupStateProvider`: postponed until sideloading entitlements are known.
+- `LHPackageStateProvider`: package-owned rootless state for `.deb` installs.
 
 Implementation tasks:
 
 - Compile first cohort profile metadata directly into the binary.
 - Derive first-mitigation state values from the active instance seed and scope;
-  do not store concrete boot age, volume age, or profile epoch constants in the
+  do not store concrete boot age, volume age, or scope/seed epoch constants in the
   profile.
 - Encode mutable state blobs as binary property lists with explicit schema versioning.
-- Store Keychain-backed state, when implemented later, as opaque data values rather than descriptive attributes.
 - Define each mutable state blob shape in the resolver or mitigation source that
   owns it. Core state providers should only know the state key, schema version,
   byte length, generated bytes callback, and opaque payload bytes.
@@ -225,7 +223,7 @@ Temporal generation tasks:
 - Generate boot-time anchor `A1` from the active seed and scope.
 - Generate volume time by deriving the same `A1`, deriving a second offset, and
   subtracting the offset so `volumeInitializedAt < lastBootAt < now`.
-- Reserve room for later `appInstalledAt`, `profileEpoch`, and profile rotation values.
+- Reserve room for later `appInstalledAt` and scope/seed rotation values.
 
 Acceptance checks:
 
@@ -237,36 +235,31 @@ Acceptance checks:
 - Different app scopes see different per-app values unless shared scope is selected.
 - If a mitigation fails, only that affected value uses fallback/pass-through behavior.
 
-## Phase 4: Dylib Audit and Build Variability
+## Phase 4: Package Readiness Baseline
 
-Status: skipped, will be done manually later on
+Status: complete.
 
-Harden the plain dylib before packaging.
+The plain dylib build, generated mitigation/policy registries, seed-derived
+names, release/debug build split, and package build inputs are stable enough to
+support the rootless package path. `make audit` remains the local dylib
+verification entry point; broader static-marker hardening is tracked in the
+manual hardening phase near the end of this checklist.
 
 Implementation tasks:
 
-- Add release audit script covering:
-  - strings
-  - exported symbols
-  - linked libraries
-  - Swift runtime absence
-  - debug log absence
-  - build timestamp/build ID absence where possible
-- Add build-flag-controlled generated internal names.
-- Keep development builds readable by default.
+- Keep the plain dylib and package builds using the same generated registry and
+  selected mitigation set.
+- Keep development builds readable by default while release/custom builds use
+  generated static names where configured.
 - Ensure build variability never changes observable API values.
-- Harden mutable state encoding markers:
-  - evaluate replacing static binary-plist field keys with generated/keyed field names or a compact binary record
-  - keep schema versioning and binary round-trip checks
-  - ensure target-process-visible state filenames remain opaque and seed-derived
+- Keep target-process-visible state filenames opaque and seed-derived.
 
 Acceptance checks:
 
+- `make audit` validates the signed release dylib.
 - `LH_ENABLE_VARIABILITY=0` produces readable development artifacts.
 - `LH_ENABLE_VARIABILITY=1` produces generated internal names where implemented.
-- Release audit fails on project-identifying strings in injected runtime.
-- Release audit does not fail on package metadata outside target process.
-- Release audit does not expose useful static mutable-state field markers beyond intentionally generic platform/runtime strings.
+- Release audit does not fail on package metadata outside target processes.
 
 ## Phase 5: Rootless Deb Package
 
@@ -286,12 +279,12 @@ resolves package installs to a persisted root install seed used as the package
 practical seed. The default per-app-install scope uses an opaque random marker in
 app data so app reinstall rotates the active seed. Custom seed scope uses a
 configured UUID as the active seed directly, letting the user deliberately link
-the default profile or multiple bundle overrides without relying on app-group
-entitlements. The package state provider
+the default policy or multiple bundle overrides through the same manual-linked
+scope model. The package state provider
 stores blobs under package-owned rootless storage outside target app containers,
 with derived opaque per-scope state directories and blob filenames. The package
 includes `LoupeholePreferences.bundle` as the built-in Settings menu for default
-profile settings, per-app overrides, mitigation toggles, global reset, debug
+policy settings, per-app overrides, mitigation toggles, global reset, debug
 paths/seeds, root seed reset, and scope selection. Device install and behavioral validation
 remain manual.
 
@@ -329,7 +322,7 @@ Acceptance checks:
 
 ## Phase 6: Configuration and Preferences
 
-Status: in progress for package-owned Settings configuration.
+Status: complete for package-owned Settings configuration.
 
 Implemented the first package-owned config provider and built-in Settings menu.
 The runtime reads the generated build-seed-derived package policy file before
@@ -337,13 +330,14 @@ scope and seed resolution, applies the default policy plus the current bundle's
 override, and installs only the enabled compiled modules. Package runtime startup
 exits before scope/seed setup for system bundles, non-app processes, extensions,
 and effectively disabled policies. The package default is off on install; when
-enabled, the default profile targets the broad UIKit app class and per-bundle
+enabled, the default policy targets the broad UIKit app class and per-bundle
 disabled overrides win. Local/plain dylib development defaults still enable compiled mitigations.
 Generated Settings metadata exposes the selected compiled module ID/name map for
 the deb, and runtime policy stores numeric module IDs with room for up to 1024
 enabled modules. The Settings menu also supports global reset, per-app override
 reset, debug seed/path explanations, scope selection, and destructively confirmed
-root seed reset. Richer profile selection remains pending.
+root seed reset. Runtime preferences select targeting, scope, seed, and compiled
+mitigation state; profile selection belongs to custom compilation/build profiles.
 
 Add configuration without moving policy into hooks.
 
@@ -351,24 +345,22 @@ Implementation tasks:
 
 - Implement config priority:
   - emergency per-bundle bypass
-  - jailbreak preference UI profile
+  - package policy override/default
   - embedded build-time config
-  - built-in default profile
+  - built-in default policy
 - Add default third-party app targeting with per-app overrides. Status: complete
   for the Settings package flow.
 - Add mitigation toggles. Status: complete for compiled module IDs through the
   Settings package flow.
-- Add profile selection. Status: pending.
 - Add scope mode selector. Status: complete for Settings package policy:
   - per app install
   - per app
   - per vendor group
   - custom seed/manual linked group
-  Future manual linked-group UX should reuse custom seeds dynamically instead of
-  adding stored group/link entities.
+  Manual linked behavior should reuse custom seeds instead of adding stored
+  group/link entities.
 - Add seed reset and state rotation controls on top of the existing
-  `LHSeedProvider`. Status: complete for package root seed reset in Settings;
-  per-app marker and scoped-state cleanup controls remain pending.
+  `LHSeedProvider`. Status: complete for package root seed reset in Settings.
 - Promote or replace the first bundle toggle helper with a full
   preference/config provider flow. Status: complete for the built-in Settings
   menu.
@@ -378,13 +370,15 @@ Acceptance checks:
 
 - Changing config changes policy output without hook-code changes.
 - Preference identifiers and paths do not leak into target app-visible API returns.
-- Scope mode is stored and passed through the state/policy layer even if only per-app is complete initially.
+- Scope mode is stored and passed through the state/policy layer for the
+  supported package policy modes.
 
 ## Phase 7: More Mitigations
 
-Status: postponed.
+Status: backlog after the package/configuration baseline.
 
-Implement remaining MVP and later surfaces after the first mitigation group is stable.
+Implement remaining MVP and later surfaces after the package/configuration
+baseline is stable.
 
 MVP passive targets:
 
@@ -412,51 +406,44 @@ Rules:
 
 ## Phase 8: Storage Guard Hardening
 
-Status: postponed.
+Status: manual hardening backlog.
 
-Add optional anti-detection guard hooks for target-visible storage.
+Add optional hardening for target-visible storage and final release artifacts
+after the current package/config baseline.
 
 Implementation tasks:
 
 - Add `StorageGuardHooks`.
-- For shared Keychain state:
+- For target-visible Keychain state:
   - filter Loupehole-owned records from broad `SecItemCopyMatching`
   - protect Loupehole-owned records from target-app update/delete when ownership is certain
   - add reentrancy bypass for Loupehole state providers
-- For shared App Group/file storage:
+- For target-visible filesystem storage:
   - evaluate `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value filtering
-  - keep this hardening-only unless needed earlier
+  - keep this hardening-only unless a specific implemented storage path needs it
+- Extend release/static-marker audits covering:
+  - strings
+  - exported symbols
+  - linked libraries
+  - Swift runtime absence
+  - debug log absence
+  - build timestamp/build ID absence where possible
+- Harden mutable state encoding markers:
+  - evaluate replacing static binary-plist field keys with generated/keyed field names or a compact binary record
+  - keep schema versioning and binary round-trip checks
+  - ensure target-process-visible state filenames remain opaque and seed-derived
 
 Acceptance checks:
 
 - Guard hooks never hide unrelated app records.
 - Guard hooks leave calls unfiltered when ownership is uncertain.
 - Opaque seed-derived names remain the primary defense.
+- Release audit fails on project-identifying strings in injected runtime.
+- Release audit does not expose useful static mutable-state field markers beyond intentionally generic platform/runtime strings.
 
-## Phase 9: Sideloaded Shared Storage Providers
+## Phase 9: Automated Harness
 
-Status: postponed.
-
-Only implement after the signing setup is known.
-
-Implementation tasks:
-
-- Implement `LHAppGroupStateProvider` for apps signed with a common App Group entitlement.
-- Implement `LHKeychainGroupStateProvider` for apps signed with a common Keychain Access Group entitlement.
-- Keep state names opaque and seed-derived.
-- Keep app linking in the policy layer: any shared-app behavior should use
-  manual linked groups/custom seeds rather than reintroducing an app-group
-  runtime scope.
-- If neither entitlement exists, use local per-app state or embedded config only.
-
-Acceptance checks:
-
-- Separately sideloaded apps do not claim shared writable state unless entitlements actually allow it.
-- Reusing the same instance seed across entitled apps reproduces matching shared state names and values.
-
-## Phase 10: Automated Harness
-
-Status: postponed.
+Status: backlog.
 
 Manual Loupe testing is enough initially.
 
@@ -471,15 +458,15 @@ Acceptance checks:
 
 - Harness can answer whether hooks applied, apps remained stable, values became less identifying, and contradictions were avoided.
 
-## Phase 11: Custom Build Website
+## Phase 10: Custom Build Website
 
-Status: postponed.
+Status: backlog.
 
 Build after local deterministic artifacts are reliable.
 
 Implementation tasks:
 
-- Web UI for target, profile, modules, filters, and instance seed.
+- Web UI for target, build profile, modules, filters, and instance seed.
 - Let users create a new UUID seed or provide an existing one.
 - Compute uniqueness/anonymity-set risk.
 - Use macOS workers with Xcode/Theos.

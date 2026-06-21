@@ -24,7 +24,7 @@ flowchart TD
 
 Responsibilities:
 
-- Load static/default profile.
+- Load the static/default build profile.
 - Derive app-scoped seeds.
 - Answer normalized values.
 - Provide safe helper functions for hooks.
@@ -124,21 +124,20 @@ which keeps alternate hook implementations coherent.
 Hook backend:
 
 - Use an `LHHookBackend` abstraction from the first implementation.
-- The first backend should be Theos/Logos with MobileSubstrate-compatible hooks.
+- The backend is Theos/Logos with MobileSubstrate-compatible hooks.
 - C APIs can require two hook strategies: patching the shared implementation and
   rebinding imported symbol pointers in already-loaded images. Both operations
   live behind `LHHookBackend` so mitigation modules stay policy adapters instead
   of Mach-O parsers.
-- ElleKit/libhooker-specific backends can be added later behind build flags without changing policy or mitigation code.
 
 ### Config Provider
 
 Inputs, in priority order:
 
 1. Emergency per-bundle bypass.
-2. Jailbreak preference UI profile.
+2. Package policy override/default.
 3. Embedded build-time config.
-4. Built-in default profile.
+4. Built-in default policy.
 
 No remote config. No analytics.
 
@@ -157,11 +156,11 @@ policy contains a default behavior plus per-bundle overrides for enabled/off
 state, scope mode, and the compiled mitigation module IDs to install.
 
 The package installs with an empty filter and a default-off policy. When the
-default profile is enabled, the Settings store uses the UIKit app-class filter
+default policy is enabled, the Settings store uses the UIKit app-class filter
 (`com.apple.UIKit`) rather than enumerating installed bundles. Package runtime
 startup then rejects system bundle IDs, non-app processes, and extensions before
 seed or hook setup. Explicit per-bundle policy rows still override the default,
-including disabled rows that make one app no-op while the default profile stays
+including disabled rows that make one app no-op while the default policy stays
 on.
 
 The package's list of available mitigations is generated from the same build
@@ -174,7 +173,7 @@ module ID.
 
 Values should be generated for an explicit scope. The default scope is per app
 install, because it rotates when the protected app is removed and reinstalled
-while still remaining stable during normal launches. Compatibility profiles may
+while still remaining stable during normal launches. Compatibility policies may
 allow the user to share mitigations across related apps when a suite expects
 sibling apps to agree.
 
@@ -188,10 +187,9 @@ Supported scope modes:
 - Per vendor group: one namespace shared by apps that report the same original
   pre-spoof `identifierForVendor`, or by explicit vendor policy when configured.
 - Custom seed/manual linked group: an explicit user-provided UUID used as the
-  active seed. The Settings UI exposes this today as Custom seed. Future manual
-  linked groups should be implemented as a grouping UI over the same custom seed
-  value, without storing separate group entities or app-group-derived runtime
-  scope state.
+  active seed. The Settings UI exposes this today as Custom seed. Manual linked
+  behavior is represented by reusing that custom seed, without storing separate
+  group entities or another runtime scope.
 
 If a scope resolver cannot provide a usable identifier, such as a missing,
 empty, or oversized bundle/vendor string, the scope layer must use a fresh
@@ -201,13 +199,13 @@ ephemeral and non-descriptive; it should not use readable constants such as
 
 Each Loupehole configuration instance should have one high-entropy instance seed
 represented as a UUID when supplied by config, without restricting the UUID
-version. If no profile/config seed is supplied, the runtime creates a random
+version. If no config/build seed is supplied, the runtime creates a random
 instance seed when `LHRuntimeConfigDefault` is built during runtime
 initialization. The user can preserve, export, or reuse an explicit seed to
 recreate the same generated state layout and value derivations across a new
 dylib or package build. The seed is not an app-visible API value. It is input
 material for deterministic derivation of scoped seeds, state identifiers,
-shared-storage keys, generated internal names, timeline values, and optional
+storage keys, generated internal names, timeline values, and optional
 build variability.
 
 The random fallback seed is ephemeral. It is useful for profile-less local
@@ -215,7 +213,7 @@ experiments, but an explicit seed is required when values must reproduce across
 app relaunches, state migration, or rebuilt artifacts.
 
 Profile definitions should not carry unique concrete timestamps such as a fixed
-boot age, fixed volume age, or fixed profile epoch. Concrete mutable values are
+boot age, fixed volume age, or fixed scope/seed epoch. Concrete mutable values are
 derived by the owning policy resolver or mitigation source from the active
 instance seed, a generated opaque derivation label, and the active scope, then
 stored as a schema-versioned state blob when a writable provider is available.
@@ -224,21 +222,22 @@ plausibility constraints.
 
 When a scope is shared, the whole mitigation tuple should be shared. IDFV replacement, synthetic boot time, volume initialization or creation time, synthetic install epoch, WebView profile, and related app-scoped seeds should come from the same scoped state. Mixing scopes is allowed only when documented as a compatibility decision.
 
-State identifiers must not reveal the project. Filenames, App Group record names, Keychain service names, Keychain account names, preference keys visible to target processes, and any other storage keys must be derived from the instance seed and scope identifier with a keyed hash or KDF. The default KDF is HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Derivation label IDs are declared beside the owning resolver or state-domain code with `LH_DERIVATION_LABEL(domain, name)`, and the generator emits opaque byte labels from the label ID plus configured instance seed for runtime use; readable IDs must not be stored next to derived names. Derived names must not contain `Loupehole`, module names, obvious prefixes, bundle filters, or readable mitigation labels. If a user rebuilds with the same instance seed and scope inputs, the derived paths and keys should match; if they rotate the instance seed, every derived storage name should rotate.
+State identifiers must not reveal the project. Filenames, Keychain service names, Keychain account names, preference keys visible to target processes, and any other storage keys must be derived from the instance seed and scope identifier with a keyed hash or KDF. The default KDF is HKDF-SHA256 implemented with C/Objective-C-compatible Apple crypto APIs. Derivation label IDs are declared beside the owning resolver or state-domain code with `LH_DERIVATION_LABEL(domain, name)`, and the generator emits opaque byte labels from the label ID plus configured instance seed for runtime use; readable IDs must not be stored next to derived names. Derived names must not contain `Loupehole`, module names, obvious prefixes, bundle filters, or readable mitigation labels. If a user rebuilds with the same instance seed and scope inputs, the derived paths and keys should match; if they rotate the instance seed, every derived storage name should rotate.
 
 The state layer should be hidden behind a provider interface so mitigation code does not care where state is stored. Core state providers store and load opaque schema-versioned byte blobs keyed by seed-derived names; they do not know about IDFV, boot time, volume time, categories, or mitigation-specific parameters:
 
 - `LHEmbeddedStateProvider`: deterministic, read-only defaults for early dylib tests and custom builds.
 - `LHLocalStateProvider`: per-app sandbox state for sideloaded testing when no shared entitlement exists.
 - `LHPackageStateProvider`: package-owned state under rootless jailbreak storage for `.deb` installs.
-- `LHAppGroupStateProvider`: shared container state for sideloaded apps signed with a common App Group entitlement.
-- `LHKeychainGroupStateProvider`: compact shared state for sideloaded apps signed with a common Keychain Access Group entitlement.
 
 Mutable state blobs should use binary property list encoding with explicit schema versioning. JSON is acceptable for debug export/import tools, but not for target-process runtime state. The first local provider uses short binary-plist keys, which are generic and non-identifying, but they are still static strings. A later hardening pass should replace those static field keys with generated/keyed field names or a compact binary record format if audits show the keys are useful as static markers.
 
 Jailbreak packages should use package-owned rootless storage while keeping target app containers untouched unless the user explicitly requests cleanup. Public package metadata may use the project name, but target-process-visible storage names must be seed-derived and non-descriptive.
 
-Sideloaded apps without jailbreak cannot reliably synchronize writable state across separately sandboxed apps unless they share entitlements. If the apps are signed with a common App Group entitlement, use the app-group container. If they are signed with a common Keychain Access Group entitlement, use shared Keychain items for compact state. If neither entitlement exists, use local per-app state or deterministic embedded config and do not claim true cross-app synchronization.
+Sideloaded apps without jailbreak should use local per-app state or deterministic
+embedded config. Cross-app coordination is represented by explicit custom seeds;
+the runtime should not claim true writable-state synchronization across separate
+sandboxes.
 
 ### Seed Material Providers
 
@@ -260,7 +259,7 @@ scope:
   scope identifier.
 - Custom seed/manual linked group uses the configured UUID as the active seed
   directly. In package builds this deliberately overrides the package root seed
-  for the selected profile or bundle.
+  for the selected default policy or bundle override.
 - Hook and resolver code ask policy/state APIs for values and never inspect
   where seed material came from.
 
@@ -285,7 +284,7 @@ Keychain guard behavior:
 - Allow Loupehole's own state provider to read, write, update, and delete through an explicit reentrancy bypass.
 - Leave the app's storage call unfiltered when ownership is uncertain.
 
-Shared App Group or file-backed guard behavior is optional and stricter because the API surface is broader. It may require filtering `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value paths. Prefer opaque filenames and avoid shared containers unless shared storage is explicitly needed.
+Target-visible filesystem guard behavior is optional and stricter because the API surface is broader. It may require filtering `FileManager`, `open`, `stat`, `getattrlist`, `readdir`, `unlink`, and URL resource-value paths. Prefer opaque filenames and avoid target-visible storage unless an implemented provider requires it.
 
 This module is separate from `KeychainHooks`. `KeychainHooks` mitigates app reinstall tracking and app-generated persistent identifiers. `StorageGuardHooks` protects Loupehole's own state from discovery or accidental deletion when that state must live in a target-visible backend.
 
@@ -308,16 +307,22 @@ Profiles can still describe broad plausible Apple device families:
 - Camera count/types/unique ID shapes.
 - WebKit navigator/screen/WebGL values.
 - OS version and kernel build family.
-- Temporal relationships between system values, including boot time, volume initialization or creation time, app install time, profile rotation time, and slowly varying values.
+- Temporal relationships between system values, including boot time, volume initialization or creation time, app install time, scope/seed rotation time, and slowly varying values.
 
-Profiles should be versioned. A profile update must not silently change an app's stable identifiers unless the user rotates that app profile.
+Compiled profiles should be versioned. A build-profile update must not silently
+change an app's stable identifiers unless the user rotates that app's scope or
+seed.
 
 Temporal ordering is mandatory, but it should be true by construction. If the
 tweak reports a synthetic boot time and a synthetic volume initialization or
 creation time, the volume time generator must derive a value earlier than the
 boot time anchor rather than relying on a later graph check.
 
-## Configuration Profiles
+## Build Profiles
+
+These profiles are compile-time/catalog choices for default behavior and custom
+builds. Runtime preferences choose targeting, scope, custom seeds, and compiled
+mitigation state; they do not select arbitrary device-profile values.
 
 ### Compatibility
 
@@ -403,7 +408,9 @@ Build variability must be controlled by build flags. Development builds can keep
 
 ## Local Development Workflow
 
-The first working artifact should be a plain arm64 iOS `.dylib` built from the same source tree that will later be packaged by Theos. This lets the runtime, hook backend, and policy engine stabilize before package scripts and preferences add more moving pieces.
+The current artifacts are a plain arm64 iOS `.dylib` and a rootless `.deb` built
+from the same runtime source tree. This keeps the runtime, hook backend, policy
+engine, package scripts, and preferences aligned.
 
 Recommended workflow:
 
@@ -411,7 +418,8 @@ Recommended workflow:
 2. Build `packages/tweak/` as a minimal injectable dylib with module registration, a safe constructor, and no-op hooks.
 3. Add the first passive mitigation group end to end: IDFV replacement, boot time normalization, and volume initialization or creation time normalization, with option documentation and audit scripts.
 4. Package the same dylib in a rootless `.deb`.
-5. Add preferences/config loading only after the embedded default config path is working.
+5. Keep package policy and Settings configuration flowing through the config
+   provider, not hook code.
 6. Expand module coverage while keeping all values profile-driven.
 
 Real-device deployment is intentionally manual for now. The repository should build artifacts for either Sideloadly-style owned-app injection flows or rootless jailbreak package installation, but device install, injection, and behavioral verification are performed outside the automated build loop.
@@ -455,7 +463,7 @@ Recommended first filter:
 
 - Do not inject into every process by default.
 - Start with an empty filter and a default-off package policy.
-- When the default profile is enabled, target the UIKit app class and rely on
+- When the default policy is enabled, target the UIKit app class and rely on
   the runtime guard plus per-bundle disabled overrides instead of an installed-app
   bundle inventory.
 - Exclude SpringBoard, system daemons, system apps, extensions, banking/DRM apps,
@@ -476,11 +484,12 @@ Install and uninstall requirements:
 ### User Flow
 
 1. Choose target: jailbreak package or developer dylib.
-2. Choose modules.
-3. Choose scope and app bundle filters.
-4. Review uniqueness score.
-5. Build artifact.
-6. Download artifact and manifest.
+2. Choose build profile.
+3. Choose modules.
+4. Choose scope and app bundle filters.
+5. Review uniqueness score.
+6. Build artifact.
+7. Download artifact and manifest.
 
 ### Backend
 

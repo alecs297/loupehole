@@ -52,7 +52,7 @@
         "Foundation"
       ],
       "language": "objc",
-      "status": "planned",
+      "status": "experimental",
       "optionDoc": "docs/options/storage-volume-time.md"
     }
   ]

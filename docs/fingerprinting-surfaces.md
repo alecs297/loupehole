@@ -86,8 +86,8 @@ Default values should be common on real devices. For example, local-network spoo
 | Surface | APIs/examples | Risk | Mitigation | Priority |
 | --- | --- | --- | --- | --- |
 | Advertising ID | `ASIdentifierManager.advertisingIdentifier`, tracking status | Cross-app ad identifier when allowed | Return zeroed ID unless user has allowed tracking; preserve platform semantics | P0 |
-| App-generated IDs | UserDefaults, files, SQLite, Keychain | Persistent tracking IDs | Detect common SDK keys, partition or rotate per app/profile, offer reset | P1 |
-| Cookies/WebKit storage | `WKWebsiteDataStore`, cookies, localStorage | Cross-session web IDs | Per-app or ephemeral stores where possible; clear on profile reset | P1 |
+| App-generated IDs | UserDefaults, files, SQLite, Keychain | Persistent tracking IDs | Detect common SDK keys, partition or rotate per app/scope, offer reset | P1 |
+| Cookies/WebKit storage | `WKWebsiteDataStore`, cookies, localStorage | Cross-session web IDs | Per-app or ephemeral stores where possible; clear on scope or seed reset | P1 |
 | APNs token | App delegate device token | Stable app install signal | Do not spoof by default; user can block network transmission only outside this tweak | P3 |
 | DeviceCheck/App Attest | DeviceCheck, App Attest | Security/fraud binding | Pass-through; do not spoof | P3 |
 | Biometry availability | `LAContext.canEvaluatePolicy`, `biometryType` | Face ID/Touch ID/enrollment state | Generic availability matching cohort, but pass-through for auth flows | P2 |
@@ -114,11 +114,11 @@ These values must be generated together:
 - OS version, kernel version, WebKit version, user agent.
 - Audio sample rate and route capabilities.
 - Telephony and device class.
-- Temporal values such as volume initialization or creation time, last boot time, app install time, and profile rotation time.
+- Temporal values such as volume initialization or creation time, last boot time, app install time, and scope or seed rotation time.
 
 Contradictions are high-risk. A tracker can flag the protection if an app sees an iPhone SE screen with ProMotion 120 Hz, an A18 Pro GPU, iPad safe area values, and a WebKit iPad platform string.
 
-Temporal contradictions are also high-risk. A tracker can flag the protection if a volume appears to have been initialized after the last boot, an app install predates the storage volume, or a resettable identifier appears older than the profile rotation that created it.
+Temporal contradictions are also high-risk. A tracker can flag the protection if a volume appears to have been initialized after the last boot, an app install predates the storage volume, or a resettable identifier appears older than the scope or seed rotation that created it.
 
 ## Value Lifetime Rules
 

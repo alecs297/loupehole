@@ -45,7 +45,7 @@ Unacceptable hardcoded values:
 
 - Unique salts shared across all installs.
 - Project-specific Keychain services.
-- Project-specific shared-container filenames or storage keys.
+- Project-specific target-visible storage filenames or keys.
 - Project-specific JS globals.
 - Project-specific class prefixes in target processes.
 - Rare fake defaults that normal devices almost never expose.
@@ -63,16 +63,16 @@ derivation. The practical seed should derive:
 - Scoped per-app-install, per-app, per-vendor, and custom/manual-linked seeds.
   Custom seed scope uses the configured UUID as the active seed directly.
 - State record identifiers.
-- Shared-container filenames.
+- Package-owned and target-visible storage filenames.
 - Keychain service/account names.
 - Package-owned internal state filenames.
-- Concrete timeline values such as boot time, volume creation time, and profile
-  epoch.
+- Concrete timeline values such as boot time, volume creation time, and
+  scope/seed rotation epoch.
 - Optional generated internal symbol or class prefixes, if those names cannot become app-visible API values.
 
 Storage-name rules:
 
-- Do not use readable project names, module names, mitigation names, or obvious prefixes in filenames, preference keys, Keychain service names, Keychain account names, or shared-container records that may be visible from a target app process.
+- Do not use readable project names, module names, mitigation names, or obvious prefixes in filenames, preference keys, Keychain service names, Keychain account names, or target-visible storage records.
 - Derive storage names with a keyed hash or KDF from the practical seed, purpose label, scope mode, and stable scope identifier.
 - Keep purpose labels internal to derivation code; do not store them next to the derived value.
 - Reusing the same practical seed and stable scope inputs should recreate the same derived paths and keys, except per-app-install scope, which also depends on a random app-container marker. Reusing the same custom seed intentionally recreates the same active seed across selected apps or installs.
@@ -110,8 +110,8 @@ Every method should be available as one of these policy behaviors:
 - Session-stable: keep a synthetic value only for the current app process lifetime.
 - Slowly varying: change values on a realistic schedule in broad buckets.
 - User-action gated: allow behavior only after a plausible foreground/user action.
-- Partitioned: isolate storage or identifiers by app/profile.
-- Ephemeral: reset data on app close or profile reset.
+- Partitioned: isolate storage or identifiers by app/scope.
+- Ephemeral: reset data on app close or scope/seed reset.
 - Native hook: intercept Objective-C/C/Swift-visible native APIs.
 - JavaScript shim: normalize WebView/browser APIs before page scripts run.
 - Rate limited: reduce sampling frequency for sensors/timing.
@@ -215,7 +215,7 @@ Rules:
 
 - Volume initialization or creation time must be earlier than the last boot time.
 - App install time must not predate the volume initialization time.
-- Synthetic profile rotation time must not predate identifiers or app-scoped values that it is supposed to reset.
+- Synthetic scope or seed rotation time must not predate identifiers or app-scoped values that it is supposed to reset.
 - Slowly varying values such as battery, free storage, thermal state, and uptime-adjacent values must move in plausible directions and buckets.
 - If a hook cannot preserve required temporal ordering, use that mitigation's documented generic fallback or pass through only the affected value rather than return a contradictory value.
 
