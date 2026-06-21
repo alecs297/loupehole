@@ -14,6 +14,10 @@
 @property (nonatomic, retain) NSArray *titles;
 @end
 
+@interface PSSpecifier (LoupeholeTarget)
+- (id)target;
+@end
+
 static const NSInteger LHCustomSeedScopeMode = 3;
 
 static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
@@ -381,7 +385,10 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     self.detailTextLabel.text = [specifier propertyForKey:@"associatedApps"] ?: @"";
     self.detailTextLabel.numberOfLines = 0;
     self.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
-    self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    BOOL selectedSeed = [[specifier propertyForKey:@"selectedSeed"] boolValue];
+    self.accessoryType = selectedSeed ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+    self.selectionStyle = UITableViewCellSelectionStyleDefault;
+    self.userInteractionEnabled = YES;
 }
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
@@ -595,24 +602,79 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 @interface LHScopeSelectionController : PSListController
 @property (nonatomic, strong) LHPreferencePolicy *entryPolicy;
 @property (nonatomic, copy) NSString *draftCustomSeed;
+@property (nonatomic, copy) NSString *scopeBundleIdentifier;
+@property (nonatomic, copy) NSString *scopeAppName;
 @end
 
 @implementation LHScopeSelectionController
 
+- (void)setSpecifier:(PSSpecifier *)specifier {
+    [super setSpecifier:specifier];
+    [self updateScopeContextFromSpecifier:specifier];
+}
+
+- (void)updateScopeContextFromSpecifier:(PSSpecifier *)specifier {
+    if (specifier == nil) {
+        return;
+    }
+
+    NSString *bundleID = [specifier propertyForKey:@"bundleIdentifier"];
+    NSString *appName = [specifier propertyForKey:@"appName"];
+
+    if ([bundleID length] > 0) {
+        self.scopeBundleIdentifier = bundleID;
+    }
+    if ([appName length] > 0) {
+        self.scopeAppName = appName;
+    }
+
+    id linkTarget = [specifier target];
+    if ([linkTarget isKindOfClass:[LHPolicyListController class]]) {
+        LHPolicyListController *policyController = (LHPolicyListController *)linkTarget;
+        if ([self.scopeBundleIdentifier length] == 0) {
+            self.scopeBundleIdentifier = [policyController scopeSelectionBundleIdentifier];
+        }
+        if ([self.scopeAppName length] == 0) {
+            self.scopeAppName = [policyController scopeSelectionAppName];
+        }
+    }
+}
+
+- (void)resolveScopeContext {
+    [self updateScopeContextFromSpecifier:[self specifier]];
+}
+
+- (NSString *)scopeTitle {
+    [self resolveScopeContext];
+
+    if ([self.scopeBundleIdentifier length] == 0) {
+        return @"Default Scope";
+    }
+
+    if ([self.scopeAppName length] > 0) {
+        return [NSString stringWithFormat:@"%@ (%@)",
+                                          self.scopeAppName,
+                                          self.scopeBundleIdentifier];
+    }
+
+    return self.scopeBundleIdentifier;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self resolveScopeContext];
+    self.navigationItem.title = [self scopeTitle];
     self.entryPolicy = [[self policy] copy];
     self.draftCustomSeed = self.entryPolicy.customSeed ?: @"";
 }
 
 - (NSString *)title {
-    NSString *appName = [[self specifier] propertyForKey:@"appName"];
-    return [appName length] > 0 ? @"App Scope" : @"Scope";
+    return [self scopeTitle];
 }
 
 - (LHPreferencePolicy *)policy {
     LHPreferenceStore *store = [LHPreferenceStore sharedStore];
-    NSString *bundleID = [[self specifier] propertyForKey:@"bundleIdentifier"];
+    NSString *bundleID = [self bundleIdentifier];
     if ([bundleID length] > 0) {
         return [store effectivePolicyForBundleIdentifier:bundleID];
     }
@@ -621,7 +683,7 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 - (BOOL)writePolicy:(LHPreferencePolicy *)policy error:(NSError **)error {
     LHPreferenceStore *store = [LHPreferenceStore sharedStore];
-    NSString *bundleID = [[self specifier] propertyForKey:@"bundleIdentifier"];
+    NSString *bundleID = [self bundleIdentifier];
     if ([bundleID length] > 0) {
         return [store setOverridePolicy:policy forBundleIdentifier:bundleID error:error];
     }
@@ -629,7 +691,8 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 }
 
 - (NSString *)bundleIdentifier {
-    return [[self specifier] propertyForKey:@"bundleIdentifier"];
+    [self resolveScopeContext];
+    return self.scopeBundleIdentifier;
 }
 
 - (NSArray<NSString *> *)bundleIdentifiersUsingSeed:(NSString *)seed {
@@ -671,8 +734,21 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 - (NSString *)selectedSeedPreviewForSpecifier:(PSSpecifier *)specifier {
     (void)specifier;
-    NSString *seed = [LHPreferenceStore normalizedSeedString:self.draftCustomSeed ?: [self policy].customSeed];
-    return seed ?: @"None";
+
+    NSString *seed = [LHPreferenceStore normalizedSeedString:
+        self.draftCustomSeed ?: [self policy].customSeed];
+
+    if (seed == nil) {
+        return @"None";
+    }
+
+    // bundleIdentifiersUsingSeed: intentionally excludes the current app.
+    NSUInteger otherAppCount = [[self bundleIdentifiersUsingSeed:seed] count];
+    NSUInteger totalAppCount = otherAppCount;
+
+    return [NSString stringWithFormat:@"matches %lu %@",
+            (unsigned long)totalAppCount,
+            totalAppCount == 1 ? @"app" : @"apps"];
 }
 
 - (NSMutableArray *)specifiers {
@@ -704,9 +780,8 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
             if ([[self bundleIdentifier] length] > 0) {
                 PSSpecifier *choose = LHLinkSpecifier(@"Choose Existing Seed", self, NSClassFromString(@"LHCustomSeedListController"), @selector(selectedSeedPreviewForSpecifier:));
                 [choose setProperty:[self bundleIdentifier] forKey:@"bundleIdentifier"];
-                NSString *appName = [[self specifier] propertyForKey:@"appName"];
-                if ([appName length] > 0) {
-                    [choose setProperty:appName forKey:@"appName"];
+                if ([self.scopeAppName length] > 0) {
+                    [choose setProperty:self.scopeAppName forKey:@"appName"];
                 }
                 [items addObject:choose];
             }
@@ -718,6 +793,8 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    [self resolveScopeContext];
+    self.navigationItem.title = [self scopeTitle];
     self.draftCustomSeed = [self policy].customSeed ?: self.draftCustomSeed ?: @"";
     _specifiers = nil;
     [self reloadSpecifiers];
@@ -867,6 +944,20 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     return [[self specifier] propertyForKey:@"bundleIdentifier"];
 }
 
+- (NSString *)currentSelectedSeed {
+    NSString *bundleID = [self bundleIdentifier];
+    if ([bundleID length] == 0) {
+        return nil;
+    }
+
+    LHPreferencePolicy *policy = [[LHPreferenceStore sharedStore] effectivePolicyForBundleIdentifier:bundleID];
+    if (policy.scopeMode != LHCustomSeedScopeMode) {
+        return nil;
+    }
+
+    return [LHPreferenceStore normalizedSeedString:policy.customSeed];
+}
+
 - (NSArray<NSDictionary<NSString *, id> *> *)seedAssociations {
     NSString *currentBundle = [self bundleIdentifier];
     NSDictionary<NSString *, NSString *> *appNames = LHApplicationNamesByBundleIdentifier();
@@ -901,16 +992,17 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 - (NSString *)associatedAppsText:(NSArray<NSDictionary<NSString *, NSString *> *> *)apps {
     NSMutableArray<NSString *> *lines = [NSMutableArray array];
     for (NSDictionary<NSString *, NSString *> *app in apps) {
-        [lines addObject:[NSString stringWithFormat:@"%@\n%@", app[@"name"] ?: @"Unknown", app[@"bundleIdentifier"] ?: @""]];
+        [lines addObject:[NSString stringWithFormat:@"%@ (%@)", app[@"name"] ?: @"Unknown", app[@"bundleIdentifier"] ?: @""]];
     }
-    return [lines componentsJoinedByString:@"\n\n"];
+    return [lines componentsJoinedByString:@"\n"];
 }
 
 - (NSMutableArray *)specifiers {
     if (!_specifiers) {
         NSMutableArray *items = [NSMutableArray array];
         NSArray<NSDictionary<NSString *, id> *> *associations = [self seedAssociations];
-        [items addObject:LHGroupSpecifier(@"Seeds", [associations count] == 0 ? @"No other app override uses a custom seed yet." : @"Selecting a seed copies it into this app override.")];
+        NSString *selectedSeed = [self currentSelectedSeed];
+        [items addObject:LHGroupSpecifier(@"Seeds", [associations count] == 0 ? @"No other app override uses a custom seed yet." : @"A checkmark marks the seed currently used by this app. Selecting a seed copies it into this app override.")];
         for (NSDictionary<NSString *, id> *association in associations) {
             NSString *seed = association[@"seed"];
             NSArray *apps = association[@"apps"] ?: @[];
@@ -919,9 +1011,11 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
                                                                        set:nil
                                                                        get:nil
                                                                     detail:nil
-                                                                      cell:PSLinkListCell
+                                                                      cell:PSListItemCell
                                                                       edit:nil];
+            [specifier setProperty:@YES forKey:@"enabled"];
             [specifier setProperty:seed forKey:@"customSeed"];
+            [specifier setProperty:@([seed isEqualToString:selectedSeed]) forKey:@"selectedSeed"];
             [specifier setProperty:[self associatedAppsText:apps] forKey:@"associatedApps"];
             [specifier setProperty:@([apps count]) forKey:@"associatedAppCount"];
             [specifier setProperty:NSClassFromString(@"LHSeedAssociationCell") forKey:@"cellClass"];
@@ -944,9 +1038,11 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         policy.customSeed = [LHPreferenceStore normalizedSeedString:seed];
         NSError *error = nil;
         if (![store setOverridePolicy:policy forBundleIdentifier:bundleID error:&error]) {
+            [tableView deselectRowAtIndexPath:indexPath animated:YES];
             LHPresentError(self, error);
             return;
         }
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
         [self.navigationController popViewControllerAnimated:YES];
         return;
     }
