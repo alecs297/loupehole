@@ -150,6 +150,34 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 @end
 
+@interface LHStaticValueTableCell : LHValueTableCell
+@end
+
+@implementation LHStaticValueTableCell
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style
+              reuseIdentifier:(NSString *)reuseIdentifier
+                    specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:style reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        self.userInteractionEnabled = NO;
+    }
+    return self;
+}
+
+- (void)setSelected:(BOOL)selected animated:(BOOL)animated {
+    [super setSelected:NO animated:animated];
+}
+
+@end
+
+static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
+    PSSpecifier *specifier = LHValueSpecifier(label, value);
+    [specifier setProperty:NSClassFromString(@"LHStaticValueTableCell") forKey:@"cellClass"];
+    return specifier;
+}
+
 @interface LHDestructiveButtonCell : PSTableCell
 @end
 
@@ -1122,12 +1150,24 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 - (NSMutableArray *)specifiers {
     NSMutableArray *items = [super specifiers];
-    if ([items count] > 0 && ![[items firstObject] propertyForKey:@"loupeholeBundleFooter"]) {
-        NSString *footer = self.bundleIdentifier ?: @"";
-        PSSpecifier *group = [items firstObject];
-        [group setProperty:footer forKey:@"footerText"];
-        [group setProperty:@YES forKey:@"loupeholeBundleFooter"];
+    if ([items count] == 0 ||
+        [[[items firstObject] propertyForKey:@"loupeholeAppInfoSection"] boolValue]) {
+        return items;
     }
+
+    NSString *bundleID = [self scopeSelectionBundleIdentifier] ?: @"";
+    NSString *appName = [self scopeSelectionAppName];
+    if ([appName length] == 0) {
+        appName = [bundleID length] > 0 ? bundleID : @"Unknown App";
+    }
+
+    PSSpecifier *infoGroup = LHGroupSpecifier(@"Info", nil);
+    [infoGroup setProperty:@YES forKey:@"loupeholeAppInfoSection"];
+
+    [items insertObject:infoGroup atIndex:0];
+    [items insertObject:LHStaticValueSpecifier(@"App Name", appName) atIndex:1];
+    [items insertObject:LHStaticValueSpecifier(@"Bundle Identifier", bundleID) atIndex:2];
+
     return items;
 }
 
