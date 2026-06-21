@@ -1,6 +1,6 @@
 # Research Notes
 
-Last updated: 2026-06-17.
+Last updated: 2026-06-22.
 
 ## Upstream Loupe Snapshot
 
@@ -103,7 +103,6 @@ Current local gaps and constraints:
 
 ## Open Research Questions
 
-- How much backend-specific support should be added after the first MobileSubstrate-compatible Theos/Logos backend, such as ElleKit or libhooker-specific paths?
 - Which injection tracks are in scope beyond jailbreak packages: TrollStore-style app injection, sideloaded IPA patching for owned apps, or developer-only test host apps?
 - What minimum iOS version should be supported? A practical first target is iOS 15+ for rootless jailbreaks, with iOS 14 or earlier considered only if there is a concrete user need.
 - How much WebKit behavior can be normalized from native code without destabilizing app web views?
