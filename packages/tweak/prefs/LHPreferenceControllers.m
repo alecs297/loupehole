@@ -1453,8 +1453,9 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
         _specifiers = [@[
             LHGroupSpecifier(@"Seeds", @"Seeds shown here are internal Loupehole inputs, not values returned to protected apps."),
             LHValueSpecifier(@"Build seed", [store buildSeedString]),
-            LHValueSpecifier(@"Build seed role", @"Compile-time UUID used to derive generated package paths, loader/filter names, and seed-derivation labels. It is not the package runtime seed."),
             LHValueSpecifier(@"Root seed", [store rootSeedHexString]),
+            LHGroupSpecifier(@"Seed roles", nil),
+            LHValueSpecifier(@"Build seed role", @"Compile-time UUID used to derive generated package paths, loader/filter names, and seed-derivation labels. It is not the package runtime seed."),
             LHValueSpecifier(@"Root seed role", @"Random per-install package seed used as the practical runtime seed. Resetting it rotates generated values and seed-derived state paths for enabled apps."),
             LHValueSpecifier(@"Active scoped seed", @"Derived inside each target app from the root seed plus the selected scope. Custom seed scope uses its configured UUID instead of the root seed."),
             LHValueSpecifier(@"App-install marker", @"Per-app-install scope adds a random marker stored in that app's data. Deleting and reinstalling the app creates a new marker and rotates that app's seed."),
