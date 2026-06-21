@@ -343,11 +343,7 @@ Goal:
 
 Exit criteria:
 
-- The package installs under `/var/jb`, uses a conservative materialized filter
-  plist, and starts with no global injection.
-- Automatic new-app coverage, when enabled, uses a separate `installd` refresh
-  trigger for the materialized filter and preserves manual `lhctl refresh` as
-  the compatibility fallback.
+- The package installs under `/var/jb`, uses a conservative filter plist, and starts with no global injection.
 - Package scripts support clean install, upgrade, disable, and uninstall.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config, without deleting protected app data unless the user explicitly requested cleanup.
 
@@ -559,7 +555,7 @@ M2 - Passive MVP:
 M3 - Jailbreak MVP:
 
 - Rootless `.deb`.
-- Inject into selected bundles or the enabled default third-party app profile.
+- Inject into selected bundles.
 - Per-app profile/cohort selection.
 
 M4 - WebView MVP:

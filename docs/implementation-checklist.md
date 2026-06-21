@@ -288,11 +288,7 @@ with derived opaque per-scope state directories and blob filenames. A generated
 `/var/jb/usr/bin/lhctl` helper
 provides a CLI/menu flow for listing, enabling, disabling, toggling, clearing,
 and configuring per-bundle injection, scope, and mitigation lists. Device
-install and behavioral validation remain manual. The package also includes a
-separate `installrefresh` trigger filtered to `installd` only. It reacts to
-install-service notification families by running a quiet refresh path when the
-default profile is enabled, so newly installed third-party apps are picked up
-without loading the privacy runtime into SpringBoard.
+install and behavioral validation remain manual.
 
 Package the same dylib for jailbreak installation.
 
@@ -319,11 +315,7 @@ Acceptance checks:
 - Package layout installs under `/var/jb`.
 - Package root seed, per-app-install marker paths, and scoped state paths are
   generated and opaque.
-- Default-on third-party app materialization, per-bundle filter toggling, and
-  package policy edits work through `lhctl`.
-- The install-refresh trigger is packaged as a separate dylib/plist targeted
-  only at `installd`, and `refresh-auto` updates newly discovered apps only when
-  the default profile is enabled.
+- Per-bundle filter toggling and package policy edits work through `lhctl`.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
 - Reinstall after uninstall does not leave stale filter plists, generated names, or dangling package-owned preferences.
@@ -336,15 +328,8 @@ Implemented the first package-owned config provider and `lhctl` settings flow.
 The runtime reads the generated build-seed-derived package policy file before
 scope and seed resolution, applies the default policy plus the current bundle's
 override, and installs only the enabled compiled modules. The package default is
-off; when enabled, the default profile targets discovered third-party installed
-app bundles by materializing those bundle IDs into the positive loader filter
-while excluding system bundle identifiers. Per-bundle overrides can enable one
-bundle while the default is off, or disable one bundle while the default is on.
-The package includes a best-effort `installd` notification trigger to rerun that
-materialization after app install, uninstall, and update notifications while the
-default is enabled.
-Local/plain dylib development defaults still enable compiled mitigations. The
-generated `lhctl mitigations` command exposes the selected compiled module
+off; local/plain dylib development defaults still enable compiled mitigations.
+The generated `lhctl mitigations` command exposes the selected compiled module
 ID/name map for the deb, and runtime policy stores numeric module IDs with room
 for up to 1024 enabled modules.
 Preference UI, seed reset/state rotation controls, and richer profile selection
@@ -359,8 +344,7 @@ Implementation tasks:
   - jailbreak preference UI profile
   - embedded build-time config
   - built-in default profile
-- Add per-app allowlist. Status: complete for the first `lhctl` package flow,
-  including default-on third-party app materialization and per-bundle exclusions.
+- Add per-app allowlist. Status: complete for the first `lhctl` package flow.
 - Add mitigation toggles. Status: complete for compiled module IDs through `lhctl`.
 - Add profile selection. Status: pending.
 - Add scope mode selector. Status: complete for `lhctl` package policy:
