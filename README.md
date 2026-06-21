@@ -1,5 +1,11 @@
 # Loupehole
 
+![Status: Early Development](https://img.shields.io/badge/status-early%20development-orange)
+
+> ⚠️ **Early-stage project**
+>
+> This project is in a very early stage of development. While the main structure is mostly finished, all the actual mitigations are not ready yet. Come back in a couple of months (I'm out of Codex tokens) ! :)
+
 Loupehole is a privacy-preserving iOS tweak/library that reduces abusive fingerprinting from native apps and embedded web views. The initial scope is based on the public surfaces demonstrated by [mysk-research/loupe](https://github.com/mysk-research/loupe), plus adjacent iOS fingerprinting techniques that are not yet covered by Loupe.
 
 The central design principle is not "make every device random." The safer target is to make protected apps see a coherent, common, low-entropy device profile. A per-user random pile of values is easy to recognize as synthetic and can become a stronger fingerprint than the real device.
