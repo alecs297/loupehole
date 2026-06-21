@@ -14,6 +14,8 @@ trap 'rm -rf "$tmpdir"' EXIT
 root="$tmpdir/root"
 control="$tmpdir/control"
 filter="$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist"
+preference_bundle="$root/var/jb/Library/PreferenceBundles/LoupeholePreferences.bundle"
+preference_loader="$root/var/jb/Library/PreferenceLoader/Preferences/Loupehole.plist"
 toggle_helper="$root/var/jb/usr/bin/lhctl"
 
 dpkg-deb -x "$artifact" "$root"
@@ -35,9 +37,12 @@ require_dir() {
 
 require_file "$root/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.dylib"
 require_file "$filter"
-require_file "$toggle_helper"
-if [ ! -x "$toggle_helper" ]; then
-  printf '%s\n' "toggle helper is not executable"
+require_dir "$preference_bundle"
+require_file "$preference_bundle/Info.plist"
+require_file "$preference_loader"
+
+if [ -e "$toggle_helper" ]; then
+  printf '%s\n' "legacy lhctl helper must not be packaged"
   exit 1
 fi
 
@@ -49,8 +54,7 @@ for script in preinst postinst prerm postrm; do
   fi
 done
 
-state_parent=$(python3 - "$root" "$control" "$filter" <<'PY'
-import os
+state_parent=$(python3 - "$root" "$control" "$filter" "$preference_loader" <<'PY'
 import plistlib
 import re
 import sys
@@ -59,6 +63,7 @@ from pathlib import Path
 root = Path(sys.argv[1])
 control = Path(sys.argv[2])
 filter_path = Path(sys.argv[3])
+preference_loader = Path(sys.argv[4])
 hex_name = re.compile(r"^[0-9a-f]{32}$")
 
 parents = []
@@ -100,23 +105,25 @@ if seed_root_dir is None or root_seed_file is None or policy_file is None:
 seed_root = root / "var/jb/var/mobile/Library/Application Support" / state_parent / seed_root_dir
 if not seed_root.is_dir():
     raise SystemExit("package layout is missing generated seed root directory")
-helper_text = (root / "var/jb/usr/bin/lhctl").read_text(encoding="utf-8")
-if policy_file not in helper_text:
-    raise SystemExit("toggle helper does not reference generated policy file")
-if "awk" in helper_text:
-    raise SystemExit("toggle helper must not require awk")
-if re.search(r'\$\(field "\$\((default_line|effective_bundle_line)', helper_text):
-    raise SystemExit("toggle helper must avoid nested quoted command substitutions")
-old_selector_pattern = r"\bmo" "de\\b|\\bmo" "des\\b|compat" "ibility|stan" "dard|str" "ict"
-if re.search(old_selector_pattern, helper_text):
-    raise SystemExit("toggle helper must not expose the old profile selector")
+
+if "lhctl" in postinst_text or "lhctl" in postrm_text:
+    raise SystemExit("maintainer scripts still reference lhctl")
+if "chmod 600 \"$policy_file\"" not in postinst_text:
+    raise SystemExit("postinst must keep the policy file non-world-readable")
+if "filter_file" not in postinst_text:
+    raise SystemExit("postinst must prepare the filter plist for Settings writes")
 
 with filter_path.open("rb") as handle:
     data = plistlib.load(handle)
-
 bundles = data.get("Filter", {}).get("Bundles")
 if bundles != []:
     raise SystemExit("package filter must start with an empty Bundles allowlist")
+
+with preference_loader.open("rb") as handle:
+    loader = plistlib.load(handle)
+entry = loader.get("entry", {})
+if entry.get("bundle") != "LoupeholePreferences" or entry.get("detail") != "LHRootListController":
+    raise SystemExit("preference loader entry does not point at the Loupehole root controller")
 
 print(state_parent)
 PY
@@ -126,111 +133,114 @@ require_dir "$root/var/jb/var/mobile/Library/Application Support/$state_parent"
 require_dir "$root/var/jb/var/mobile/Library/Caches/$state_parent"
 require_dir "$root/var/jb/var/mobile/Library/Preferences/$state_parent"
 
-bundles_from_filter() {
-  python3 - "$filter" <<'PY'
-import plistlib
-import sys
+cat >"$tmpdir/preference_store_check.m" <<'SOURCE'
+#import "LHPreferenceStore.h"
 
-with open(sys.argv[1], "rb") as handle:
-    data = plistlib.load(handle)
-for bundle in data.get("Filter", {}).get("Bundles", []):
-    print(bundle)
-PY
+#import <Foundation/Foundation.h>
+
+static NSArray *bundlesAtPath(NSString *path) {
+    NSDictionary *plist = [NSDictionary dictionaryWithContentsOfFile:path];
+    return plist[@"Filter"][@"Bundles"] ?: @[];
 }
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.example.one >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default scope per-app >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default mitigations identity.idfv.uidevice.scoped_uuid >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one scope per-vendor-group >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" set com.example.one mitigations system.boot_time.composite.synthetic storage.volume_creation_time.foundation.synthetic >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" toggle com.example.two >/dev/null
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" disable com.example.one >/dev/null
-bundles=$(bundles_from_filter)
-if [ "$bundles" != "com.example.two" ]; then
-  printf '%s\n' "toggle helper did not update filter allowlist"
-  exit 1
-fi
+static NSArray *policyLinesAtPath(NSString *path) {
+    NSString *text = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+    NSMutableArray *lines = [NSMutableArray array];
+    for (NSString *line in [text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]]) {
+        if ([line length] > 0) {
+            [lines addObject:line];
+        }
+    }
+    return lines;
+}
 
-if LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" enable com.apple.Maps >/dev/null 2>&1; then
-  printf '%s\n' "toggle helper allowed a system bundle"
-  exit 1
-fi
+int main(void) {
+    @autoreleasepool {
+        LHPreferenceStore *store = [[LHPreferenceStore alloc] initWithRootPrefix:nil];
+        NSError *error = nil;
+        if (![store ensurePolicyWithError:&error]) {
+            return 1;
+        }
 
-python3 - "$root" "$state_parent" <<'PY'
-import re
-import sys
-from pathlib import Path
+        LHPreferencePolicy *defaultPolicy = [LHPreferencePolicy defaultPolicy];
+        defaultPolicy.enabled = YES;
+        defaultPolicy.scopeMode = 1;
+        defaultPolicy.moduleFilterEnabled = YES;
+        defaultPolicy.moduleIDs = @[@1];
+        if (![store setDefaultPolicy:defaultPolicy error:&error]) {
+            return 2;
+        }
+        if (![bundlesAtPath([store filterPath]) isEqualToArray:@[@"com.apple.UIKit"]]) {
+            return 3;
+        }
 
-root = Path(sys.argv[1])
-state_parent = sys.argv[2]
-config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
-policy_files = [path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name)]
-if len(policy_files) != 1:
-    raise SystemExit("expected one generated policy file")
+        LHPreferencePolicy *bundlePolicy = [defaultPolicy copy];
+        bundlePolicy.enabled = YES;
+        bundlePolicy.scopeMode = 2;
+        bundlePolicy.moduleFilterEnabled = YES;
+        bundlePolicy.moduleIDs = @[@2, @3];
+        if (![store setOverridePolicy:bundlePolicy forBundleIdentifier:@"com.example.one" error:&error]) {
+            return 4;
+        }
+        if (![[store overridePolicyForBundleIdentifier:@"com.example.one"].moduleIDs isEqualToArray:@[@2, @3]]) {
+            return 5;
+        }
 
-entries = {}
-for line in policy_files[0].read_text(encoding="utf-8").splitlines():
-    fields = line.split("|")
-    if not fields:
-        continue
-    if fields[0] == "D":
-        entries["D"] = fields
-    elif fields[0] == "B" and len(fields) > 1:
-        entries[fields[1]] = fields
+        NSURL *exportURL = [store exportSettingsWithError:&error];
+        if (exportURL == nil) {
+            return 6;
+        }
+        NSDictionary *exported = [NSDictionary dictionaryWithContentsOfURL:exportURL];
+        if (![exported[@"format"] isEqualToString:@"com.loupehole.settings"]) {
+            return 7;
+        }
+        NSArray *exportedModules = exported[@"overrides"][@"com.example.one"][@"mitigations"];
+        if (![exportedModules isEqualToArray:@[@"system.boot_time.composite.synthetic", @"storage.volume_creation_time.foundation.synthetic"]]) {
+            return 8;
+        }
 
-if entries.get("D") != ["D", "0", "1", "1", "1"]:
-    raise SystemExit(f"default policy mismatch: {entries.get('D')}")
-if entries.get("com.example.one") != ["B", "com.example.one", "0", "2", "1", "2,3"]:
-    raise SystemExit(f"bundle one policy mismatch: {entries.get('com.example.one')}")
-if entries.get("com.example.two") != ["B", "com.example.two", "1", "1", "1", "1"]:
-    raise SystemExit(f"bundle two policy mismatch: {entries.get('com.example.two')}")
-PY
+        defaultPolicy.enabled = NO;
+        defaultPolicy.moduleFilterEnabled = NO;
+        defaultPolicy.moduleIDs = @[];
+        if (![store setDefaultPolicy:defaultPolicy error:&error]) {
+            return 9;
+        }
+        if (![bundlesAtPath([store filterPath]) isEqualToArray:@[@"com.example.one"]]) {
+            return 10;
+        }
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" default enabled on >/dev/null
-bundles=$(bundles_from_filter)
-if [ "$bundles" != "com.apple.UIKit" ]; then
-  printf '%s\n' "default-on policy did not switch to the UIKit app filter"
-  exit 1
-fi
+        if (![store removeOverrideForBundleIdentifier:@"com.example.one" error:&error]) {
+            return 11;
+        }
+        if ([bundlesAtPath([store filterPath]) count] != 0) {
+            return 12;
+        }
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" disable com.example.two >/dev/null
-bundles=$(bundles_from_filter)
-if [ "$bundles" != "com.apple.UIKit" ]; then
-  printf '%s\n' "disabled override should not remove the broad UIKit filter"
-  exit 1
-fi
+        if (![store resetAllWithError:&error]) {
+            return 13;
+        }
+        NSArray *lines = policyLinesAtPath([store policyPath]);
+        if (![lines isEqualToArray:@[@"D|0|0|0|"]]) {
+            return 14;
+        }
+    }
+    return 0;
+}
+SOURCE
 
-status=$(LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" status com.example.two)
-case "$status" in
-  *"effective: disabled"*) ;;
-  *)
-    printf '%s\n' "status did not report disabled override"
-    exit 1
-    ;;
-esac
+cc \
+  -DLH_PREFERENCES_TESTING=1 \
+  -Icore/include \
+  -Icore/generated \
+  -Ipackages/tweak/generated \
+  -Ipackages/tweak/prefs \
+  packages/tweak/prefs/LHPreferenceStore.m \
+  packages/tweak/generated/LHGeneratedPreferenceMetadata.c \
+  core/generated/LHGeneratedConfig.c \
+  "$tmpdir/preference_store_check.m" \
+  -framework Foundation \
+  -o "$tmpdir/preference_store_check"
 
-LHCTL_ALLOW_NONROOT=1 ROOT_PREFIX="$root/var/jb" "$toggle_helper" clear >/dev/null
-bundles=$(bundles_from_filter)
-if [ -n "$bundles" ]; then
-  printf '%s\n' "toggle helper did not clear filter allowlist"
-  exit 1
-fi
-
-python3 - "$root" "$state_parent" <<'PY'
-import re
-import sys
-from pathlib import Path
-
-root = Path(sys.argv[1])
-state_parent = sys.argv[2]
-config_dir = root / "var/jb/var/mobile/Library/Preferences" / state_parent
-policy_file = next(path for path in config_dir.iterdir() if re.fullmatch(r"[0-9a-f]{32}", path.name))
-for line in policy_file.read_text(encoding="utf-8").splitlines():
-    fields = line.split("|")
-    if fields and fields[0] == "D" and len(fields) > 1 and fields[1] != "0":
-        raise SystemExit("clear did not disable default policy")
-    if fields and fields[0] == "B" and len(fields) > 2 and fields[2] != "0":
-        raise SystemExit("clear did not disable bundle policy entries")
-PY
+LH_PREFERENCES_TEST_ROOT="$root/var/jb" "$tmpdir/preference_store_check"
 
 printf '%s\n' "package layout check passed"

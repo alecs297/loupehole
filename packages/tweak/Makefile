@@ -10,6 +10,7 @@ include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
 
 TWEAK_NAME := runtime
+BUNDLE_NAME := LoupeholePreferences
 
 runtime_FILES := \
 	sources/Runtime.mm \
@@ -56,7 +57,33 @@ runtime_FRAMEWORKS := Foundation $(LH_SELECTED_FRAMEWORKS)
 runtime_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
 runtime_LIBRARIES := $(LH_SELECTED_LIBRARIES)
 
+LoupeholePreferences_FILES := \
+	prefs/LHPreferenceStore.m \
+	prefs/LHPreferenceControllers.m \
+	generated/LHGeneratedPreferenceMetadata.c \
+	../../core/generated/LHGeneratedConfig.c
+
+LoupeholePreferences_INSTALL_PATH := /Library/PreferenceBundles
+LoupeholePreferences_FRAMEWORKS := Foundation UIKit MobileCoreServices
+LoupeholePreferences_PRIVATE_FRAMEWORKS :=
+LoupeholePreferences_CFLAGS += \
+	-I../../core/include \
+	-I../../core/generated \
+	-Igenerated \
+	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
+	-fobjc-arc \
+	-Wall \
+	-Wextra \
+	-Werror
+LoupeholePreferences_LDFLAGS += -undefined dynamic_lookup
+LoupeholePreferences_RESOURCE_DIRS := prefs/Resources
+
 include $(THEOS_MAKE_PATH)/tweak.mk
+include $(THEOS_MAKE_PATH)/bundle.mk
+
+internal-stage::
+	$(ECHO_NOTHING)mkdir -p $(THEOS_STAGING_DIR)/Library/PreferenceLoader/Preferences$(ECHO_END)
+	$(ECHO_NOTHING)cp prefs/entry.plist $(THEOS_STAGING_DIR)/Library/PreferenceLoader/Preferences/Loupehole.plist$(ECHO_END)
 
 # dpkg-deb --root-owner-group makes fakeroot unnecessary for this deb, and
 # avoids host SYSV IPC failures from faked during local package builds.

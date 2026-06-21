@@ -274,7 +274,7 @@ Status: complete for the first rootless package path.
 Implemented a rootless Theos package for the existing runtime. `make package`
 builds `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`, compiles the
 dylib with `LHStateProviderKindPackage`, verifies the `/var/jb` package layout,
-checks the package filter starts empty, and exercises the package helper's
+checks the package filter starts empty, and exercises the Settings store's
 default-on UIKit app-class filter plus per-bundle overrides. The package
 includes install, upgrade, disable, and uninstall maintainer-script paths. The
 package layout, package-owned state parent
@@ -285,12 +285,11 @@ resolves package installs to a persisted root install seed used as the package
 practical seed. The default per-app-install scope uses an opaque random marker in
 app data so app reinstall rotates the active seed. The package state provider
 stores blobs under package-owned rootless storage outside target app containers,
-with derived opaque per-scope state directories and blob filenames. A generated
-`/var/jb/usr/bin/lhctl` helper
-provides a CLI/menu flow for default third-party app targeting, listing,
-enabling, disabling, toggling, clearing, and configuring per-bundle scope and
-mitigation lists. Device
-install and behavioral validation remain manual.
+with derived opaque per-scope state directories and blob filenames. The package
+includes `LoupeholePreferences.bundle` as the built-in Settings menu for default
+profile settings, per-app overrides, mitigation toggles, global reset, debug
+paths/seeds, and `.lh` export. Device install and behavioral validation remain
+manual.
 
 Package the same dylib for jailbreak installation.
 
@@ -303,7 +302,7 @@ Implementation tasks:
 - Implement `LHPackageStateProvider`.
 - Implement `LHSeedProvider` for practical seed resolution, package root seed,
   per-app-install markers, and stable scoped seeds.
-- Add a first helper for the rootless filter plist and package policy.
+- Add a first configuration surface for the rootless filter plist and package policy.
 - Keep package-owned runtime state outside target app containers.
 - Keep target-process-visible state names seed-derived and opaque.
 - Derive the package policy config filename from the build seed so the runtime
@@ -319,16 +318,16 @@ Acceptance checks:
 - Package root seed, per-app-install marker paths, and scoped state paths are
   generated and opaque.
 - Default third-party app targeting, disabled per-bundle overrides, and package
-  policy edits work through `lhctl`.
+  policy edits work through the Settings store verifier.
 - Uninstall removes package-owned dylibs, filter plists, preference bundles, generated manifests, caches, and package-owned config.
 - Uninstall does not delete target app containers or app Keychain items unless explicitly requested by the user.
 - Reinstall after uninstall does not leave stale filter plists, generated names, or dangling package-owned preferences.
 
 ## Phase 6: Configuration and Preferences
 
-Status: in progress for package-owned CLI configuration.
+Status: in progress for package-owned Settings configuration.
 
-Implemented the first package-owned config provider and `lhctl` settings flow.
+Implemented the first package-owned config provider and built-in Settings menu.
 The runtime reads the generated build-seed-derived package policy file before
 scope and seed resolution, applies the default policy plus the current bundle's
 override, and installs only the enabled compiled modules. Package runtime startup
@@ -336,11 +335,12 @@ exits before scope/seed setup for system bundles, non-app processes, extensions,
 and effectively disabled policies. The package default is off on install; when
 enabled, the default profile targets the broad UIKit app class and per-bundle
 disabled overrides win. Local/plain dylib development defaults still enable compiled mitigations.
-The generated `lhctl mitigations` command exposes the selected compiled module
-ID/name map for the deb, and runtime policy stores numeric module IDs with room
-for up to 1024 enabled modules.
-Preference UI, seed reset/state rotation controls, and richer profile selection
-remain pending.
+Generated Settings metadata exposes the selected compiled module ID/name map for
+the deb, and runtime policy stores numeric module IDs with room for up to 1024
+enabled modules. The Settings menu also supports global reset, per-app override
+reset, debug seed/path display, and `.lh` export using dotted mitigation IDs for
+cross-install readability. Seed reset/state rotation controls and richer profile
+selection remain pending.
 
 Add configuration without moving policy into hooks.
 
@@ -352,10 +352,11 @@ Implementation tasks:
   - embedded build-time config
   - built-in default profile
 - Add default third-party app targeting with per-app overrides. Status: complete
-  for the first `lhctl` package flow.
-- Add mitigation toggles. Status: complete for compiled module IDs through `lhctl`.
+  for the Settings package flow.
+- Add mitigation toggles. Status: complete for compiled module IDs through the
+  Settings package flow.
 - Add profile selection. Status: pending.
-- Add scope mode selector. Status: complete for `lhctl` package policy:
+- Add scope mode selector. Status: complete for Settings package policy:
   - per app install
   - per app
   - per vendor group
@@ -363,9 +364,9 @@ Implementation tasks:
   - manual linked group
 - Add seed reset and state rotation controls on top of the existing
   `LHSeedProvider`.
-- Promote or replace the first `lhctl` bundle toggle helper with a full
-  preference/config provider flow. Status: complete for CLI/provider, pending
-  preference UI.
+- Promote or replace the first bundle toggle helper with a full
+  preference/config provider flow. Status: complete for the built-in Settings
+  menu.
 - Use Swift only for preference UI if needed.
 
 Acceptance checks:

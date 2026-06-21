@@ -29,8 +29,10 @@ sources into the injected dylib.
   label bytes.
 - `packages/tweak/generated/package-layout/`: generated Theos package layout,
   including maintainer scripts, package-owned state directories, the package seed
-  root, the package policy file, and the first `lhctl` per-bundle settings
-  helper.
+- `packages/tweak/generated/LHGeneratedPreferenceMetadata.h`: generated
+  selected mitigation metadata for the Settings bundle.
+- `packages/tweak/generated/LHGeneratedPreferenceMetadata.c`: generated
+  selected mitigation metadata definitions for the Settings bundle.
 
 Generated files are ignored by git. The root `make` target regenerates them
 before compiling. If building directly from `packages/tweak` with Theos, run
@@ -353,47 +355,38 @@ from the practical seed. Stable per-app, vendor-group, shared-app-group, and
 manual-linked-group scopes derive directly from the practical seed plus the
 resolved scope identifier.
 
-The package also installs `/var/jb/usr/bin/lhctl`, a small shell helper for the
-initial per-bundle filter and policy flow:
+The package also installs `LoupeholePreferences.bundle` plus a PreferenceLoader
+entry for the built-in Settings menu. The menu edits
+`/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist` for injection
+and the generated package policy file for default/per-bundle runtime settings.
+Those runtime settings are enabled/off state, scope, and the compiled mitigation
+module list. The package starts from an empty `Bundles` filter and a default-off
+policy, so no app is injected on install. When the default profile is enabled,
+the Settings store writes the broad UIKit app-class filter (`com.apple.UIKit`)
+instead of enumerating installed app bundles. The runtime then limits work to
+targetable third-party app processes, excluding system bundle IDs and
+non-app/extension processes before seed or hook setup. Per-bundle rows override
+the default policy, so disabling one app keeps the broad filter in place but
+makes that app an effective no-op. When the default policy is off, only
+explicitly enabled bundle rows are written directly to the filter. Restart the
+target app after changing filter or policy settings.
 
-```sh
-lhctl list
-lhctl enable com.example.app
-lhctl disable com.example.app
-lhctl toggle com.example.app
-lhctl status com.example.app
-lhctl set com.example.app enabled off
-lhctl set com.example.app scope per-vendor-group
-lhctl set com.example.app mitigations identity.idfv.uidevice.scoped_uuid
-lhctl default enabled on
-lhctl default enabled off
-lhctl default scope per-app-install
-lhctl default mitigations all
-lhctl mitigations
-lhctl clear
-lhctl menu
-```
+The Settings menu exposes default profile enabled/off state, scope, mitigation
+toggles, a third-party app override list, per-app override reset, global reset,
+debug seed/path display, and `.lh` export. The export is an XML property list
+using dotted mitigation IDs so exports remain meaningful across installs where
+numeric module IDs could differ.
 
-The helper edits `/var/jb/Library/MobileSubstrate/DynamicLibraries/runtime.plist`
-for injection and the generated package policy file for default/per-bundle
-runtime settings. Those runtime settings are enabled/off state, scope, and the
-compiled mitigation module list. The package starts from an empty `Bundles`
-filter and a default-off policy, so no app is injected on install. When
-`lhctl default enabled on` is set, the helper writes the broad UIKit app-class
-filter (`com.apple.UIKit`) instead of enumerating installed app bundles. The
-runtime then limits work to targetable third-party app processes, excluding
-system bundle IDs and non-app/extension processes before seed or hook setup.
-Per-bundle rows override the default policy, so `lhctl disable com.example.app`
-keeps the broad filter in place but makes that app an effective no-op. When the
-default policy is off, only explicitly enabled bundle rows are written directly
-to the filter. It must be run as root because it writes rootless package
-configuration. Restart the target app after changing filter or policy settings.
+On install, `postinst` keeps the generated policy file and loader filter
+non-world-readable and owned by `mobile` so the Settings app can update them
+without the old root CLI. This is a practical package permission boundary, not a
+strong per-app access-control boundary: the runtime still has to read the policy
+from protected app processes, and iOS app sandbox behavior ultimately decides
+which other mobile-user processes can reach the generated rootless paths.
 
 The deb's available mitigation list is frozen at build time. The generator
 assigns numeric module IDs from the mitigation catalog, compiles only the
 selected mitigation sources into the dylib, and emits the same selected ID/name
-map into `lhctl`. `lhctl mitigations` prints that generated map and accepts
-either the numeric module ID or the dotted mitigation ID when writing a
-per-bundle or default mitigation list. Runtime policy stores only numeric module
+map into Settings bundle metadata. Runtime policy stores only numeric module
 IDs, and a package cannot enable a mitigation that was not compiled into that
 deb.

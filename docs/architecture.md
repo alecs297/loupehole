@@ -155,7 +155,7 @@ for enabled/off state, scope mode, and the compiled mitigation module IDs to
 install.
 
 The package installs with an empty filter and a default-off policy. When the
-default profile is enabled, `lhctl` uses the UIKit app-class filter
+default profile is enabled, the Settings store uses the UIKit app-class filter
 (`com.apple.UIKit`) rather than enumerating installed bundles. Package runtime
 startup then rejects system bundle IDs, non-app processes, and extensions before
 seed or hook setup. Explicit per-bundle policy rows still override the default,
@@ -163,9 +163,10 @@ including disabled rows that make one app no-op while the default profile stays
 on.
 
 The package's list of available mitigations is generated from the same build
-selection that compiles the dylib. `lhctl` does not discover modules dynamically;
-the build generator emits the selected module ID/name map into the helper, and
-the runtime only gates the compiled registry by numeric module ID.
+selection that compiles the dylib. The Settings bundle does not discover modules
+dynamically; the build generator emits the selected module ID/name map into
+preference metadata, and the runtime only gates the compiled registry by numeric
+module ID.
 
 ### State Scope and Storage
 
@@ -459,8 +460,8 @@ Install and uninstall requirements:
 - The initial install must not inject into any app until the default policy or an
   explicit per-bundle policy enables injection.
 - Maintainer scripts may create package-owned directories, migrate package-owned configuration, refresh loader caches where required, and remove package-owned artifacts on uninstall.
-- Uninstall must remove the dylib, filter plist, preference bundle, package-owned caches, launch helpers, generated module manifests, and package-owned default configuration.
-- Uninstall must not delete protected app containers, app Keychain items, or user-selected cleanup targets unless the user explicitly requested that privacy cleanup in preferences or through a separate helper command.
+- Uninstall must remove the dylib, filter plist, preference bundle, package-owned caches, generated module manifests, and package-owned default configuration.
+- Uninstall must not delete protected app containers, app Keychain items, or user-selected cleanup targets unless the user explicitly requested that privacy cleanup in preferences.
 - A reinstall should be able to start cleanly after uninstall without stale filter plists, stale generated names, or dangling package-owned preference files.
 
 ## Website Builder Design
