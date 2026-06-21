@@ -1,73 +1,127 @@
-# system.boot_time
+# `system.boot_time`
 
-Name: Device boot time
-Status: experimental
-Default behavior: enabled when the module is selected
-Affected APIs: `sysctl`, `sysctlbyname`, `__sysctl`, `__sysctlbyname`, `kern.boottime`, `NSProcessInfo.systemUptime`
-Permissions: none
+The boot-time option normalizes app-visible device lifetime values. It covers
+passive temporal fingerprinting surfaces, while the mitigation actively hooks
+both C sysctl callers and the Foundation uptime property.
 
-Original API behavior:
+## Metadata
 
-`kern.boottime` exposes the device's last boot timestamp as a `timeval`.
+| Field | Value |
+| --- | --- |
+| Option ID | `system.boot_time` |
+| Implemented mitigation | `system.boot_time.composite.synthetic` |
+| Policy value | `boot_time` |
+| User-facing name | Device boot time |
+| Status | Experimental |
+| Surface | System lifetime |
+| Classification | Passive temporal surface; active hook mitigation |
+| Affected APIs | `sysctl`, `sysctlbyname`, `__sysctl`, `__sysctlbyname`, `kern.boottime`, `NSProcessInfo.systemUptime` |
+| Default behavior | Enabled when the mitigation is selected |
+| Permission requirement | None; these APIs do not trigger an iOS permission prompt |
 
-Fingerprinting mechanism:
+## References
 
-Boot time is stable until reboot and can link app sessions, especially when
-combined with storage initialization dates and other passive signals.
+- Apple Developer: [`ProcessInfo.systemUptime`](https://developer.apple.com/documentation/foundation/processinfo/systemuptime).
+- Apple Developer archive: [`sysctl(3)` iOS manual page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/sysctl.3.html).
+- Apple Developer: [`sysctlbyname`](https://developer.apple.com/documentation/kernel/1387446-sysctlbyname).
+- Apple open source: [`CTL_KERN` and `KERN_BOOTTIME` in Darwin `sysctl.h`](https://github.com/apple/darwin-xnu/blob/main/bsd/sys/sysctl.h).
 
-Mitigation behavior:
+## Surface and Relevance
 
-The default selected mitigation is `system.boot_time.composite.synthetic`. It
-imports the sysctl-family hook adapter and the `NSProcessInfo.systemUptime`
-adapter. The sysctl adapter hooks `sysctl` and `sysctlbyname` for
-`kern.boottime`; it also hooks the underscored syscall entry names when present
-because Swift and libSystem callers can bind closer to those symbols than the
-public wrappers. The backend applies both implementation patching and
-imported-symbol rebinding for those names. The ProcessInfo adapter returns an
-uptime derived from the same synthetic boot timestamp. Non-boot-time calls pass
-through to the original functions.
+### Original API Behavior
 
-Common defaults:
+`kern.boottime` exposes the system's last boot timestamp as a `struct timeval`
+through the sysctl MIB path `CTL_KERN, KERN_BOOTTIME` or the string name
+`"kern.boottime"`. `NSProcessInfo.systemUptime` exposes elapsed awake time since
+the last restart.
 
-The temporal resolver derives a boot time before `now` from the active instance
-seed and scope, then stores it in the temporal state blob when a writable
-provider is available. Hook code does not embed the timeline.
+### Fingerprinting Relevance
 
-Value lifetime:
+Boot time is stable until the device restarts. Apps can use it to link launches,
+compare sessions, infer reboot behavior, or cross-check other timeline signals
+such as volume creation time, app install time, logs, caches, and storage
+metadata.
 
-Per-scope stable when local state is writable. Embedded fallback can operate
-without writable state.
+## Mitigation Strategy
 
-Value dependencies:
+The selected mitigation is a composite installer. It imports:
 
-Must stay later than `storage.volume_creation_time`.
+- `BootTimeSysctlMitigation.c` for `sysctl`, `sysctlbyname`, `__sysctl`, and
+  `__sysctlbyname`.
+- `BootTimeProcessInfoMitigation.m` for `-[NSProcessInfo systemUptime]`.
 
-Temporal dependencies:
+The sysctl adapter handles read-only boot-time queries only. It recognizes
+`CTL_KERN, KERN_BOOTTIME` and `"kern.boottime"` when `newp == NULL`, copies out
+the policy-provided `struct timeval`, and preserves the normal `oldp`/`oldlenp`
+size-query pattern. Non-boot-time sysctl calls and write attempts pass through
+to the original functions.
 
-`volumeCreationTime < bootTime < now`.
+The ProcessInfo adapter reads the same `boot_time` policy value and returns
+`now - bootTime` when the result is coherent and nonnegative. This keeps uptime
+and boot timestamp tied to the same synthetic timeline.
 
-Drawbacks:
+The hook backend attempts direct function patching and imported-symbol
+rebinding for the sysctl names because app, Swift, and libSystem call sites may
+not all pass through a single public wrapper.
 
-Apps that compare additional uptime-adjacent APIs may still observe
-unimplemented surfaces until later mitigations are added.
+## Derivation and Lifetime
 
-Detection and uniqueness risks:
+- State owner:
+  `packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c`.
+- State key label: `temporal_lifetime.state`.
+- Boot anchor label: `temporal_lifetime.boot_anchor`.
+- Value shape: `struct timeval` with microseconds set to `0`.
+- Derivation input: active instance seed plus active `LHScope`.
+- Boot age: at least 6 hours before `now`, plus a seed-derived offset inside a
+  14-day window.
+- Storage behavior: the temporal state domain uses
+  `LHPolicyEngineLoadOrCreateState`, so writable state keeps the generated
+  timeline stable across relaunches for the same scope.
+- Value dependencies: must stay later than
+  `storage.volume_creation_time`.
+- Temporal dependencies: `volumeCreationTime < bootTime < now`; the same state
+  blob also reserves `profileEpoch <= volumeCreationTime` for later timeline
+  surfaces.
 
-Returning contradictory temporal values is high risk. The temporal generator
-builds boot and volume values from shared seed-derived anchors so the ordering is
-true by construction.
+Hook code does not embed concrete dates or ages. It only requests the policy
+value and adapts it to the queried API shape.
 
-Test plan:
+## Impact and Tradeoffs
 
-Manual Loupe comparison after injection should show `kern.boottime` normalized
-through Loupe's `SysctlHelper.timeval("kern.boottime")` path and still later
-than the synthetic volume creation time.
+Apps that compare unimplemented uptime-adjacent APIs can still observe real
+values until those surfaces receive separate mitigation modules. The composite
+currently covers the sysctl-family boot timestamp and Foundation
+`systemUptime`; it does not claim to normalize every possible monotonic clock,
+mach time, log timestamp, or process lifetime value.
 
-Validation:
+The highest detection risk is temporal contradiction. Returning a boot time that
+is earlier than impossible storage events, later than `now`, or inconsistent
+with `systemUptime` would stand out. This mitigation reduces that risk by
+serving boot timestamp and uptime from one policy timeline.
 
-Phase 3 manual Loupe validation passed on 2026-06-18.
+## Validation
 
-Rollback:
+Manual Loupe validation passed on 2026-06-18. Expected observations:
 
-If hook installation or policy lookup fails, pass through only the affected
-boot-time query path.
+- `kern.boottime` is normalized through Loupe's sysctl path.
+- `NSProcessInfo.systemUptime` corresponds to the same synthetic boot timestamp.
+- The synthetic boot time remains stable across relaunches for the same seed and
+  scope.
+- The synthetic boot time is later than the synthetic volume creation time and
+  earlier than the current wall clock.
+- Non-boot-time sysctl queries keep their original behavior.
+
+## Rollback and Pass-Through
+
+If no boot-time adapter installs, the composite mitigation registers as a no-op.
+If policy lookup fails inside an installed sysctl replacement, the replacement
+falls through to the original function. If no original function is available as
+a final safety path, the C replacement returns `-1` with `errno` set rather than
+manufacturing an unrelated timestamp.
+
+For `NSProcessInfo.systemUptime`, policy lookup failure or an incoherent negative
+uptime falls through to the original implementation. If no original method is
+available, the last-resort return is `0.0`.
+
+Disabling this mitigation should affect only boot-time and uptime queries. The
+volume creation date mitigation has its own rollback behavior.
