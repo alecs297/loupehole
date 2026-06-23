@@ -117,7 +117,7 @@ Every method should be available as one of these policy behaviors:
 - Rate limited: reduce sampling frequency for sensors/timing.
 - Smoothing/noise: add low-risk deterministic perturbation without becoming unique.
 
-Each surface should expose all behaviors that are technically and ethically appropriate. For example, location can support pass-through, coarse, region-only, session-stable synthetic, or denied. DeviceCheck/App Attest should generally support pass-through only, because spoofing those APIs targets security workflows more than privacy fingerprinting.
+Each surface should expose all behaviors that are technically and ethically appropriate. For example, location can support pass-through, coarse, region-only, session-stable synthetic, or denied.
 
 ## Required Documentation Per Option
 
@@ -150,9 +150,13 @@ Suggested markdown template:
 ### option.id
 
 Name:
+
 Status:
+
 Default:
+
 Affected APIs:
+
 Permissions:
 
 Original API behavior:
@@ -242,4 +246,3 @@ A spoofing option is complete only when:
 - Its temporal or value dependencies are listed.
 - Its drawbacks are documented.
 - It does not contain identifying project/build constants in the injected runtime.
-- It can be disabled per app.

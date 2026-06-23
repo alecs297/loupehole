@@ -15,10 +15,8 @@ The central design principle is not "make every device random." The safer target
 - [Execution plan](docs/execution-plan.md): goals, roadmap, milestones, development environment, risk model, and release tracks.
 - [Architecture](docs/architecture.md): proposed repository layout, tweak runtime, build system, configuration model, website/custom compiler, and QA harness.
 - [Build configuration](docs/build-configuration.md): mitigation catalog, build selection JSON, generated registry, and naming conventions.
-- [Implementation checklist](docs/implementation-checklist.md): actionable phase-by-phase handoff plan with statuses and acceptance checks.
 - [Fingerprinting surfaces](docs/fingerprinting-surfaces.md): detailed API-by-API notes, mitigation strategy, limitations, and priority.
 - [Spoofing option policy](docs/spoofing-option-policy.md): non-identifying constants, common defaults, required option documentation, and mitigation method coverage.
-- [Research notes](docs/research-notes.md): source inventory, Loupe upstream commit, and open research questions.
 
 ## Development Environment
 

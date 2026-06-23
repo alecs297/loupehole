@@ -31,15 +31,6 @@ Responsibilities:
 - Keep no telemetry.
 - Prevent hook modules from embedding identifying constants or spoofed values directly.
 
-Suggested modules:
-
-- `LHPolicyEngine`
-- `LHProfile`
-- `LHAppContext`
-- `LHSeed`
-- `LHValueQuantizer`
-- `LHCompatibility`
-
 Implementation language:
 
 - The injected runtime must use C, Objective-C, or Objective-C++.
@@ -54,33 +45,8 @@ the same policy value. Higher-level grouping, such as "identity" or "storage",
 belongs in configuration, UI, or build presets rather than the injected module
 boundary. The compilation boundary is driven by a static mitigation catalog and
 build-selection JSON; no dynamic module loading is used in target processes.
-Early mitigation-level modules include:
 
-- `IDFVMitigation`
-- `BootTimeMitigation`
-- `BootTimeSysctlMitigation`
-- `BootTimeProcessInfoMitigation`
-- `VolumeCreationTimeMitigation`
-- `DeviceModelSysctlMitigation`
-- `ProcessInfoCPUMitigation`
-- `StorageCapacityMitigation`
-- `DisplayHooks`
-- `BatteryHooks`
-- `LocaleHooks`
-- `AccessibilityHooks`
-- `PasteboardHooks`
-- `NetworkHooks`
-- `FontsVoicesHooks`
-- `AudioHooks`
-- `MetalHooks`
-- `TelephonyHooks`
-- `URLSchemeHooks`
-- `KeychainHooks`
-- `StorageGuardHooks`
-- `PermissionedDataHooks`
-- `WebKitHooks`
-
-`BootTimeMitigation` is the default catch-all mitigation for the boot-time
+As an example, `BootTimeMitigation` is the default catch-all mitigation for the boot-time
 surface. It imports the sysctl-family component and the `NSProcessInfo`
 component so a build can select one boot-time mitigation while still covering
 several call paths. `BootTimeSysctlMitigation` hooks both public sysctl wrappers
@@ -96,26 +62,11 @@ Mitigation source files are organized by runtime domain and surface:
 packages/tweak/sources/<domain>/<surface>/<Component>Mitigation.{c,m,mm}
 ```
 
-Examples are `system/boot_time`, `identity/idfv`, and
-`storage/volume_creation_time`. Cross-surface runtime entry files, such as the
-constructor, can stay directly under `packages/tweak/sources`.
-
-Hook modules should be compiled as thin adapters around a shared internal ABI. The first dylib should already use the final boundaries: generated module registration, per-mitigation compile selection, policy-engine lookups, and centralized value generation. A placeholder or no-op implementation is preferable to a shortcut that embeds spoofed constants in hook code.
-
 Mitigation IDs use `domain.surface.api_or_method.variant`, for example
 `system.boot_time.composite.synthetic`. Every ID includes a variant segment,
 even when only one variant exists. The generated registry derives install
 symbols from IDs using `LHMitigation_` plus the ID with dots replaced by
 underscores, then `_install`.
-
-Policy lookups use a generated value-query boundary rather than one top-level
-`LHPolicyEngineCopy...` function per future surface. Hook adapters construct a
-value request containing a generated value ID, expected payload kind, output
-buffer, and output length. The policy engine validates the request against the
-generated policy-value descriptor table and dispatches to the registered
-resolver. This keeps `LHPolicyEngine` as the shared config/scope/profile/state
-coordinator instead of a growing list of category-specific accessors or a
-central switch over every future value.
 
 Policy value IDs come from `config/policy-values.json` and are independent from
 mitigation IDs. Multiple mitigation modules can request the same policy value,
@@ -324,46 +275,6 @@ These profiles are compile-time/catalog choices for default behavior and custom
 builds. Runtime preferences choose targeting, scope, custom seeds, and compiled
 mitigation state; they do not select arbitrary device-profile values.
 
-### Compatibility
-
-Goal:
-
-- Reduce the worst passive fingerprinting while preserving app behavior.
-
-Behavior:
-
-- Normalize IDFV-like identifiers per app.
-- Coarsen storage, battery, boot time, locale, and WebView details.
-- Leave camera, location, contacts, photos, calendars, reminders, music mostly pass-through after user permission.
-- Do not block URL schemes that are likely required by app features.
-
-### Standard
-
-Goal:
-
-- Default privacy improvement for most apps.
-
-Behavior:
-
-- Full passive normalization.
-- WebView anti-fingerprinting enabled.
-- URL scheme probing returns a common cohort set unless the app opens a user-initiated URL.
-- Keychain reinstall tracking guarded.
-- Permissioned APIs summarized or coarsened when possible.
-
-### Strict
-
-Goal:
-
-- Maximum privacy for high-risk apps where breakage is acceptable.
-
-Behavior:
-
-- Empty or generic responses for app inventory, local network, Bluetooth, contacts summaries, music taste, photo metadata, reminder titles, calendar source names.
-- Coarse location.
-- Camera enumeration reduced to a common virtual set if the app does not need capture.
-- WebView canvas/WebGL/audio/timing heavily normalized.
-
 ## Build Variability
 
 Build variability is useful for reducing static signature matching, but it should not create unique runtime behavior.
@@ -443,31 +354,11 @@ The full required template is defined in [spoofing-option-policy.md](spoofing-op
 
 ## Jailbreak Package Design
 
-Use Theos for the first package.
-
 Artifacts:
 
 - Rootless `.deb` as primary.
-- Optional rootful package if needed.
 - Filter plist for selected bundle IDs.
 - Preference bundle.
-
-Theos notes:
-
-- Theos supports multiple platforms and common package formats.
-- Rootless packages install under `/var/jb`.
-- Rootless iOS commonly uses `iphoneos-arm64`.
-- Filter plists control process injection by bundle, executable, or class.
-
-Recommended first filter:
-
-- Do not inject into every process by default.
-- Start with an empty filter and a default-off package policy.
-- When the default policy is enabled, target the UIKit app class and rely on
-  the runtime guard plus per-bundle disabled overrides instead of an installed-app
-  bundle inventory.
-- Exclude SpringBoard, system daemons, system apps, extensions, banking/DRM apps,
-  and critical Apple services unless explicitly tested.
 
 Install and uninstall requirements:
 
@@ -479,7 +370,7 @@ Install and uninstall requirements:
 - Uninstall must not delete protected app containers, app Keychain items, or user-selected cleanup targets unless the user explicitly requested that privacy cleanup in preferences.
 - A reinstall should be able to start cleanly after uninstall without stale filter plists, stale generated names, or dangling package-owned preference files.
 
-## Website Builder Design
+## Profile Builder Design
 
 ### User Flow
 
@@ -491,52 +382,6 @@ Install and uninstall requirements:
 6. Build artifact.
 7. Download artifact and manifest.
 
-### Backend
-
-Use macOS workers for official artifacts.
-
-Components:
-
-- Build API.
-- Queue.
-- macOS worker pool.
-- Theos/Xcode toolchain image.
-- Artifact store with short retention.
-- Manifest generator.
-
-Security:
-
-- No arbitrary user scripts.
-- No user-provided source code in v1.
-- Predefined mitigation module toggles only.
-- Hard resource/time limits.
-- Artifacts expire.
-- No telemetry beyond operational build status.
-
-## Test Harness
-
-The harness should answer four questions:
-
-1. Did the hook apply?
-2. Did the app remain stable?
-3. Did the exposed values become less identifying?
-4. Are there contradictions?
-
-Test apps:
-
-- Native Loupe-style probe app.
-- WKWebView fingerprint page.
-- App compatibility suite with camera, audio, maps, login, WebView, and media playback flows.
-
-Reports:
-
-- Raw observed value.
-- Protected observed value.
-- Expected cohort value.
-- Entropy bucket.
-- Invariant result.
-- Breakage notes.
-
 ## Failure Modes
 
 Never disable all hooks as the normal response to a single mitigation failure. Each mitigation should define its own best-effort generic fallback and rollback behavior. If a coherent generic fallback is not available, the affected mitigation may pass through the real value.
@@ -544,7 +389,6 @@ Never disable all hooks as the normal response to a single mitigation failure. E
 Examples:
 
 - If a display hook cannot find a coherent profile value, use the display module's documented generic fallback or return the real display value.
-- If a WebView script injection fails, log only in diagnostics mode.
 - If config is corrupt, load built-in defaults.
 - If a hook detects an unsupported OS/API version, bypass that hook.
 
@@ -555,10 +399,3 @@ Default:
 - No logs.
 - No files.
 - No network.
-
-Diagnostics mode:
-
-- Per-app opt-in.
-- Ring buffer in memory.
-- Manual export from preferences.
-- Redact identifiers.

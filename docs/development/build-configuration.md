@@ -1,7 +1,6 @@
 # Build Configuration
 
-Loupehole uses a static generated build graph for mitigation modules. Mitigations
-are not dynamically loaded at runtime. A build selection chooses mitigation IDs,
+Mitigations are not dynamically loaded at runtime. A build selection chooses mitigation IDs,
 the generator validates the selection, and Theos compiles only the selected
 sources into the injected dylib.
 
@@ -33,10 +32,6 @@ sources into the injected dylib.
   selected mitigation metadata for the Settings bundle.
 - `packages/tweak/generated/LHGeneratedPreferenceMetadata.c`: generated
   selected mitigation metadata definitions for the Settings bundle.
-
-Generated files are ignored by git. The root `make` target regenerates them
-before compiling. If building directly from `packages/tweak` with Theos, run
-`make generate` from the repository root first.
 
 ## Catalog Entries
 
