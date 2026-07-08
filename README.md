@@ -6,7 +6,7 @@
 >
 > This project is in a very early stage of development. While the main structure is mostly finished, all the actual mitigations are not ready yet. Come back in a couple of months (I'm out of Codex tokens) ! :)
 
-Loupehole is a privacy-preserving iOS tweak/library that reduces abusive fingerprinting from native apps and embedded web views. The initial scope is based on the public surfaces demonstrated by [mysk-research/loupe](https://github.com/mysk-research/loupe), plus adjacent iOS fingerprinting techniques that are not yet covered by Loupe.
+Loupehole is a privacy-preserving iOS injected runtime/library that reduces abusive fingerprinting from native apps and embedded web views. The initial scope is based on the public surfaces demonstrated by [mysk-research/loupe](https://github.com/mysk-research/loupe), plus adjacent iOS fingerprinting techniques that are not yet covered by Loupe.
 
 The central design principle is not "make every device random." The safer target is to make protected apps see a coherent, common, low-entropy device profile. A per-user random pile of values is easy to recognize as synthetic and can become a stronger fingerprint than the real device.
 
@@ -25,7 +25,7 @@ Loupehole does not aim to make every observation random. Its default approach is
 
 ## Project status
 
-The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. Three mitigations are compiled by the default build selection. Their status is **experimental** and their coverage is intentionally narrow.
+The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. Three mitigations are compiled by the default build selection. Their coverage is intentionally narrow, and each mitigation page records its current development status.
 
 The broader surface inventory is substantially larger than the implemented set. The [surfaces](docs/surfaces/) folder contains the list of targettable fingerprinting surfaces, while [mitigations](docs/mitigations/) presents the currently implemented mitigations. 
 
@@ -33,13 +33,13 @@ The documentation links below target those final names.
 
 ## Available mitigations
 
-| Surface | Mitigation | Source folder | Status | ID |
-| --- | --- | --- | --- | --- |
-| [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | Experimental | `identity.idfv.uidevice.scoped_uuid` |
-| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) + [shared temporal state](src/mitigations/common/temporal/) | Experimental | `system.boot_time.composite.synthetic` |
-| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) + [shared temporal state](src/mitigations/common/temporal/) | Experimental | `storage.volume_creation_time.foundation.synthetic` |
+| Surface | Mitigation | Source folder | ID |
+| --- | --- | --- | --- |
+| [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | `identity.idfv.uidevice.scoped_uuid` |
+| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) + [shared temporal state](src/mitigations/common/temporal/) | `system.boot_time.composite.synthetic` |
+| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) + [shared temporal state](src/mitigations/common/temporal/) | `storage.volume_creation_time.foundation.synthetic` |
 
-The boot-time and volume-creation-time mitigations are one coherent temporal group: `volume creation time < boot time < now` is preserved by a shared tweak helper. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
+The boot-time and volume-creation-time mitigations are one coherent temporal group: `volume creation time < boot time < now` is preserved by a shared mitigation helper. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
 
 ## Documentation
 

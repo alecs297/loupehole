@@ -1,6 +1,6 @@
 #include "common/temporal/TemporalLifetimeValues.h"
 
-#include "LHTweakValues.h"
+#include "LHMitigationValues.h"
 
 #include <string.h>
 #include <time.h>
@@ -28,7 +28,7 @@ static bool LHTemporalGenerateBootTime(const LHRuntimeConfig *config,
                                        struct timeval *bootTime) {
     uint64_t seedValue = 0;
     if (bootTime == 0 ||
-        !LHTweakDeriveU64(&config->buildSeed,
+        !LHMitigationDeriveU64(&config->buildSeed,
                           &LHGeneratedPolicySeed_temporal_lifetime_boot_time,
                           &context->scope,
                           0,
@@ -52,7 +52,7 @@ static bool LHTemporalGenerateVolumeCreationTime(const LHRuntimeConfig *config,
     uint64_t offsetSeed = 0;
     if (volumeCreationTime == 0 ||
         !LHTemporalGenerateBootTime(config, context, now, &bootTime) ||
-        !LHTweakDeriveU64(&config->buildSeed,
+        !LHMitigationDeriveU64(&config->buildSeed,
                           &LHGeneratedPolicySeed_temporal_lifetime_volume_creation_date,
                           &context->scope,
                           0,
@@ -99,7 +99,7 @@ static bool LHTemporalLoadState(const LHPolicyEngine *engine, LHTemporalLifetime
         return false;
     }
 
-    LHStateKey key = LHTweakStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1);
+    LHStateKey key = LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1);
     return LHPolicyEngineLoadOrCreateState(engine,
                                            &key,
                                            (uint8_t *)state,

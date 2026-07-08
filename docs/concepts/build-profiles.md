@@ -6,7 +6,7 @@ A build profile is the declarative selection that determines which mitigation mo
 
 - **Build profile:** decides what code exists in the dylib or package.
 - **Runtime policy:** decides which compiled modules are enabled for a process, bundle, or scope.
-- **Policy seed declarations:** live in tweak source and are compiled only when the owning source is selected.
+- **Policy seed declarations:** live in mitigation source and are compiled only when the owning source is selected.
 
 There is no centralized value catalog, coherence profile, or cohort profile.
 
@@ -61,7 +61,7 @@ Build variability avoids every independently built artifact having identical non
 
 A build profile should group mitigations that can be coherent together and validate together. A selection should not enable a surface merely because it compiles. Strong profiles have a stated compatibility goal, scope policy, required state domains, and validation evidence.
 
-Coherence is documented and implemented by the tweaks that own the values. Do not add central profile machinery to force coherence globally.
+Coherence is documented and implemented by the mitigations that own the values. Do not add central profile machinery to force coherence globally.
 
 ## Reproducibility
 

@@ -36,8 +36,8 @@ $(LH_LOADER_BASENAME)_FILES := \
 	../../src/runtime/seeds/LHSeed.c \
 	../../src/runtime/seeds/LHSeedProvider.m \
 	../../src/runtime/state/LHStateProvider.m \
-	../../src/tweakkit/LHTweakValues.c \
-	../../src/tweakkit/LHValueQuantizer.c
+	../../src/mitigationkit/LHMitigationValues.c \
+	../../src/mitigationkit/LHValueQuantizer.c
 
 $(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \

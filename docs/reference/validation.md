@@ -18,7 +18,7 @@ A mitigation requires evidence at four layers. Passing one layer does not substi
 - derivation behavior;
 - seed-provider behavior;
 - state-provider behavior;
-- tweak-value derivation;
+- mitigation-value derivation;
 - Mach-O summary;
 - string scanning;
 - exported-symbol scanning;

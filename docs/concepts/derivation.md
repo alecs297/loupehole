@@ -2,7 +2,7 @@
 
 ## Definition
 
-Derivation transforms seed material, generated labels or policy seeds, and scope into deterministic bytes. It creates separate namespaces for tweak values, state keys, storage names, package names, and other internal identities without copying literal identifiers into runtime logic.
+Derivation transforms seed material, generated labels or policy seeds, and scope into deterministic bytes. It creates separate namespaces for mitigation values, state keys, storage names, package names, and other internal identities without copying literal identifiers into runtime logic.
 
 ## Domain Separation
 
@@ -22,7 +22,7 @@ The generator hashes the build seed plus each policy seed literal at compile tim
 | Raw bytes | Seed material, state initialization, bounded number generation. |
 | Contextual bytes | Derivation that includes extra state or marker context. |
 | Opaque hexadecimal name | Storage directory/file identifiers that avoid fixed project markers. |
-| Tweak value | UUID strings, timestamps, `timeval`, ASCII strings, or other API-specific shapes. |
+| Mitigation value | UUID strings, timestamps, `timeval`, ASCII strings, or other API-specific shapes. |
 
 ## State Keys
 
@@ -34,7 +34,7 @@ flowchart LR
     Policy["Generated policy seed"] --> Derive
     Scope["Scope"] --> Derive
     Context["Optional context"] --> Derive
-    Derive --> Value["Tweak value"]
+    Derive --> Value["Mitigation value"]
     Policy --> Key["State key"]
     Key --> Store["State provider"]
     Store --> Value
@@ -48,7 +48,7 @@ Fixed directories, preference keys, Keychain names, and cache names can be proje
 
 - Use generated labels or policy seeds, not hand-written runtime strings.
 - Use distinct policy seeds for different semantic values, even within the same mitigation.
-- Reuse a policy seed literal only for intentional cross-tweak agreement.
+- Reuse a policy seed literal only for intentional cross-mitigation agreement.
 - Always combine policy seeds with the practical/active seed and scope.
 - Do not use an opaque name as a user-facing identifier.
 - Keep values and state roots within the proper package/local provider boundary.

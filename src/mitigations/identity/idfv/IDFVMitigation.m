@@ -1,7 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
-#include "LHTweakValues.h"
+#include "LHMitigationValues.h"
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -19,7 +19,7 @@ static LHPolicyEngine *LHIDFVPolicy;
 static NSUUID *LHIDFVReplacement(id self, SEL selector) {
     char uuid[LH_IDFV_UUID_STRING_LENGTH] = { 0 };
     if (LHIDFVPolicy != 0 &&
-        LHTweakDeriveUUIDString(&LHIDFVPolicy->config.buildSeed,
+        LHMitigationDeriveUUIDString(&LHIDFVPolicy->config.buildSeed,
                                 &LHGeneratedPolicySeed_identifier_for_vendor_value,
                                 &LHIDFVPolicy->appContext.scope,
                                 uuid,

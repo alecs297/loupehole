@@ -13,8 +13,8 @@ The seed model exists to make stability and rotation explicit. The same active s
 | Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib starting seed when embedded. |
 | Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding the selection build seed in the deb-mode dylib. |
 | Practical seed | Effective parent seed before scoping. | Custom manual-group seed, embedded build seed, or package root seed. | Unifies package and standalone modes. |
-| Active seed | Seed used by tweaks after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces tweak values and opaque names for the current context. |
-| Policy seed | Compile-time generated domain separator declared by a tweak. | `LH_POLICY_SEED(domain, name, "literal")`. | Separates semantic value streams. |
+| Active seed | Seed used by mitigations after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces mitigation values and opaque names for the current context. |
+| Policy seed | Compile-time generated domain separator declared by a mitigation. | `LH_POLICY_SEED(domain, name, "literal")`. | Separates semantic value streams. |
 | State-derived value | Persisted or generated value associated with active seed and scope. | `LHStateProviderLoadOrCreate`. | Preserves a value that needs stateful lifetime. |
 
 ## Build Seed Behavior
@@ -30,11 +30,11 @@ This single name avoids a split build/instance vocabulary in the injected dylib.
 
 Literal replacement values are difficult to rotate, easy to share accidentally, and can reveal a custom build. Seeds allow the project to derive outputs without storing every output in the binary. They also let a reset or scope change rotate a family of dependent values together.
 
-A seed does not automatically make an output privacy-preserving. A tweak still needs a plausible value shape and cross-surface coherence. Seeded uniqueness used without a shared-surface policy can still be fingerprintable.
+A seed does not automatically make an output privacy-preserving. A mitigation still needs a plausible value shape and cross-surface coherence. Seeded uniqueness used without a shared-surface policy can still be fingerprintable.
 
 ## Derivation Inputs
 
-Tweak derivation should use:
+Mitigation derivation should use:
 
 ```text
 active/practical seed + generated policy seed + scope mode + scope identifier [+ optional context]
@@ -47,7 +47,7 @@ flowchart LR
     Root["Build or package root seed"] --> Practical["Practical seed"]
     Practical --> Scope["Scope inputs"]
     Scope --> Active["Active seed"]
-    Policy["Generated policy seed"] --> Value["Tweak value"]
+    Policy["Generated policy seed"] --> Value["Mitigation value"]
     Active --> Value
     Active --> Names["Opaque paths / names"]
     Policy --> State["State keys and state blobs"]

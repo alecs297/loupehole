@@ -6,9 +6,9 @@
 
 A mitigation owns a documented set of API paths and no more. It does not alter nearby methods "just in case," and it names every adjacent surface left unchanged. This keeps compatibility work bounded and makes evidence meaningful.
 
-### 2. Tweak-Owned Value Logic
+### 2. Mitigation-Owned Value Logic
 
-Hook code may derive or load values, but the value logic must be documented, scoped, and reusable where needed. Use generated policy seeds and tweakkit helpers instead of fixed literals, module-local random UUIDs, or hidden fallback profiles.
+Hook code may derive or load values, but the value logic must be documented, scoped, and reusable where needed. Use generated policy seeds and mitigationkit helpers instead of fixed literals, module-local random UUIDs, or hidden fallback profiles.
 
 ### 3. Coherence Across Observable Surfaces
 
@@ -19,7 +19,7 @@ Every replacement value has a stated relationship to values an app can compare w
 - vendor-scoped identifiers must use an appropriate sharing scope;
 - future hardware/model values must agree across model, display, GPU, camera, and WebKit claims.
 
-Coherence is implemented by the relevant tweaks or shared tweak helpers. It is not a central profile system. When the project cannot establish coherence, it documents the gap and prefers pass-through over a broad false claim.
+Coherence is implemented by the relevant mitigations or shared mitigation helpers. It is not a central profile system. When the project cannot establish coherence, it documents the gap and prefers pass-through over a broad false claim.
 
 ### 4. Stable Where A Stable Value Is Expected
 

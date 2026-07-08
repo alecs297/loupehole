@@ -20,7 +20,7 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 
 | Target | Result |
 | --- | --- |
-| `make` / `make all` | Generates inputs, builds the tweak, signs the dylib, copies `dist/runtime.dylib`. |
+| `make` / `make all` | Generates inputs, builds the injected runtime, signs the dylib, copies `dist/runtime.dylib`. |
 | `make build` | Generates inputs and invokes Theos for the dylib. |
 | `make sign` | Builds then signs the Theos dylib. |
 | `make copy-artifact` | Copies signed runtime to `dist/runtime.dylib`. |
@@ -37,7 +37,7 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | --- | --- | --- |
 | `config/mitigations.json` | `packaging/theos/generated/mitigation-files.mk` | Selected source and link metadata for Theos. |
 | catalog + selection | `core/generated/LHGeneratedMitigationRegistry.[hc]` | Numeric module IDs and installers. |
-| selected `LH_POLICY_SEED` declarations | `core/generated/LHGeneratedPolicySeeds.[hc]` | Compile-time policy seed bytes for selected tweaks. |
+| selected `LH_POLICY_SEED` declarations | `core/generated/LHGeneratedPolicySeeds.[hc]` | Compile-time policy seed bytes for selected mitigations. |
 | selection / variability inputs | `core/generated/LHGeneratedConfig.[hc]` | Compiled seed availability and generated package names. |
 | `LH_DERIVATION_LABEL` declarations | `core/generated/LHGeneratedDerivationLabels.[hc]` | Stable generated labels for internal derivation domains. |
 | catalog / selection | `packaging/theos/generated/LHGeneratedPreferenceMetadata.[hc]` | Settings UI module metadata. |
@@ -60,4 +60,4 @@ That means the deb-mode dylib does not carry the raw selection build seed. At ru
 
 ## Release Artifact Checks
 
-The root `verify` target combines seed, seed-provider, state-provider, tweak-value, and binary-inspection checks. `package-verify` runs a layout check against the final copied package. A clean build should always regenerate inputs before testing artifact contents.
+The root `verify` target combines seed, seed-provider, state-provider, mitigation-value, and binary-inspection checks. `package-verify` runs a layout check against the final copied package. A clean build should always regenerate inputs before testing artifact contents.

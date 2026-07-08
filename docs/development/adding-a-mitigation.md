@@ -9,7 +9,7 @@ flowchart TD
     Research["Identify one app-visible surface"] --> Classify["Classify collection, permission, and risk"]
     Classify --> Model["Choose scope, seed, state, and coherence model"]
     Model --> Catalog["Add mitigation catalog entry"]
-    Catalog --> Seeds["Declare tweak policy seeds in source"]
+    Catalog --> Seeds["Declare mitigation policy seeds in source"]
     Seeds --> Hook["Implement hook adapter and value logic"]
     Hook --> Generate["Regenerate build graph"]
     Generate --> Verify["Run static and package verification"]
@@ -38,10 +38,10 @@ Answer before writing the hook:
 - Is the safest behavior normalization, scoped derivation, persisted state, quantization, deliberate no-op, or pass-through?
 - Which scope mode is appropriate: install, app, vendor, or manual linked group?
 - Does the value need persisted state, or can it be derived deterministically?
-- Which existing tweak state/value helper must agree with it?
+- Which existing mitigation state/value helper must agree with it?
 - What must happen when storage, seed derivation, the original symbol, or the target selector is unavailable?
 
-Coherence is a tweak-development responsibility, not a central profile feature. If two values must agree, make the involved tweaks share the same helper or reproduce the same computation from the same policy seed. Do not introduce a global coherence profile or cohort profile.
+Coherence is a mitigation-development responsibility, not a central profile feature. If two values must agree, make the involved mitigations share the same helper or reproduce the same computation from the same policy seed. Do not introduce a global coherence profile or cohort profile.
 
 ## 3. Add Declarative Metadata
 
@@ -49,7 +49,6 @@ Add a mitigation entry in `config/mitigations.json` with:
 
 - stable string `id`;
 - source list;
-- optional status;
 - required frameworks, weak frameworks, and libraries;
 - conflicts and platform requirements;
 - `optionDoc` path under `docs/mitigations/`.
@@ -58,7 +57,7 @@ Do not add centralized value fields or source-language metadata. Do not create o
 
 Add the mitigation ID to `config/build.default.json` only when it should be compiled in the default profile. The default selection is not a dumping ground for unvalidated modules.
 
-## 4. Declare Policy Seeds In The Tweak
+## 4. Declare Policy Seeds In The Mitigation
 
 Use `LH_POLICY_SEED(domain, name, "literal")` in selected source:
 
@@ -70,34 +69,34 @@ The generator hashes the build seed and literal at compile time and emits genera
 
 Rules:
 
-- pass both the active/practical seed and policy seed to tweakkit helpers;
+- pass both the active/practical seed and policy seed to mitigationkit helpers;
 - use a distinct policy seed for each semantic identifier or random stream;
-- reuse the same literal only when two tweaks intentionally need the same policy seed;
+- reuse the same literal only when two mitigations intentionally need the same policy seed;
 - list every policy seed literal and meaning in the mitigation page;
 - treat a policy seed literal change as a compatibility change because derived values rotate.
 
-## 5. Use The Tweakkit Helpers
+## 5. Use The Mitigationkit Helpers
 
-Prefer helpers in `LHTweakValues.h` over ad hoc derivation:
+Prefer helpers in `LHMitigationValues.h` over ad hoc derivation:
 
 | Helper | Use |
 | --- | --- |
-| `LHTweakDeriveBytes` | Raw deterministic bytes with optional context. |
-| `LHTweakDeriveU64` | Numeric stream input. |
-| `LHTweakDeriveBoundedU64` | Bounded numeric choice. |
-| `LHTweakDeriveUUIDString` | Stable UUID strings. |
-| `LHTweakDeriveASCIIString` | Stable opaque strings from an alphabet. |
-| `LHTweakDeriveTimeIntervalBetween` | Timestamp inside an interval. |
-| `LHTweakStateKeyFromPolicySeed` | State key labels from policy seeds. |
+| `LHMitigationDeriveBytes` | Raw deterministic bytes with optional context. |
+| `LHMitigationDeriveU64` | Numeric stream input. |
+| `LHMitigationDeriveBoundedU64` | Bounded numeric choice. |
+| `LHMitigationDeriveUUIDString` | Stable UUID strings. |
+| `LHMitigationDeriveASCIIString` | Stable opaque strings from an alphabet. |
+| `LHMitigationDeriveTimeIntervalBetween` | Timestamp inside an interval. |
+| `LHMitigationStateKeyFromPolicySeed` | State key labels from policy seeds. |
 
-Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/tweakkit/` only when it removes repeated value-shaping code from multiple mitigations or clarifies a tricky invariant.
+Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/mitigationkit/` only when it removes repeated value-shaping code from multiple mitigations or clarifies a tricky invariant.
 
 ## 6. Implement A Thin Hook Adapter
 
 The hook should:
 
 1. identify only the supported query shape;
-2. derive or load the documented value through tweakkit/runtime helpers;
+2. derive or load the documented value through mitigationkit/runtime helpers;
 3. adapt the value to the original API shape;
 4. preserve normal errors, output sizing, and unrelated request behavior;
 5. pass through on derivation, parsing, coherence, installation, or availability failure.

@@ -38,7 +38,7 @@ The important property is not that the values are “random.” It is that they 
 
 ## Relationship To Seeds
 
-A seed determines reproducible derived bytes. A tweak defines the plausible shape, distribution, and invariants for its own values. Randomness can choose a state or bounded point within that documented model; it does not replace the model. A different seed should produce a different coherent instance, not a different set of rules.
+A seed determines reproducible derived bytes. A mitigation defines the plausible shape, distribution, and invariants for its own values. Randomness can choose a state or bounded point within that documented model; it does not replace the model. A different seed should produce a different coherent instance, not a different set of rules.
 
 ## Review questions
 

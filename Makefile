@@ -30,7 +30,7 @@ export LH_EMBED_BUILD_SEED ?= 1
 
 # Root targets intentionally funnel through generation before build/test work so
 # ignored generated files are disposable outputs of catalog + selection.
-.PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check tweak-value-check
+.PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check mitigation-value-check
 
 all: copy-artifact
 
@@ -66,7 +66,7 @@ copy-artifact: sign
 
 audit: copy-artifact verify
 
-verify: seed-check seed-provider-check state-check tweak-value-check summary strings symbols swift-absence debug-log-absence
+verify: seed-check seed-provider-check state-check mitigation-value-check summary strings symbols swift-absence debug-log-absence
 
 summary:
 	scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
@@ -92,5 +92,5 @@ seed-provider-check: generate
 state-check: generate
 	scripts/verify/state-provider-check.sh
 
-tweak-value-check: generate
-	scripts/verify/tweak-value-check.sh
+mitigation-value-check: generate
+	scripts/verify/mitigation-value-check.sh

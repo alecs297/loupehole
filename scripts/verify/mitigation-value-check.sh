@@ -4,10 +4,10 @@ set -eu
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-cat >"$tmpdir/tweak_value_check.m" <<'SOURCE'
+cat >"$tmpdir/mitigation_value_check.m" <<'SOURCE'
 #include "LHPolicyEngine.h"
 #include "LHGeneratedPolicySeeds.h"
-#include "LHTweakValues.h"
+#include "LHMitigationValues.h"
 #include "common/temporal/TemporalLifetimeValues.h"
 
 #include <stdio.h>
@@ -22,7 +22,7 @@ int main(void) {
     }
 
     char idfv[LH_TEST_UUID_STRING_LENGTH] = {0};
-    if (!LHTweakDeriveUUIDString(&engine.config.buildSeed,
+    if (!LHMitigationDeriveUUIDString(&engine.config.buildSeed,
                                  &LHGeneratedPolicySeed_identifier_for_vendor_value,
                                  &engine.appContext.scope,
                                  idfv,
@@ -34,7 +34,7 @@ int main(void) {
     }
 
     char small[4] = {0};
-    if (LHTweakDeriveUUIDString(&engine.config.buildSeed,
+    if (LHMitigationDeriveUUIDString(&engine.config.buildSeed,
                                 &LHGeneratedPolicySeed_identifier_for_vendor_value,
                                 &engine.appContext.scope,
                                 small,
@@ -55,7 +55,7 @@ int main(void) {
     }
 
     uint64_t bounded = 0;
-    if (!LHTweakDeriveBoundedU64(&engine.config.buildSeed,
+    if (!LHMitigationDeriveBoundedU64(&engine.config.buildSeed,
                                  &LHGeneratedPolicySeed_temporal_lifetime_boot_time,
                                  &engine.appContext.scope,
                                  0,
@@ -86,13 +86,13 @@ cc \
   src/runtime/seeds/LHSeed.c \
   src/runtime/seeds/LHSeedProvider.m \
   src/runtime/state/LHStateProvider.m \
-  src/tweakkit/LHTweakValues.c \
+  src/mitigationkit/LHMitigationValues.c \
   src/mitigations/common/temporal/TemporalLifetimeValues.c \
-  "$tmpdir/tweak_value_check.m" \
+  "$tmpdir/mitigation_value_check.m" \
   -framework Foundation \
-  -o "$tmpdir/tweak_value_check"
+  -o "$tmpdir/mitigation_value_check"
 
-LH_STATE_TEST_HOME="$tmpdir" "$tmpdir/tweak_value_check"
+LH_STATE_TEST_HOME="$tmpdir" "$tmpdir/mitigation_value_check"
 
 cat >"$tmpdir/package_enablement_check.m" <<'SOURCE'
 #include "LHPolicyEngine.h"
@@ -187,4 +187,4 @@ LH_APP_CONTEXT_TEST_BUNDLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB
 LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/PlugIns/Widget.appex/Widget \
   "$tmpdir/package_enablement_check" disabled
 
-printf '%s\n' "tweak value check passed"
+printf '%s\n' "mitigation value check passed"

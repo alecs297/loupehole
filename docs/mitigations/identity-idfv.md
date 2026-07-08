@@ -1,6 +1,6 @@
 # `identity.idfv`
 
-The IDFV option replaces the app-visible vendor identifier with a scoped UUID derived by the selected tweak. It covers a passive identity surface, while the mitigation itself is an active Objective-C method hook.
+The IDFV option replaces the app-visible vendor identifier with a scoped UUID derived by the selected mitigation. It covers a passive identity surface, while the mitigation itself is an active Objective-C method hook.
 
 ## Metadata
 
@@ -30,7 +30,7 @@ Apps and SDKs can treat IDFV as a stable native identifier for analytics, anti-a
 
 ## Mitigation Strategy
 
-The mitigation hooks `-[UIDevice identifierForVendor]`. The replacement derives a UUID string with `LHTweakDeriveUUIDString`, converts that string to `NSUUID`, and returns it to the caller.
+The mitigation hooks `-[UIDevice identifierForVendor]`. The replacement derives a UUID string with `LHMitigationDeriveUUIDString`, converts that string to `NSUUID`, and returns it to the caller.
 
 Hook code does not embed UUID bytes. Its only policy seed declaration is:
 
@@ -46,7 +46,7 @@ Non-IDFV APIs are untouched. If the target class or selector is unavailable, the
 | --- | --- |
 | Policy seed literal | `"identifier_for_vendor"` |
 | Generated seed symbol | `LHGeneratedPolicySeed_identifier_for_vendor_value` |
-| Helper | `LHTweakDeriveUUIDString` |
+| Helper | `LHMitigationDeriveUUIDString` |
 | Value shape | Lowercase RFC 4122 version 4 UUID string accepted by `NSUUID`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
 | Storage behavior | No mitigation-owned state blob; stability comes from seed and scope. |
@@ -68,7 +68,7 @@ Manual Loupe validation passed on 2026-06-18. Expected observations:
 - `UIDevice.identifierForVendor` differs from the real device/vendor value after injection.
 - The returned UUID remains stable across relaunches for the same seed and scope.
 - Different app scopes receive different values unless a shared scope is selected.
-- The tweak-value verifier can derive a UUID without embedding the literal policy seed string in the runtime artifact.
+- The mitigation-value verifier can derive a UUID without embedding the literal policy seed string in the runtime artifact.
 
 ## Rollback And Pass-Through
 

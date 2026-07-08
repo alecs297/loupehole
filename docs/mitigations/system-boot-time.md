@@ -56,8 +56,8 @@ LH_POLICY_SEED(temporal_lifetime, volume_creation_date, "volume_creation_date")
 | Item | Value |
 | --- | --- |
 | State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
-| State key | `LHTweakStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
-| Boot helper | `LHTweakDeriveU64` with `LHGeneratedPolicySeed_temporal_lifetime_boot_time` |
+| State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
+| Boot helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_temporal_lifetime_boot_time` |
 | Value shape | `struct timeval` with microseconds set to `0`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
 | Boot age | At least 6 hours before `now`, plus a seed-derived offset inside a 14-day window. |

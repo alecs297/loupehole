@@ -7,7 +7,7 @@ The canonical environment is macOS with Xcode, Theos, `ldid`, `dpkg-deb`, Python
 | Dependency | Role |
 | --- | --- |
 | macOS + Xcode | Apple SDK, Clang toolchain, headers, and signing-related tooling. |
-| Theos | Builds the tweak dylib, rootless package, and preference bundle. |
+| Theos | Builds the injected dylib, rootless package, and preference bundle. |
 | arm64 iOS SDK/toolchain | Required by the Theos target `iphone:clang:latest:15.0`. |
 | `ldid` | Signs the standalone dylib before it is copied to `dist/`. |
 | `dpkg-deb` | Creates the rootless Debian package. |
@@ -71,7 +71,7 @@ make clean
 - seed derivation checks;
 - seed-provider checks;
 - state-provider checks;
-- tweak-value checks;
+- mitigation-value checks;
 - Mach-O summary;
 - string scan;
 - exported-symbol scan;
