@@ -10,9 +10,9 @@ The seed model exists to make stability and rotation explicit. The same active s
 
 | Layer | Meaning | Typical origin | Purpose |
 | --- | --- | --- | --- |
-| Build instance seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Reproducible build input for local/dylib mode. |
+| Build build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Reproducible build input for local/dylib mode. |
 | Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding a personal seed in source. |
-| Practical seed | Effective parent seed before scoping. | Custom manual-group seed, instance seed, or package root seed. | Unifies package and standalone modes. |
+| Practical seed | Effective parent seed before scoping. | Custom manual-group seed, build seed, or package root seed. | Unifies package and standalone modes. |
 | Active seed | Seed used by policy resolvers. | Deterministic scoped derivation or app-install derivation. | Produces policy values and opaque names for the current context. |
 | State-derived value | Persisted or generated value associated with active seed and scope. | `LHStateProviderLoadOrCreate`. | Preserves a value that needs stateful lifetime. |
 
@@ -47,7 +47,7 @@ flowchart LR
 
 A derived value may rotate when:
 
-- the configured build/instance seed changes;
+- the configured build/build seed changes;
 - package root state is reset;
 - a per-app-install marker changes because an app is reinstalled or reset;
 - scope mode or scope identifier changes;

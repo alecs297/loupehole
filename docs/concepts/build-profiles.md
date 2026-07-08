@@ -32,7 +32,7 @@ The default selection currently records:
   "target": "ios-arm64-dylib",
   "configuration": "release",
   "minIos": "15.0",
-  "instanceSeed": "<UUID>",
+  "buildSeed": "<UUID>",
   "mitigations": [
     "identity.idfv.uidevice.scoped_uuid",
     "system.boot_time.composite.synthetic",
@@ -41,7 +41,7 @@ The default selection currently records:
 }
 ```
 
-The instance seed is an input to derivation, not a public build label. The exact default UUID should not be interpreted as a shared production identity.
+The build seed is an input to derivation, not a public build label. The exact default UUID should not be interpreted as a shared production identity.
 
 ## Variability
 

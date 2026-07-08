@@ -47,7 +47,7 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     return true;
 }
 
-bool LHPolicyEngineSetInstanceSeed(LHPolicyEngine *engine, const char *uuid) {
+bool LHPolicyEngineSetBuildSeed(LHPolicyEngine *engine, const char *uuid) {
     if (engine == 0) {
         return false;
     }
@@ -57,7 +57,7 @@ bool LHPolicyEngineSetInstanceSeed(LHPolicyEngine *engine, const char *uuid) {
         return false;
     }
 
-    engine->config.instanceSeed = parsed;
+    engine->config.buildSeed = parsed;
     return true;
 }
 
@@ -69,7 +69,7 @@ bool LHPolicyEngineDeriveBytes(const LHPolicyEngine *engine,
         return false;
     }
 
-    return LHSeedDeriveBytes(&engine->config.instanceSeed, label, &engine->appContext.scope, output, outputLength);
+    return LHSeedDeriveBytes(&engine->config.buildSeed, label, &engine->appContext.scope, output, outputLength);
 }
 
 bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,

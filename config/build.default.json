@@ -3,7 +3,7 @@
   "target": "ios-arm64-dylib",
   "configuration": "release",
   "minIos": "15.0",
-  "instanceSeed": "123e4567-e89b-12d3-a456-426614174000",
+  "buildSeed": "123e4567-e89b-12d3-a456-426614174000",
   "mitigations": [
     "identity.idfv.uidevice.scoped_uuid",
     "system.boot_time.composite.synthetic",

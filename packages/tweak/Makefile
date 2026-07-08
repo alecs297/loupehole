@@ -5,6 +5,7 @@ THEOS_LAYOUT_DIR_NAME ?= generated/package-layout
 _THEOS_PLATFORM_DPKG_DEB ?= ../../scripts/build/dpkg-deb-root-owner-group.sh
 THEOS_PLATFORM_DEB_COMPRESSION_TYPE ?= xz
 LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
+LH_EMBED_BUILD_SEED ?= 1
 
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
@@ -49,6 +50,7 @@ $(LH_LOADER_BASENAME)_CFLAGS += \
 	-Werror \
 	-DLH_ENABLE_VARIABILITY=$(LH_ENABLE_VARIABILITY) \
 	-DLH_ENABLE_DIAGNOSTICS=$(LH_ENABLE_DIAGNOSTICS) \
+	-DLH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) \
 	-DLH_DEFAULT_STATE_PROVIDER_KIND=$(LH_STATE_PROVIDER_KIND)
 
 $(LH_LOADER_BASENAME)_CCFLAGS += $($(LH_LOADER_BASENAME)_CFLAGS) -fvisibility-inlines-hidden
@@ -75,7 +77,8 @@ LoupeholePreferences_CFLAGS += \
 	-fobjc-arc \
 	-Wall \
 	-Wextra \
-	-Werror
+	-Werror \
+	-DLH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
 LoupeholePreferences_LDFLAGS += -undefined dynamic_lookup
 LoupeholePreferences_RESOURCE_DIRS := prefs/Resources
 

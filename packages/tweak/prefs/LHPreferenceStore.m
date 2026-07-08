@@ -553,10 +553,10 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 }
 
 - (NSString *)buildSeedString {
-    if (!LHGeneratedConfigHasInstanceSeed) {
+    if (!LHGeneratedConfigHasBuildSeed) {
         return @"runtime-random";
     }
-    const uint8_t *bytes = LHGeneratedConfigInstanceSeed.bytes;
+    const uint8_t *bytes = LHGeneratedConfigBuildSeed.bytes;
     return [NSString stringWithFormat:@"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
             bytes[0], bytes[1], bytes[2], bytes[3],
             bytes[4], bytes[5],

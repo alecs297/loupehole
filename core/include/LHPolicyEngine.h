@@ -24,7 +24,7 @@ typedef struct LHPolicyEngine {
 } LHPolicyEngine;
 
 LH_INTERNAL bool LHPolicyEngineInit(LHPolicyEngine *engine);
-LH_INTERNAL bool LHPolicyEngineSetInstanceSeed(LHPolicyEngine *engine, const char *uuid);
+LH_INTERNAL bool LHPolicyEngineSetBuildSeed(LHPolicyEngine *engine, const char *uuid);
 LH_INTERNAL bool LHPolicyEngineDeriveBytes(const LHPolicyEngine *engine,
                                            const LHDerivationLabel *label,
                                            uint8_t *output,

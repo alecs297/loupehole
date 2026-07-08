@@ -15,10 +15,10 @@ LHRuntimeConfig LHRuntimeConfigDefault(void) {
         .moduleFilterEnabled = false,
         .enabledModuleIDCount = 0
     };
-    if (LHGeneratedConfigHasInstanceSeed) {
-        config.instanceSeed = LHGeneratedConfigInstanceSeed;
+    if (LHGeneratedConfigHasBuildSeed) {
+        config.buildSeed = LHGeneratedConfigBuildSeed;
     } else {
-        arc4random_buf(config.instanceSeed.bytes, sizeof(config.instanceSeed.bytes));
+        arc4random_buf(config.buildSeed.bytes, sizeof(config.buildSeed.bytes));
     }
     return config;
 }

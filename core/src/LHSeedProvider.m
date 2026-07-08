@@ -162,7 +162,7 @@ static bool LHSeedProviderResolvePracticalSeed(const LHRuntimeConfig *config, LH
         return true;
     }
 
-    *practicalSeed = config->instanceSeed;
+    *practicalSeed = config->buildSeed;
     if (config->stateProviderKind != LHStateProviderKindPackage) {
         return true;
     }
@@ -217,7 +217,7 @@ bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext
             return false;
         }
 
-        config->instanceSeed = activeSeed;
+        config->buildSeed = activeSeed;
         return true;
     }
 }

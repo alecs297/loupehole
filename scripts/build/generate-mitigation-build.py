@@ -66,8 +66,8 @@ def parse_uuid_bytes(value, name):
     return bytes.fromhex(value.replace("-", ""))
 
 
-def label_bytes_for(identifier, instance_seed):
-    seed = instance_seed if instance_seed is not None else b""
+def label_bytes_for(identifier, build_seed):
+    seed = build_seed if build_seed is not None else b""
     digest = hashlib.sha256(LABEL_NAMESPACE + seed + b"\0" + identifier.encode("utf-8")).digest()
     return digest[:16]
 
@@ -76,29 +76,29 @@ def byte_initializer(data):
     return "{ " + ", ".join(f"0x{byte:02x}" for byte in data) + " }"
 
 
-def generated_hex_name(namespace, instance_seed):
-    seed = instance_seed if instance_seed is not None else b""
+def generated_hex_name(namespace, build_seed):
+    seed = build_seed if build_seed is not None else b""
     return hashlib.sha256(namespace + seed).hexdigest()[:32]
 
 
-def package_state_parent_name(instance_seed):
-    return generated_hex_name(PACKAGE_STATE_PARENT_NAMESPACE, instance_seed)
+def package_state_parent_name(build_seed):
+    return generated_hex_name(PACKAGE_STATE_PARENT_NAMESPACE, build_seed)
 
 
-def package_seed_root_directory_name(instance_seed):
-    return generated_hex_name(PACKAGE_SEED_ROOT_DIRECTORY_NAMESPACE, instance_seed)
+def package_seed_root_directory_name(build_seed):
+    return generated_hex_name(PACKAGE_SEED_ROOT_DIRECTORY_NAMESPACE, build_seed)
 
 
-def package_root_seed_file_name(instance_seed):
-    return generated_hex_name(PACKAGE_ROOT_SEED_FILE_NAMESPACE, instance_seed)
+def package_root_seed_file_name(build_seed):
+    return generated_hex_name(PACKAGE_ROOT_SEED_FILE_NAMESPACE, build_seed)
 
 
-def package_policy_file_name(instance_seed):
-    return generated_hex_name(PACKAGE_POLICY_FILE_NAMESPACE, instance_seed)
+def package_policy_file_name(build_seed):
+    return generated_hex_name(PACKAGE_POLICY_FILE_NAMESPACE, build_seed)
 
 
-def package_loader_basename(instance_seed):
-    seed = instance_seed if instance_seed is not None else b""
+def package_loader_basename(build_seed):
+    seed = build_seed if build_seed is not None else b""
     return "x" + hashlib.sha256(PACKAGE_LOADER_BASENAME_NAMESPACE + seed).hexdigest()[:31]
 
 
@@ -221,7 +221,7 @@ def source_for_label_scan(text):
     return "".join(output)
 
 
-def discover_derivation_labels(source_paths, instance_seed):
+def discover_derivation_labels(source_paths, build_seed):
     labels = []
     seen = {}
     for source in source_paths:
@@ -245,7 +245,7 @@ def discover_derivation_labels(source_paths, instance_seed):
             labels.append({
                 "id": identifier,
                 "symbol": label_symbol_for(identifier),
-                "bytes": label_bytes_for(identifier, instance_seed),
+                "bytes": label_bytes_for(identifier, build_seed),
             })
 
     return labels
@@ -474,9 +474,9 @@ def emit_derivation_labels(labels):
     write_file(ROOT / "core/generated/LHGeneratedDerivationLabels.c", source)
 
 
-def emit_generated_config(instance_seed, package_state_parent, package_seed_root_directory, package_root_seed_file, package_policy_file, package_loader_basename_value):
-    has_seed = instance_seed is not None
-    seed_bytes = instance_seed if instance_seed is not None else bytes(16)
+def emit_generated_config(build_seed, package_state_parent, package_seed_root_directory, package_root_seed_file, package_policy_file, package_loader_basename_value):
+    has_seed = build_seed is not None
+    seed_bytes = build_seed if build_seed is not None else bytes(16)
     header = "\n".join([
         "#ifndef LH_GENERATED_CONFIG_H",
         "#define LH_GENERATED_CONFIG_H",
@@ -488,8 +488,8 @@ def emit_generated_config(instance_seed, package_state_parent, package_seed_root
         "extern \"C\" {",
         "#endif",
         "",
-        "LH_INTERNAL extern const bool LHGeneratedConfigHasInstanceSeed;",
-        "LH_INTERNAL extern const LHSeed LHGeneratedConfigInstanceSeed;",
+        "LH_INTERNAL extern const bool LHGeneratedConfigHasBuildSeed;",
+        "LH_INTERNAL extern const LHSeed LHGeneratedConfigBuildSeed;",
         "LH_INTERNAL extern const char LHGeneratedConfigPackageStateParentDirectoryName[];",
         "LH_INTERNAL extern const char LHGeneratedConfigPackageSeedRootDirectoryName[];",
         "LH_INTERNAL extern const char LHGeneratedConfigPackageRootSeedFileName[];",
@@ -507,10 +507,21 @@ def emit_generated_config(instance_seed, package_state_parent, package_seed_root
     source = "\n".join([
         "#include \"LHGeneratedConfig.h\"",
         "",
-        f"LH_INTERNAL const bool LHGeneratedConfigHasInstanceSeed = {'true' if has_seed else 'false'};",
-        "LH_INTERNAL const LHSeed LHGeneratedConfigInstanceSeed = {",
+        "#ifndef LH_EMBED_BUILD_SEED",
+        "#define LH_EMBED_BUILD_SEED 1",
+        "#endif",
+        "",
+        "#if LH_EMBED_BUILD_SEED",
+        f"LH_INTERNAL const bool LHGeneratedConfigHasBuildSeed = {'true' if has_seed else 'false'};",
+        "LH_INTERNAL const LHSeed LHGeneratedConfigBuildSeed = {",
         f"    .bytes = {byte_initializer(seed_bytes)}",
         "};",
+        "#else",
+        "LH_INTERNAL const bool LHGeneratedConfigHasBuildSeed = false;",
+        "LH_INTERNAL const LHSeed LHGeneratedConfigBuildSeed = {",
+        f"    .bytes = {byte_initializer(bytes(16))}",
+        "};",
+        "#endif",
         f"LH_INTERNAL const char LHGeneratedConfigPackageStateParentDirectoryName[] = \"{package_state_parent}\";",
         f"LH_INTERNAL const char LHGeneratedConfigPackageSeedRootDirectoryName[] = \"{package_seed_root_directory}\";",
         f"LH_INTERNAL const char LHGeneratedConfigPackageRootSeedFileName[] = \"{package_root_seed_file}\";",
@@ -789,22 +800,22 @@ def main():
     catalog = load_json(ROOT / args.catalog)
     value_catalog = load_json(ROOT / args.values)
     selection = load_json(ROOT / args.selection)
-    instance_seed = parse_uuid_bytes(selection.get("instanceSeed"), "selection.instanceSeed")
-    package_state_parent = package_state_parent_name(instance_seed)
-    package_seed_root_directory = package_seed_root_directory_name(instance_seed)
-    package_root_seed_file = package_root_seed_file_name(instance_seed)
-    package_policy_file = package_policy_file_name(instance_seed)
-    package_loader_basename_value = package_loader_basename(instance_seed)
+    build_seed = parse_uuid_bytes(selection.get("buildSeed"), "selection.buildSeed")
+    package_state_parent = package_state_parent_name(build_seed)
+    package_seed_root_directory = package_seed_root_directory_name(build_seed)
+    package_root_seed_file = package_root_seed_file_name(build_seed)
+    package_policy_file = package_policy_file_name(build_seed)
+    package_loader_basename_value = package_loader_basename(build_seed)
     mitigations = normalize_catalog(catalog)
     for index, item in enumerate(mitigations.values(), start=1):
         item["moduleID"] = index
     policy_values = normalize_policy_values(value_catalog)
     selected, selected_values = validate_selection(selection, mitigations, policy_values)
     label_sources = selected_source_paths(selected, selected_values) + core_derivation_label_source_paths()
-    derivation_labels = discover_derivation_labels(list(dict.fromkeys(label_sources)), instance_seed)
+    derivation_labels = discover_derivation_labels(list(dict.fromkeys(label_sources)), build_seed)
     emit_make_fragment(selected, selected_values, package_loader_basename_value)
     emit_registry(mitigations.values(), selected)
-    emit_generated_config(instance_seed, package_state_parent, package_seed_root_directory, package_root_seed_file, package_policy_file, package_loader_basename_value)
+    emit_generated_config(build_seed, package_state_parent, package_seed_root_directory, package_root_seed_file, package_policy_file, package_loader_basename_value)
     emit_preference_metadata(selected)
     emit_derivation_labels(derivation_labels)
     emit_policy_value_registry(selected_values)

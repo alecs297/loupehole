@@ -27,18 +27,19 @@ FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).
 
 export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
+export LH_EMBED_BUILD_SEED ?= 1
 
 .PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check policy-check
 
 all: copy-artifact
 
 build: generate
-	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE)
+	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
 
 package: package-verify
 
 package-build: generate
-	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage package
+	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 package
 
 copy-package: package-build
 	mkdir -p "$(ARTIFACT_DIR)"

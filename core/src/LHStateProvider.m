@@ -20,7 +20,7 @@ static NSData *LHDataFromBytes(const uint8_t *bytes, size_t length) {
 
 static NSString *LHStateBlobName(const LHRuntimeConfig *config, const LHAppContext *context, const LHStateKey *key) {
     char name[33] = { 0 };
-    if (!LHSeedDeriveOpaqueName(&config->instanceSeed,
+    if (!LHSeedDeriveOpaqueName(&config->buildSeed,
                                 &key->label,
                                 &context->scope,
                                 name,
@@ -54,7 +54,7 @@ static NSString *LHStateBlobPath(const LHRuntimeConfig *config, const LHAppConte
 
 static NSString *LHPackageStateRootName(const LHRuntimeConfig *config, const LHAppContext *context) {
     char name[33] = { 0 };
-    if (!LHSeedDeriveOpaqueName(&config->instanceSeed,
+    if (!LHSeedDeriveOpaqueName(&config->buildSeed,
                                 &LHGeneratedDerivationLabel_package_state_root,
                                 &context->scope,
                                 name,

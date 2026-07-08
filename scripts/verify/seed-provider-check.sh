@@ -151,7 +151,7 @@ static int has_root_seed_file(void) {
 static int resolve_for_scope(LHScopeMode mode, const char *identifier, const LHSeed *buildSeed, LHSeed *activeSeed) {
     LHRuntimeConfig config = LHRuntimeConfigDefault();
     config.stateProviderKind = LHStateProviderKindPackage;
-    config.instanceSeed = *buildSeed;
+    config.buildSeed = *buildSeed;
 
     LHAppContext context;
     memset(&context, 0, sizeof(context));
@@ -162,14 +162,14 @@ static int resolve_for_scope(LHScopeMode mode, const char *identifier, const LHS
         return 0;
     }
 
-    *activeSeed = config.instanceSeed;
+    *activeSeed = config.buildSeed;
     return 1;
 }
 
 static int resolve_for_custom_seed(const char *seedString, const char *identifier, const LHSeed *buildSeed, LHSeed *activeSeed) {
     LHRuntimeConfig config = LHRuntimeConfigDefault();
     config.stateProviderKind = LHStateProviderKindPackage;
-    config.instanceSeed = *buildSeed;
+    config.buildSeed = *buildSeed;
     config.scopeMode = LHScopeModeManualLinkedGroup;
     config.customSeedEnabled = true;
     if (!LHSeedParseUUID(seedString, &config.customSeed)) {
@@ -185,7 +185,7 @@ static int resolve_for_custom_seed(const char *seedString, const char *identifie
         return 0;
     }
 
-    *activeSeed = config.instanceSeed;
+    *activeSeed = config.buildSeed;
     return 1;
 }
 
@@ -195,7 +195,7 @@ int main(void) {
     }
 
     LHRuntimeConfig buildConfig = LHRuntimeConfigDefault();
-    LHSeed buildSeed = buildConfig.instanceSeed;
+    LHSeed buildSeed = buildConfig.buildSeed;
     LHSeed installFirst = {0};
     LHSeed installSecond = {0};
     LHSeed installOther = {0};

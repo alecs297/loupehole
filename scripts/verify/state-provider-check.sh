@@ -119,7 +119,7 @@ static bool generate_state(const LHRuntimeConfig *config,
 
     LHTestStateBlob blob;
     memset(&blob, 0, sizeof(blob));
-    if (!LHSeedDeriveBytes(&config->instanceSeed, &LHTestStateValueLabel, &context->scope, blob.value, sizeof(blob.value))) {
+    if (!LHSeedDeriveBytes(&config->buildSeed, &LHTestStateValueLabel, &context->scope, blob.value, sizeof(blob.value))) {
         return false;
     }
     blob.marker = 0x5a17c0de;
@@ -142,12 +142,12 @@ int main(void) {
     LHStateLoadResult packageFirstResult;
     LHStateLoadResult packageSecondResult;
 
-    if (!LHGeneratedConfigHasInstanceSeed &&
-        memcmp(config.instanceSeed.bytes, otherConfig.instanceSeed.bytes, sizeof(config.instanceSeed.bytes)) == 0) {
+    if (!LHGeneratedConfigHasBuildSeed &&
+        memcmp(config.buildSeed.bytes, otherConfig.buildSeed.bytes, sizeof(config.buildSeed.bytes)) == 0) {
         return 10;
     }
-    if (LHGeneratedConfigHasInstanceSeed &&
-        memcmp(config.instanceSeed.bytes, otherConfig.instanceSeed.bytes, sizeof(config.instanceSeed.bytes)) != 0) {
+    if (LHGeneratedConfigHasBuildSeed &&
+        memcmp(config.buildSeed.bytes, otherConfig.buildSeed.bytes, sizeof(config.buildSeed.bytes)) != 0) {
         return 12;
     }
 

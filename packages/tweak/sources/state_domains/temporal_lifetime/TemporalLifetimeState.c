@@ -43,7 +43,7 @@ static bool LHTemporalDeriveU64(const LHRuntimeConfig *config,
                                 const LHDerivationLabel *label,
                                 uint64_t *value) {
     uint8_t bytes[8] = { 0 };
-    if (value == 0 || !LHSeedDeriveBytes(&config->instanceSeed, label, &context->scope, bytes, sizeof(bytes))) {
+    if (value == 0 || !LHSeedDeriveBytes(&config->buildSeed, label, &context->scope, bytes, sizeof(bytes))) {
         return false;
     }
 

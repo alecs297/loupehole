@@ -29,7 +29,7 @@ typedef struct LHRuntimeConfig {
     size_t enabledModuleIDCount;
     bool customSeedEnabled;
     LHSeed customSeed;
-    LHSeed instanceSeed;
+    LHSeed buildSeed;
 } LHRuntimeConfig;
 
 LH_INTERNAL LHRuntimeConfig LHRuntimeConfigDefault(void);

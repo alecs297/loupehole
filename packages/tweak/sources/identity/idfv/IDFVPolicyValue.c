@@ -39,7 +39,7 @@ static bool LHIDFVGenerate(const LHRuntimeConfig *config,
     }
 
     uint8_t uuidBytes[16] = { 0 };
-    if (!LHSeedDeriveBytes(&config->instanceSeed, &LHGeneratedDerivationLabel_identifier_for_vendor_value, &context->scope, uuidBytes, sizeof(uuidBytes))) {
+    if (!LHSeedDeriveBytes(&config->buildSeed, &LHGeneratedDerivationLabel_identifier_for_vendor_value, &context->scope, uuidBytes, sizeof(uuidBytes))) {
         return false;
     }
 
