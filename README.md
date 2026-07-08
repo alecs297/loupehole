@@ -35,9 +35,9 @@ The documentation links below target those final names.
 
 | Surface | Mitigation | Source folder | Status | ID |
 | --- | --- | --- | --- | --- |
-| [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/tweaks/identity/idfv/) | Experimental | `identity.idfv.uidevice.scoped_uuid` |
-| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/tweaks/system/boot_time/) + [shared temporal state](src/tweaks/common/temporal/) | Experimental | `system.boot_time.composite.synthetic` |
-| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/tweaks/storage/volume_creation_time/) + [shared temporal state](src/tweaks/common/temporal/) | Experimental | `storage.volume_creation_time.foundation.synthetic` |
+| [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | Experimental | `identity.idfv.uidevice.scoped_uuid` |
+| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) + [shared temporal state](src/mitigations/common/temporal/) | Experimental | `system.boot_time.composite.synthetic` |
+| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) + [shared temporal state](src/mitigations/common/temporal/) | Experimental | `storage.volume_creation_time.foundation.synthetic` |
 
 The boot-time and volume-creation-time mitigations are one coherent temporal group: `volume creation time < boot time < now` is preserved by a shared tweak helper. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
 

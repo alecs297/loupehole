@@ -42,7 +42,7 @@ $(LH_LOADER_BASENAME)_FILES := \
 $(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \
 	-I../../core/generated \
-	-I../../src/tweaks \
+	-I../../src/mitigations \
 	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
 	-fvisibility=hidden \
 	-fdata-sections \

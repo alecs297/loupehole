@@ -138,7 +138,7 @@ def normalize_catalog(catalog):
             if not (ROOT / source).is_file():
                 raise SystemExit(f"{identifier} source does not exist: {source}")
 
-        status = item.get("status")
+        status = item.get("status", defaults.get("status", "experimental"))
         if status not in STATUSES:
             raise SystemExit(f"{identifier} status must be one of {sorted(STATUSES)}")
 

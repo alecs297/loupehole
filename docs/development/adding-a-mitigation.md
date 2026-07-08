@@ -1,6 +1,6 @@
 # Adding And Documenting A Mitigation
 
-A mitigation is a bounded change to a specific app-visible surface. It comprises research, a catalog entry, a thin hook adapter, tweak-owned value/state logic, generated registry participation, tests, and a detailed mitigation page. A hook alone is not a complete mitigation.
+A mitigation is a bounded change to a specific app-visible surface. It comprises research, a catalog entry, a thin hook adapter, mitigation-owned value/state logic, generated registry participation, tests, and a detailed mitigation page. A hook alone is not a complete mitigation.
 
 ## Lifecycle
 
@@ -49,7 +49,7 @@ Add a mitigation entry in `config/mitigations.json` with:
 
 - stable string `id`;
 - source list;
-- status;
+- optional status;
 - required frameworks, weak frameworks, and libraries;
 - conflicts and platform requirements;
 - `optionDoc` path under `docs/mitigations/`.
@@ -90,7 +90,7 @@ Prefer helpers in `LHTweakValues.h` over ad hoc derivation:
 | `LHTweakDeriveTimeIntervalBetween` | Timestamp inside an interval. |
 | `LHTweakStateKeyFromPolicySeed` | State key labels from policy seeds. |
 
-Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/tweakkit/` only when it removes repeated value-shaping code from multiple tweaks or clarifies a tricky invariant.
+Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/tweakkit/` only when it removes repeated value-shaping code from multiple mitigations or clarifies a tricky invariant.
 
 ## 6. Implement A Thin Hook Adapter
 

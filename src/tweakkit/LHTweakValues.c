@@ -9,7 +9,7 @@ static void LHTweakPolicySeedToLabel(const LHPolicySeed *policySeed, LHDerivatio
     memcpy(label->bytes, policySeed->bytes, sizeof(label->bytes));
 }
 
-/** Derives tweak-owned bytes from practical seed, policy seed, scope, and context. */
+/** Derives mitigation-owned bytes from practical seed, policy seed, scope, and context. */
 bool LHTweakDeriveBytes(const LHSeed *seed,
                         const LHPolicySeed *policySeed,
                         const LHScope *scope,

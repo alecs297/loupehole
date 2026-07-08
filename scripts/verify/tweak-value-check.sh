@@ -74,7 +74,7 @@ cc \
   -DLH_STATE_TESTING=1 \
   -Icore/include \
   -Icore/generated \
-  -Isrc/tweaks \
+  -Isrc/mitigations \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
   core/generated/LHGeneratedPolicySeeds.c \
@@ -87,7 +87,7 @@ cc \
   src/runtime/seeds/LHSeedProvider.m \
   src/runtime/state/LHStateProvider.m \
   src/tweakkit/LHTweakValues.c \
-  src/tweaks/common/temporal/TemporalLifetimeValues.c \
+  src/mitigations/common/temporal/TemporalLifetimeValues.c \
   "$tmpdir/tweak_value_check.m" \
   -framework Foundation \
   -o "$tmpdir/tweak_value_check"

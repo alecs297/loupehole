@@ -15,8 +15,8 @@ Treat `README.md`, `docs/README.md`, and the files under `docs/development/` and
 | `core/include/` | Internal runtime/tweakkit headers. |
 | `core/generated/` | Ignored generator output. Never hand-edit. |
 | `src/runtime/` | Injected runtime, app context, config, scope, seed, state, module registry, and hook backend. |
-| `src/tweakkit/` | Helpers intended for tweaks to import. |
-| `src/tweaks/` | Mitigation installers, hook adapters, and shared tweak-owned value/state helpers. |
+| `src/tweakkit/` | Helpers intended for mitigations to import. |
+| `src/mitigations/` | Mitigation installers, hook adapters, and shared mitigation-owned value/state helpers. |
 | `packaging/theos/` | Theos/deb package scaffold. |
 | `ui/preferences/` | PreferenceLoader Settings UI. |
 | `scripts/build/` | Generator and build helper scripts. |
@@ -38,10 +38,10 @@ Treat `README.md`, `docs/README.md`, and the files under `docs/development/` and
 - If a helper or shipped package artifact is generated, patch the generator first.
 - Preserve pass-through behavior when a hook cannot safely provide its documented value.
 
-## Tweak Development Pattern
+## Mitigation Development Pattern
 
-1. Add source under `src/tweaks/<surface>/<name>/` or shared code under `src/tweaks/common/`.
-2. Add a catalog entry in `config/mitigations.json` with source paths, status, framework/library needs, and `optionDoc`.
+1. Add source under `src/mitigations/<surface>/<name>/` or shared code under `src/mitigations/common/`.
+2. Add a catalog entry in `config/mitigations.json` with source paths, framework/library needs, optional status, and `optionDoc`.
 3. Declare every value stream with `LH_POLICY_SEED`.
 4. Use `LHTweakValues.h` helpers for UUIDs, bytes, bounded numbers, strings, timestamps, and state keys.
 5. Implement the generated installer symbol:

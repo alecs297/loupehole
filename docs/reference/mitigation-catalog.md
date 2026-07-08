@@ -30,7 +30,7 @@ The catalog keeps only build metadata:
 | --- | --- |
 | `id` | Stable dotted mitigation identifier. |
 | `sources` | Source files compiled when selected. |
-| `status` | Documentation/status label such as `experimental`. |
+| `status` | Optional documentation/status label such as `experimental`; omitted entries default to `experimental` during generation. |
 | `optionDoc` | Detailed mitigation page under `docs/mitigations/`. |
 | `frameworks`, `weakFrameworks`, `libraries` | Link metadata for selected sources. |
 | `minIos`, `maxIos`, `requires`, `conflicts` | Compatibility and dependency constraints. |
@@ -63,11 +63,11 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 
 | Mitigation ID | Detailed page | Source entrypoint(s) | Status |
 | --- | --- | --- | --- |
-| `identity.idfv.uidevice.scoped_uuid` | [IDFV](../mitigations/identity-idfv.md) | `src/tweaks/identity/idfv/IDFVMitigation.m` | Experimental |
-| `system.boot_time.composite.synthetic` | [Boot time](../mitigations/system-boot-time.md) | `src/tweaks/system/boot_time/BootTimeMitigation.m`, sysctl adapter, ProcessInfo adapter | Experimental |
-| `storage.volume_creation_time.foundation.synthetic` | [Volume creation time](../mitigations/storage-volume-time.md) | `src/tweaks/storage/volume_creation_time/VolumeCreationTimeMitigation.m` | Experimental |
+| `identity.idfv.uidevice.scoped_uuid` | [IDFV](../mitigations/identity-idfv.md) | `src/mitigations/identity/idfv/IDFVMitigation.m` | Experimental |
+| `system.boot_time.composite.synthetic` | [Boot time](../mitigations/system-boot-time.md) | `src/mitigations/system/boot_time/BootTimeMitigation.m`, sysctl adapter, ProcessInfo adapter | Experimental |
+| `storage.volume_creation_time.foundation.synthetic` | [Volume creation time](../mitigations/storage-volume-time.md) | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m` | Experimental |
 
-The boot-time and volume-creation-time mitigations share `src/tweaks/common/temporal/TemporalLifetimeValues.c`.
+The boot-time and volume-creation-time mitigations share `src/mitigations/common/temporal/TemporalLifetimeValues.c`.
 
 ## Naming and Entry Points
 
@@ -95,9 +95,9 @@ Source folders should mirror ownership:
 | Folder | Ownership |
 | --- | --- |
 | `src/runtime/` | Injected runtime, policy engine, scope, seed, state, and hook backend. |
-| `src/tweakkit/` | Helpers intended for tweaks to import. |
-| `src/tweaks/<surface>/...` | Individual mitigation adapters. |
-| `src/tweaks/common/...` | Shared tweak-owned state/value helpers. |
+| `src/tweakkit/` | Helpers intended for mitigations to import. |
+| `src/mitigations/<surface>/...` | Individual mitigation adapters. |
+| `src/mitigations/common/...` | Shared mitigation-owned state/value helpers. |
 | `packaging/theos/` | Theos/deb package scaffold. |
 | `ui/preferences/` | PreferenceLoader Settings UI. |
 

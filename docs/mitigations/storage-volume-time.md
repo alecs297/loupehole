@@ -53,7 +53,7 @@ LH_POLICY_SEED(temporal_lifetime, volume_creation_date, "volume_creation_date")
 
 | Item | Value |
 | --- | --- |
-| State owner | `src/tweaks/common/temporal/TemporalLifetimeValues.c` |
+| State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
 | State key | `LHTweakStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
 | Volume helper | `LHTweakDeriveU64` with `LHGeneratedPolicySeed_temporal_lifetime_volume_creation_date` |
 | Value shape | `double` Unix timestamp returned to Foundation as an `NSDate`. |
