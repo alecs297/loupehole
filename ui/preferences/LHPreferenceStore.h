@@ -72,7 +72,7 @@
 - (NSString *)cacheDirectoryPath;
 /** Returns the package root seed path. */
 - (NSString *)rootSeedPath;
-/** Returns the build seed visible to standalone debug builds, or a redacted package-mode marker. */
+/** Returns the build seed embedded in preference metadata, or a runtime-only marker. */
 - (NSString *)buildSeedString;
 /** Returns the package root seed as lowercase hex when readable. */
 - (NSString *)rootSeedHexString;

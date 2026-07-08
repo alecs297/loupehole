@@ -10,7 +10,7 @@ The seed model exists to make stability and rotation explicit. The same active s
 
 | Layer | Meaning | Typical origin | Purpose |
 | --- | --- | --- | --- |
-| Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib starting seed when embedded. |
+| Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib starting seed when embedded; package preference debug metadata. |
 | Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding the selection build seed in the deb-mode dylib. |
 | Practical seed | Effective parent seed before scoping. | Custom manual-group seed, embedded build seed, or package root seed. | Unifies package and standalone modes. |
 | Active seed | Seed used by mitigations after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces mitigation values and opaque names for the current context. |
@@ -22,9 +22,9 @@ The seed model exists to make stability and rotation explicit. The same active s
 The runtime field is named `buildSeed` in both modes:
 
 - In standalone dylib mode, it starts as the configured build seed when embedded.
-- In deb/package mode, the raw selection build seed is not embedded in the package dylib; after seed-provider resolution the same field holds the package-derived active seed.
+- In deb/package mode, the raw selection build seed is not embedded in the injected package dylib; after seed-provider resolution the same field holds the package-derived active seed.
 
-This single name avoids a split build/instance vocabulary in the injected dylib. The important boundary is that package mode should not carry the raw selection build seed bytes.
+This single name avoids a split build/instance vocabulary in the injected dylib. The important boundary is that package mode can carry the build seed in the deb's preference metadata, but not in the injected runtime dylib.
 
 ## Why Seeds Rather Than Literal Values
 

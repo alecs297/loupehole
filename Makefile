@@ -27,6 +27,7 @@ FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).
 export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
 export LH_EMBED_BUILD_SEED ?= 1
+export LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
 
 # Root targets intentionally funnel through generation before build/test work so
 # ignored generated files are disposable outputs of catalog + selection.
@@ -35,12 +36,12 @@ export LH_EMBED_BUILD_SEED ?= 1
 all: copy-artifact
 
 build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) LH_PREFERENCES_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
 
 package: package-verify
 
 package-build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 package
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 LH_PREFERENCES_EMBED_BUILD_SEED=1 package
 
 copy-package: package-build
 	mkdir -p "$(ARTIFACT_DIR)"

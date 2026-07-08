@@ -45,7 +45,7 @@ The default selection currently records:
 }
 ```
 
-The build seed is generator input. In standalone dylib builds it can be embedded as the runtime starting seed. In package builds the raw selection build seed is not embedded; it still drives generated names and compile-time policy seed bytes.
+The build seed is generator input. In standalone dylib builds it can be embedded as the runtime starting seed. In package builds the raw selection build seed is not embedded in the injected runtime dylib; it still drives generated names, compile-time policy seed bytes, and preference-bundle debug metadata.
 
 ## Variability
 

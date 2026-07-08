@@ -596,7 +596,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [[NSCharacterSet alphanumericCharacterSet] characterIsMember:first];
 }
 
-/** Returns the generated build seed string or the package-mode redaction marker. */
+/** Returns the generated build seed string when preference metadata embeds it. */
 - (NSString *)buildSeedString {
     if (!LHGeneratedConfigHasBuildSeed) {
         return @"runtime-random";

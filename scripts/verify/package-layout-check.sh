@@ -279,6 +279,9 @@ int main(void) {
         if (![lines isEqualToArray:@[@"D|0|0|0||"]]) {
             return 14;
         }
+        if ([[store buildSeedString] isEqualToString:@"runtime-random"]) {
+            return 29;
+        }
         if (![store resetRootSeedWithError:&error]) {
             return 19;
         }
@@ -304,6 +307,7 @@ SOURCE
 
 cc \
   -DLH_PREFERENCES_TESTING=1 \
+  -DLH_EMBED_BUILD_SEED=1 \
   -Icore/include \
   -Icore/generated \
   -Ipackaging/theos/generated \

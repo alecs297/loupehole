@@ -6,6 +6,7 @@ _THEOS_PLATFORM_DPKG_DEB ?= ../../scripts/build/dpkg-deb-root-owner-group.sh
 THEOS_PLATFORM_DEB_COMPRESSION_TYPE ?= xz
 LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 LH_EMBED_BUILD_SEED ?= 1
+LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
 
 # This Makefile is package/build glue only. Runtime code lives under ../../src,
 # preference UI under ../../ui, and generated package inputs under ./generated.
@@ -80,7 +81,7 @@ LoupeholePreferences_CFLAGS += \
 	-Wall \
 	-Wextra \
 	-Werror \
-	-DLH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
+	-DLH_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
 LoupeholePreferences_LDFLAGS += -undefined dynamic_lookup
 LoupeholePreferences_RESOURCE_DIRS := ../../ui/preferences/Resources
 

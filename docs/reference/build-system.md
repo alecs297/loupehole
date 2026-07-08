@@ -14,7 +14,8 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `ARTIFACT_DIR` | `dist` | Final copied artifact directory. |
 | `LH_ENABLE_VARIABILITY` | `1` | Build variability feature flag. |
 | `LH_ENABLE_DIAGNOSTICS` | `0` | Diagnostics feature flag. |
-| `LH_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed for standalone dylib builds; package builds force `0`. |
+| `LH_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed in the injected runtime dylib; package builds force `0` for that dylib. |
+| `LH_PREFERENCES_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed in the preferences bundle metadata for the debug pane. |
 
 ## Targets
 
@@ -26,7 +27,7 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `make copy-artifact` | Copies signed runtime to `dist/runtime.dylib`. |
 | `make audit` | Builds/copies the dylib and runs all static verification gates. |
 | `make package` | Runs package verification, builds rootless package, copies final `.deb`. |
-| `make package-build` | Generates inputs and invokes Theos package build with package state provider and no embedded build seed. |
+| `make package-build` | Generates inputs and invokes Theos package build with package state provider, no runtime-dylib build seed, and preference metadata enabled. |
 | `make package-verify` | Validates copied `.deb` package layout. |
 | `make generate` | Runs `scripts/build/generate-mitigation-build.py`. |
 | `make clean` | Removes build/package artifacts and `dist`. |
@@ -49,14 +50,16 @@ Generated files are disposable outputs. Do not hand-edit them.
 
 The standalone dylib build uses the local state provider by default and embeds the configured build seed when `LH_EMBED_BUILD_SEED=1`.
 
-`make package-build` sets:
+`make package-build` sets the injected runtime dylib to package mode:
 
 ```sh
 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage
 LH_EMBED_BUILD_SEED=0
 ```
 
-That means the deb-mode dylib does not carry the raw selection build seed. At runtime the package creates or reads its package root seed and then resolves the active scoped seed. The runtime field remains named `buildSeed` because it is the seed value that the injected dylib uses after config and seed-provider resolution.
+It also keeps `LH_PREFERENCES_EMBED_BUILD_SEED=1`, so the deb can include the raw selection build seed in the PreferenceLoader bundle debug metadata. That seed must not be compiled into the injected package dylib.
+
+At runtime the package creates or reads its package root seed and then resolves the active scoped seed. The runtime field remains named `buildSeed` because it is the seed value that the injected dylib uses after config and seed-provider resolution.
 
 ## Release Artifact Checks
 
