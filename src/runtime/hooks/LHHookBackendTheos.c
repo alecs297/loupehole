@@ -26,6 +26,7 @@ static LHImportedSymbolBinding LHImportedSymbolBindings[16];
 static size_t LHImportedSymbolBindingCount;
 static bool LHImportedSymbolCallbackRegistered;
 
+/** Resolves MobileSubstrate entry points for the shared backend context. */
 static LHTheosBackendContext LHTheosBackendSharedContext(void) {
     LHTheosBackendContext context = { 0 };
     context.hookFunction = (MSHookFunctionType)dlsym(RTLD_DEFAULT, "MSHookFunction");
@@ -33,6 +34,7 @@ static LHTheosBackendContext LHTheosBackendSharedContext(void) {
     return context;
 }
 
+/** Compares import-table symbol names while tolerating Mach-O leading underscores. */
 static bool LHImportedSymbolNameMatches(const char *candidate, const char *expected) {
     if (candidate == 0 || expected == 0) {
         return false;
@@ -44,12 +46,14 @@ static bool LHImportedSymbolNameMatches(const char *candidate, const char *expec
     return strcmp(candidate, expected) == 0;
 }
 
+/** Captures the original imported symbol pointer before rebinding. */
 static void LHImportedSymbolStoreOriginal(const LHImportedSymbolBinding *binding, void *current) {
     if (binding->original != 0 && *binding->original == 0 && current != binding->replacement) {
         *binding->original = current;
     }
 }
 
+/** Writes an import pointer after temporarily relaxing page protections. */
 static bool LHImportedSymbolWritePointer(void **slot, void *replacement, bool restoreReadOnly) {
     if (slot == 0 || *slot == replacement) {
         return false;
@@ -74,6 +78,7 @@ static bool LHImportedSymbolWritePointer(void **slot, void *replacement, bool re
     return true;
 }
 
+/** Rebinds matching indirect symbol pointers within one Mach-O section. */
 static bool LHImportedSymbolRebindSection(const struct section_64 *section,
                                           const struct nlist_64 *symbolTable,
                                           uint32_t symbolCount,
@@ -116,6 +121,7 @@ static bool LHImportedSymbolRebindSection(const struct section_64 *section,
     return rebound;
 }
 
+/** Rebinds matching imported symbols in one loaded Mach-O image. */
 static bool LHImportedSymbolRebindImage(const struct mach_header *header,
                                         intptr_t slide,
                                         const LHImportedSymbolBinding *binding) {
@@ -174,12 +180,14 @@ static bool LHImportedSymbolRebindImage(const struct mach_header *header,
     return rebound;
 }
 
+/** Rebind callback invoked for images loaded after registration. */
 static void LHImportedSymbolRebindImageCallback(const struct mach_header *header, intptr_t slide) {
     for (size_t i = 0; i < LHImportedSymbolBindingCount; i++) {
         (void)LHImportedSymbolRebindImage(header, slide, &LHImportedSymbolBindings[i]);
     }
 }
 
+/** Rebinds an imported symbol across every image currently loaded. */
 static bool LHImportedSymbolRebindExistingImages(const LHImportedSymbolBinding *binding) {
     bool rebound = false;
     uint32_t count = _dyld_image_count();
@@ -191,6 +199,7 @@ static bool LHImportedSymbolRebindExistingImages(const LHImportedSymbolBinding *
     return rebound;
 }
 
+/** MobileSubstrate function-hook adapter. */
 static bool LHTheosHookFunction(LHHookBackend *backend, void *target, void *replacement, void **original) {
     LHTheosBackendContext *context = (LHTheosBackendContext *)backend->context;
     if (context == 0 || context->hookFunction == 0 || target == 0 || replacement == 0) {
@@ -201,6 +210,7 @@ static bool LHTheosHookFunction(LHHookBackend *backend, void *target, void *repl
     return true;
 }
 
+/** Imported-symbol hook adapter backed by local Mach-O rebinding. */
 static bool LHTheosHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
     (void)backend;
     if (symbol == 0 || symbol[0] == '\0' || replacement == 0 || LHImportedSymbolBindingCount >= (sizeof(LHImportedSymbolBindings) / sizeof(LHImportedSymbolBindings[0]))) {
@@ -222,6 +232,7 @@ static bool LHTheosHookImportedSymbol(LHHookBackend *backend, const char *symbol
     return rebound;
 }
 
+/** MobileSubstrate Objective-C method-hook adapter. */
 static bool LHTheosHookMessage(LHHookBackend *backend, Class targetClass, SEL selector, void *replacement, void **original) {
     LHTheosBackendContext *context = (LHTheosBackendContext *)backend->context;
     if (context == 0 || context->hookMessage == 0 || targetClass == 0 || selector == 0 || replacement == 0) {
@@ -232,6 +243,7 @@ static bool LHTheosHookMessage(LHHookBackend *backend, Class targetClass, SEL se
     return true;
 }
 
+/** Records a no-op installation for an enabled module with no active hook. */
 static bool LHTheosRegisterNoOp(LHHookBackend *backend, uint32_t moduleID) {
     LHTheosBackendContext *context = (LHTheosBackendContext *)backend->context;
     if (context == 0 || moduleID == 0) {
@@ -242,6 +254,7 @@ static bool LHTheosRegisterNoOp(LHHookBackend *backend, uint32_t moduleID) {
     return true;
 }
 
+/** Creates a hook backend backed by Theos/MobileSubstrate primitives. */
 LHHookBackend LHHookBackendCreateTheos(void) {
     static LHTheosBackendContext context;
     static bool initialized;

@@ -7,6 +7,7 @@
 #define LH_DEFAULT_STATE_PROVIDER_KIND LHStateProviderKindLocal
 #endif
 
+/** Builds the default runtime configuration from generated build inputs. */
 LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
         .scopeMode = LHScopeModePerAppInstall,
@@ -23,6 +24,7 @@ LHRuntimeConfig LHRuntimeConfigDefault(void) {
     return config;
 }
 
+/** Returns whether a generated module ID is active under the runtime filter. */
 bool LHRuntimeConfigIsModuleEnabled(const LHRuntimeConfig *config, uint32_t moduleID) {
     if (config == 0 || !config->policyEnabled || moduleID == 0) {
         return false;

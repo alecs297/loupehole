@@ -38,10 +38,15 @@ struct LHHookBackend {
     void *context;
 };
 
+/** Installs a direct function hook through `backend`. */
 LH_INTERNAL bool LHHookBackendHookFunction(LHHookBackend *backend, void *target, void *replacement, void **original);
+/** Rebinds imported symbols matching `symbol` through `backend`. */
 LH_INTERNAL bool LHHookBackendHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original);
+/** Installs an Objective-C method hook through `backend`. */
 LH_INTERNAL bool LHHookBackendHookMessage(LHHookBackend *backend, Class targetClass, SEL selector, void *replacement, void **original);
+/** Records that `moduleID` intentionally installed no hooks. */
 LH_INTERNAL bool LHHookBackendRegisterNoOp(LHHookBackend *backend, uint32_t moduleID);
+/** Creates the Theos/MobileSubstrate hook backend. */
 LH_INTERNAL LHHookBackend LHHookBackendCreateTheos(void);
 
 #ifdef __cplusplus

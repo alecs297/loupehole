@@ -33,12 +33,15 @@ typedef struct LHPolicySeed {
     LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##domain##_##name;
 #endif
 
+/** Parses a UUID string into a 16-byte seed. */
 LH_INTERNAL bool LHSeedParseUUID(const char *uuid, LHSeed *seed);
+/** Derives scoped bytes from `seed`, `label`, and `scope`. */
 LH_INTERNAL bool LHSeedDeriveBytes(const LHSeed *seed,
                                    const LHDerivationLabel *label,
                                    const LHScope *scope,
                                    uint8_t *output,
                                    size_t outputLength);
+/** Derives scoped bytes with extra context mixed into the derivation transcript. */
 LH_INTERNAL bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
                                               const LHDerivationLabel *label,
                                               const LHScope *scope,
@@ -46,6 +49,7 @@ LH_INTERNAL bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
                                               size_t contextLength,
                                               uint8_t *output,
                                               size_t outputLength);
+/** Formats a scoped derivation as a 32-character opaque lowercase hex name. */
 LH_INTERNAL bool LHSeedDeriveOpaqueName(const LHSeed *seed,
                                         const LHDerivationLabel *label,
                                         const LHScope *scope,

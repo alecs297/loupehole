@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+/** Applies package-mode policy overrides for the current app context. */
 LH_INTERNAL bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppContext *context);
 
 #ifdef __cplusplus

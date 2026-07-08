@@ -21,10 +21,15 @@ typedef struct LHScope {
     size_t identifierLength;
 } LHScope;
 
+/** Initializes a scope from raw identifier bytes or a random fallback when invalid. */
 LH_INTERNAL bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength);
+/** Initializes an install-scoped per-app scope from a bundle identifier. */
 LH_INTERNAL bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier);
+/** Initializes a per-app scope from a bundle identifier. */
 LH_INTERNAL bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier);
+/** Initializes a vendor-group scope from a vendor identifier. */
 LH_INTERNAL bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier);
+/** Initializes a manually linked group scope from a caller-provided identifier. */
 LH_INTERNAL bool LHScopeInitManualLinkedGroup(LHScope *scope, const char *groupIdentifier);
 
 #ifdef __cplusplus

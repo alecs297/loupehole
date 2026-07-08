@@ -4,6 +4,7 @@
 
 #include <string.h>
 
+/** Initializes the policy engine, runtime config, app context, scope, and seed. */
 bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     if (engine == 0) {
         return false;
@@ -41,6 +42,7 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     return true;
 }
 
+/** Sets the build seed from a UUID string. */
 bool LHPolicyEngineSetBuildSeed(LHPolicyEngine *engine, const char *uuid) {
     if (engine == 0) {
         return false;
@@ -55,6 +57,7 @@ bool LHPolicyEngineSetBuildSeed(LHPolicyEngine *engine, const char *uuid) {
     return true;
 }
 
+/** Derives scoped bytes using an internal generated derivation label. */
 bool LHPolicyEngineDeriveBytes(const LHPolicyEngine *engine,
                                const LHDerivationLabel *label,
                                uint8_t *output,
@@ -66,6 +69,7 @@ bool LHPolicyEngineDeriveBytes(const LHPolicyEngine *engine,
     return LHSeedDeriveBytes(&engine->config.buildSeed, label, &engine->appContext.scope, output, outputLength);
 }
 
+/** Loads or creates a state blob through the configured state provider. */
 bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,
                                      const LHStateKey *key,
                                      uint8_t *output,
@@ -87,6 +91,7 @@ bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,
                                        result);
 }
 
+/** Returns whether a module ID is enabled for the initialized engine. */
 bool LHPolicyEngineIsModuleEnabled(const LHPolicyEngine *engine, uint32_t moduleID) {
     if (engine == 0 || !engine->initialized) {
         return false;

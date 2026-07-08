@@ -9,6 +9,7 @@
 extern "C" {
 #endif
 
+/** Resolves the practical and active seed for `config` under `context`. */
 LH_INTERNAL bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext *context);
 
 #ifdef __cplusplus

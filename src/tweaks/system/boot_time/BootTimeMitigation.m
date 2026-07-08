@@ -4,6 +4,7 @@
 LH_INTERNAL bool LHBootTimeSysctlInstall(LHHookBackend *backend, LHPolicyEngine *policy);
 LH_INTERNAL bool LHBootTimeProcessInfoInstall(LHHookBackend *backend, LHPolicyEngine *policy);
 
+/** Installs every boot-time hook adapter that is available in the target process. */
 bool LHMitigation_system_boot_time_composite_synthetic_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     bool installed = false;
 

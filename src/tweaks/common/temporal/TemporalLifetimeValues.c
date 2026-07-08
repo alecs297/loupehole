@@ -21,6 +21,7 @@ typedef struct LHTemporalLifetimeState {
     double volumeCreationTime;
 } LHTemporalLifetimeState;
 
+/** Generates the boot time from practical and policy seed material. */
 static bool LHTemporalGenerateBootTime(const LHRuntimeConfig *config,
                                        const LHAppContext *context,
                                        time_t now,
@@ -42,6 +43,7 @@ static bool LHTemporalGenerateBootTime(const LHRuntimeConfig *config,
     return bootTime->tv_sec > 0;
 }
 
+/** Generates a volume creation timestamp that remains older than boot time. */
 static bool LHTemporalGenerateVolumeCreationTime(const LHRuntimeConfig *config,
                                                  const LHAppContext *context,
                                                  time_t now,
@@ -64,6 +66,7 @@ static bool LHTemporalGenerateVolumeCreationTime(const LHRuntimeConfig *config,
     return *volumeCreationTime < (double)bootTime.tv_sec;
 }
 
+/** Generates the persisted temporal-lifetime state blob. */
 static bool LHTemporalGenerateState(const LHRuntimeConfig *config,
                                     const LHAppContext *context,
                                     void *generatorContext,
@@ -90,6 +93,7 @@ static bool LHTemporalGenerateState(const LHRuntimeConfig *config,
     return true;
 }
 
+/** Loads or creates the shared temporal-lifetime state. */
 static bool LHTemporalLoadState(const LHPolicyEngine *engine, LHTemporalLifetimeState *state) {
     if (state == 0) {
         return false;
@@ -105,6 +109,7 @@ static bool LHTemporalLoadState(const LHPolicyEngine *engine, LHTemporalLifetime
                                            0);
 }
 
+/** Copies the coherent synthetic boot time from temporal lifetime state. */
 bool LHTemporalLifetimeCopyBootTime(const LHPolicyEngine *engine, struct timeval *bootTime) {
     if (bootTime == 0) {
         return false;
@@ -119,6 +124,7 @@ bool LHTemporalLifetimeCopyBootTime(const LHPolicyEngine *engine, struct timeval
     return true;
 }
 
+/** Copies the coherent synthetic volume creation timestamp from temporal lifetime state. */
 bool LHTemporalLifetimeCopyVolumeCreationTime(const LHPolicyEngine *engine, double *volumeCreationTime) {
     if (volumeCreationTime == 0) {
         return false;

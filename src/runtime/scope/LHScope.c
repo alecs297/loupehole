@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+/** Initializes a scope with a fresh opaque fallback identifier. */
 static bool LHScopeInitRandomIdentifier(LHScope *scope, LHScopeMode mode) {
     static const uint8_t alphabet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     enum { kFallbackLength = 32 };
@@ -20,6 +21,7 @@ static bool LHScopeInitRandomIdentifier(LHScope *scope, LHScopeMode mode) {
     return true;
 }
 
+/** Initializes a scope from caller-provided identifier bytes or fallback bytes. */
 bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, size_t identifierLength) {
     if (scope == 0) {
         return false;
@@ -35,6 +37,7 @@ bool LHScopeInit(LHScope *scope, LHScopeMode mode, const uint8_t *identifier, si
     return true;
 }
 
+/** Initializes install-scoped app identity. */
 bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier) {
     return LHScopeInit(scope,
                        LHScopeModePerAppInstall,
@@ -42,6 +45,7 @@ bool LHScopeInitPerAppInstall(LHScope *scope, const char *bundleIdentifier) {
                        bundleIdentifier == 0 ? 0 : strlen(bundleIdentifier));
 }
 
+/** Initializes deterministic per-app identity. */
 bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier) {
     return LHScopeInit(scope,
                        LHScopeModePerApp,
@@ -49,6 +53,7 @@ bool LHScopeInitPerApp(LHScope *scope, const char *bundleIdentifier) {
                        bundleIdentifier == 0 ? 0 : strlen(bundleIdentifier));
 }
 
+/** Initializes deterministic vendor-group identity. */
 bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier) {
     return LHScopeInit(scope,
                        LHScopeModePerVendorGroup,
@@ -56,6 +61,7 @@ bool LHScopeInitPerVendorGroup(LHScope *scope, const char *vendorIdentifier) {
                        vendorIdentifier == 0 ? 0 : strlen(vendorIdentifier));
 }
 
+/** Initializes manual linked-group identity. */
 bool LHScopeInitManualLinkedGroup(LHScope *scope, const char *groupIdentifier) {
     static const uint8_t staticIdentifier[] = { 0 };
     (void)groupIdentifier;

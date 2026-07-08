@@ -17,6 +17,7 @@ typedef struct LHModuleDescriptor {
     LHModuleInstall install;
 } LHModuleDescriptor;
 
+/** Installs every generated mitigation descriptor that is enabled by `policy`. */
 LH_INTERNAL bool LHModuleRegistryInstall(LHHookBackend *backend, LHPolicyEngine *policy);
 
 #ifdef __cplusplus

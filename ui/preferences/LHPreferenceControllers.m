@@ -20,6 +20,7 @@
 
 static const NSInteger LHCustomSeedScopeMode = 3;
 
+/** Builds the short enabled/scope/modules summary shown in policy rows. */
 static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
     NSString *state = policy.enabled ? @"On" : @"Off";
     if (override) {
@@ -28,6 +29,7 @@ static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
     return [NSString stringWithFormat:@"Default: %@", state];
 }
 
+/** Returns installed application display names keyed by bundle identifier. */
 static NSDictionary<NSString *, NSString *> *LHApplicationNamesByBundleIdentifier(void) {
     NSMutableDictionary<NSString *, NSString *> *names = [NSMutableDictionary dictionary];
     Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
@@ -43,6 +45,7 @@ static NSDictionary<NSString *, NSString *> *LHApplicationNamesByBundleIdentifie
     return names;
 }
 
+/** Presents a simple alert for a preference-store error. */
 static void LHPresentError(UIViewController *controller, NSError *error) {
     NSString *message = error.localizedDescription ?: @"The settings could not be updated.";
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Loupehole" message:message preferredStyle:UIAlertControllerStyleAlert];
@@ -50,6 +53,7 @@ static void LHPresentError(UIViewController *controller, NSError *error) {
     [controller presentViewController:alert animated:YES completion:nil];
 }
 
+/** Creates a grouped Preferences section specifier. */
 static PSSpecifier *LHGroupSpecifier(NSString *label, NSString *footer) {
     PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label target:nil set:nil get:nil detail:nil cell:PSGroupCell edit:nil];
     if (footer != nil) {
@@ -58,6 +62,7 @@ static PSSpecifier *LHGroupSpecifier(NSString *label, NSString *footer) {
     return specifier;
 }
 
+/** Creates a switch specifier backed by a preference key. */
 static PSSpecifier *LHSwitchSpecifier(NSString *label, id target, NSString *key) {
     PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label
                                                            target:target
@@ -70,12 +75,14 @@ static PSSpecifier *LHSwitchSpecifier(NSString *label, id target, NSString *key)
     return specifier;
 }
 
+/** Creates a plain action-button specifier. */
 static PSSpecifier *LHButtonSpecifier(NSString *label, id target, SEL action) {
     PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label target:target set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
     specifier.buttonAction = action;
     return specifier;
 }
 
+/** Creates a destructive action-button specifier. */
 static PSSpecifier *LHDestructiveButtonSpecifier(NSString *label, id target, SEL action) {
     PSSpecifier *specifier = LHButtonSpecifier(label, target, action);
     [specifier setProperty:NSClassFromString(@"LHDestructiveButtonCell") forKey:@"cellClass"];
@@ -83,10 +90,12 @@ static PSSpecifier *LHDestructiveButtonSpecifier(NSString *label, id target, SEL
     return specifier;
 }
 
+/** Creates a navigation-link specifier with an optional preview selector. */
 static PSSpecifier *LHLinkSpecifier(NSString *label, id target, Class detail, SEL preview) {
     return [PSSpecifier preferenceSpecifierNamed:label target:target set:nil get:preview detail:detail cell:PSLinkListCell edit:nil];
 }
 
+/** Calculates enough row height for a wrapped value string. */
 static CGFloat LHValueHeightForValue(NSString *value) {
     NSUInteger length = [(value ?: @"") length];
     if (length > 150) {
@@ -101,6 +110,7 @@ static CGFloat LHValueHeightForValue(NSString *value) {
     return 60.0;
 }
 
+/** Creates a read-only value specifier using the wrapping value cell. */
 static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
     PSSpecifier *specifier = [PSSpecifier preferenceSpecifierNamed:label target:nil set:nil get:nil detail:nil cell:PSTitleValueCell edit:nil];
     [specifier setProperty:value ?: @"" forKey:@"value"];
@@ -190,6 +200,7 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
 
 @end
 
+/** Creates a read-only static value specifier. */
 static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
     PSSpecifier *specifier = LHValueSpecifier(label, value);
     [specifier setProperty:NSClassFromString(@"LHStaticValueTableCell") forKey:@"cellClass"];

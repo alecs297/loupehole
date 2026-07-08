@@ -11,6 +11,7 @@ typedef NSTimeInterval (*LHSystemUptimeOriginal)(NSProcessInfo *self, SEL select
 static LHSystemUptimeOriginal LHSystemUptimeOriginalImplementation;
 static LHPolicyEngine *LHProcessInfoBootTimePolicy;
 
+/** Replacement for `-[NSProcessInfo systemUptime]`. */
 static NSTimeInterval LHSystemUptimeReplacement(NSProcessInfo *self, SEL selector) {
     struct timeval bootTime;
     if (LHTemporalLifetimeCopyBootTime(LHProcessInfoBootTimePolicy, &bootTime)) {
@@ -28,6 +29,7 @@ static NSTimeInterval LHSystemUptimeReplacement(NSProcessInfo *self, SEL selecto
     return 0.0;
 }
 
+/** Installs the NSProcessInfo uptime hook. */
 bool LHBootTimeProcessInfoInstall(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHProcessInfoBootTimePolicy = policy;
 

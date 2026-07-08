@@ -14,10 +14,12 @@
 
 LH_DERIVATION_LABEL(package_state, root)
 
+/** Wraps raw bytes in immutable NSData for plist storage. */
 static NSData *LHDataFromBytes(const uint8_t *bytes, size_t length) {
     return [NSData dataWithBytes:bytes length:length];
 }
 
+/** Derives the opaque filename for a state key. */
 static NSString *LHStateBlobName(const LHRuntimeConfig *config, const LHAppContext *context, const LHStateKey *key) {
     char name[33] = { 0 };
     if (!LHSeedDeriveOpaqueName(&config->buildSeed,
@@ -30,6 +32,7 @@ static NSString *LHStateBlobName(const LHRuntimeConfig *config, const LHAppConte
     return [NSString stringWithUTF8String:name];
 }
 
+/** Returns the local standalone-mode state blob path. */
 static NSString *LHStateBlobPath(const LHRuntimeConfig *config, const LHAppContext *context, const LHStateKey *key) {
 #if LH_STATE_TESTING
     const char *overrideHome = getenv("LH_STATE_TEST_HOME");
@@ -52,6 +55,7 @@ static NSString *LHStateBlobPath(const LHRuntimeConfig *config, const LHAppConte
     return [base stringByAppendingPathComponent:name];
 }
 
+/** Derives the package-mode per-scope state root directory name. */
 static NSString *LHPackageStateRootName(const LHRuntimeConfig *config, const LHAppContext *context) {
     char name[33] = { 0 };
     if (!LHSeedDeriveOpaqueName(&config->buildSeed,
@@ -64,6 +68,7 @@ static NSString *LHPackageStateRootName(const LHRuntimeConfig *config, const LHA
     return [NSString stringWithUTF8String:name];
 }
 
+/** Returns the package-mode per-scope state base path. */
 static NSString *LHPackageStateBasePath(const LHRuntimeConfig *config, const LHAppContext *context) {
     NSString *rootName = LHPackageStateRootName(config, context);
     if (rootName == nil) {
@@ -86,6 +91,7 @@ static NSString *LHPackageStateBasePath(const LHRuntimeConfig *config, const LHA
     return [[base stringByAppendingPathComponent:parentName] stringByAppendingPathComponent:rootName];
 }
 
+/** Returns the package-mode state blob path for a key. */
 static NSString *LHPackageStateBlobPath(const LHRuntimeConfig *config, const LHAppContext *context, const LHStateKey *key) {
     NSString *base = LHPackageStateBasePath(config, context);
     NSString *name = LHStateBlobName(config, context, key);
@@ -95,6 +101,7 @@ static NSString *LHPackageStateBlobPath(const LHRuntimeConfig *config, const LHA
     return [base stringByAppendingPathComponent:name];
 }
 
+/** Reads and validates a serialized state blob. */
 static bool LHStateReadBytes(NSString *path, const LHStateKey *key, uint8_t *output, size_t outputLength) {
     NSData *data = [NSData dataWithContentsOfFile:path];
     if (data == nil) {
@@ -121,6 +128,7 @@ static bool LHStateReadBytes(NSString *path, const LHStateKey *key, uint8_t *out
     return true;
 }
 
+/** Writes a serialized state blob with schema and payload fields. */
 static bool LHStateWriteBytes(NSString *path, const LHStateKey *key, const uint8_t *bytes, size_t length) {
     NSString *directory = [path stringByDeletingLastPathComponent];
     if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:nil]) {
@@ -141,6 +149,7 @@ static bool LHStateWriteBytes(NSString *path, const LHStateKey *key, const uint8
     return [data writeToFile:path options:NSDataWritingAtomic error:nil];
 }
 
+/** Invokes a state generator after clearing the output buffer. */
 static bool LHStateGenerate(const LHRuntimeConfig *config,
                             const LHAppContext *context,
                             LHStateGenerateBytes generate,
@@ -151,6 +160,7 @@ static bool LHStateGenerate(const LHRuntimeConfig *config,
     return generate != 0 && generate(config, context, generatorContext, output, outputLength);
 }
 
+/** Loads or creates a standalone-mode state blob. */
 static bool LHStateProviderLoadLocal(const LHRuntimeConfig *config,
                                      const LHAppContext *context,
                                      const LHStateKey *key,
@@ -186,6 +196,7 @@ static bool LHStateProviderLoadLocal(const LHRuntimeConfig *config,
     return true;
 }
 
+/** Loads or creates a package-mode state blob. */
 static bool LHStateProviderLoadPackage(const LHRuntimeConfig *config,
                                        const LHAppContext *context,
                                        const LHStateKey *key,
@@ -221,6 +232,7 @@ static bool LHStateProviderLoadPackage(const LHRuntimeConfig *config,
     return true;
 }
 
+/** Loads or creates state through the configured local, package, or embedded backend. */
 bool LHStateProviderLoadOrCreate(const LHRuntimeConfig *config,
                                  const LHAppContext *context,
                                  const LHStateKey *key,

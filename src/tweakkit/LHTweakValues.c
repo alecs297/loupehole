@@ -4,10 +4,12 @@
 
 #define LH_UUID_STRING_LENGTH 37
 
+/** Adapts a tweak policy seed to the derivation-label ABI. */
 static void LHTweakPolicySeedToLabel(const LHPolicySeed *policySeed, LHDerivationLabel *label) {
     memcpy(label->bytes, policySeed->bytes, sizeof(label->bytes));
 }
 
+/** Derives tweak-owned bytes from practical seed, policy seed, scope, and context. */
 bool LHTweakDeriveBytes(const LHSeed *seed,
                         const LHPolicySeed *policySeed,
                         const LHScope *scope,
@@ -24,6 +26,7 @@ bool LHTweakDeriveBytes(const LHSeed *seed,
     return LHSeedDeriveBytesWithContext(seed, &label, scope, context, contextLength, output, outputLength);
 }
 
+/** Derives a little-endian 64-bit value for tweak use. */
 bool LHTweakDeriveU64(const LHSeed *seed,
                       const LHPolicySeed *policySeed,
                       const LHScope *scope,
@@ -47,6 +50,7 @@ bool LHTweakDeriveU64(const LHSeed *seed,
     return true;
 }
 
+/** Derives a bounded 64-bit value with deterministic reduction. */
 bool LHTweakDeriveBoundedU64(const LHSeed *seed,
                              const LHPolicySeed *policySeed,
                              const LHScope *scope,
@@ -67,6 +71,7 @@ bool LHTweakDeriveBoundedU64(const LHSeed *seed,
     return true;
 }
 
+/** Derives a deterministic version 4 UUID string for tweak use. */
 bool LHTweakDeriveUUIDString(const LHSeed *seed,
                              const LHPolicySeed *policySeed,
                              const LHScope *scope,
@@ -96,6 +101,7 @@ bool LHTweakDeriveUUIDString(const LHSeed *seed,
     return true;
 }
 
+/** Derives a deterministic ASCII string from a caller-provided alphabet. */
 bool LHTweakDeriveASCIIString(const LHSeed *seed,
                               const LHPolicySeed *policySeed,
                               const LHScope *scope,
@@ -120,6 +126,7 @@ bool LHTweakDeriveASCIIString(const LHSeed *seed,
     return true;
 }
 
+/** Derives a double timestamp inside an exclusive upper-bound interval. */
 bool LHTweakDeriveTimeIntervalBetween(const LHSeed *seed,
                                       const LHPolicySeed *policySeed,
                                       const LHScope *scope,
@@ -140,6 +147,7 @@ bool LHTweakDeriveTimeIntervalBetween(const LHSeed *seed,
     return *output >= lowerInclusive && *output < upperExclusive;
 }
 
+/** Builds a state key from a generated tweak policy seed. */
 LHStateKey LHTweakStateKeyFromPolicySeed(const LHPolicySeed *policySeed, uint32_t schemaVersion) {
     LHStateKey key;
     memset(&key, 0, sizeof(key));

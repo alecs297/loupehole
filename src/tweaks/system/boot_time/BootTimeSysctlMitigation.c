@@ -18,6 +18,7 @@ static LHSysctlByNameOriginal LHSysctlByNameOriginalImplementation;
 static LHSysctlByNameOriginal LHPrivateSysctlByNameOriginalImplementation;
 static LHPolicyEngine *LHBootTimePolicy;
 
+/** Copies the synthetic boot-time timeval into a sysctl output buffer. */
 static int LHBootTimeCopyOut(void *oldp, size_t *oldlenp) {
     struct timeval bootTime;
     if (!LHTemporalLifetimeCopyBootTime(LHBootTimePolicy, &bootTime)) {
@@ -47,6 +48,7 @@ static int LHBootTimeCopyOut(void *oldp, size_t *oldlenp) {
     return 0;
 }
 
+/** Replacement for public `sysctl` boot-time requests. */
 static int LHSysctlReplacement(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     if (newp == 0 && name != 0 && namelen >= 2 && name[0] == CTL_KERN && name[1] == KERN_BOOTTIME) {
         if (LHBootTimeCopyOut(oldp, oldlenp) == 0) {
@@ -62,6 +64,7 @@ static int LHSysctlReplacement(int *name, u_int namelen, void *oldp, size_t *old
     return -1;
 }
 
+/** Replacement for private `__sysctl` boot-time requests. */
 static int LHPrivateSysctlReplacement(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     if (newp == 0 && name != 0 && namelen >= 2 && name[0] == CTL_KERN && name[1] == KERN_BOOTTIME) {
         if (LHBootTimeCopyOut(oldp, oldlenp) == 0) {
@@ -77,6 +80,7 @@ static int LHPrivateSysctlReplacement(int *name, u_int namelen, void *oldp, size
     return -1;
 }
 
+/** Replacement for public `sysctlbyname` boot-time requests. */
 static int LHSysctlByNameReplacement(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     if (newp == 0 && name != 0 && strcmp(name, "kern.boottime") == 0) {
         if (LHBootTimeCopyOut(oldp, oldlenp) == 0) {
@@ -92,6 +96,7 @@ static int LHSysctlByNameReplacement(const char *name, void *oldp, size_t *oldle
     return -1;
 }
 
+/** Replacement for private `__sysctlbyname` boot-time requests. */
 static int LHPrivateSysctlByNameReplacement(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     if (newp == 0 && name != 0 && strcmp(name, "kern.boottime") == 0) {
         if (LHBootTimeCopyOut(oldp, oldlenp) == 0) {
@@ -107,6 +112,7 @@ static int LHPrivateSysctlByNameReplacement(const char *name, void *oldp, size_t
     return -1;
 }
 
+/** Hooks a private symbol only when it resolves to a distinct implementation. */
 static bool LHBootTimeHookIfDistinct(LHHookBackend *backend,
                                      void *target,
                                      void *knownTarget,
@@ -119,6 +125,7 @@ static bool LHBootTimeHookIfDistinct(LHHookBackend *backend,
     return LHHookBackendHookFunction(backend, target, replacement, original);
 }
 
+/** Registers an imported-symbol hook for a boot-time function. */
 static bool LHBootTimeHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
     if (symbol == 0 || replacement == 0) {
         return false;
@@ -127,6 +134,7 @@ static bool LHBootTimeHookImportedSymbol(LHHookBackend *backend, const char *sym
     return LHHookBackendHookImportedSymbol(backend, symbol, replacement, original);
 }
 
+/** Installs sysctl-based boot-time hooks. */
 bool LHBootTimeSysctlInstall(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHBootTimePolicy = policy;
 

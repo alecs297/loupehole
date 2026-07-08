@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 
+/** Rounds `value` down to the nearest `bucketSize` multiple. */
 LH_INTERNAL uint64_t LHValueQuantizeDown(uint64_t value, uint64_t bucketSize);
 
 #ifdef __cplusplus

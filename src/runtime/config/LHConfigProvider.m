@@ -22,6 +22,7 @@ typedef struct LHParsedPolicy {
     LHSeed customSeed;
 } LHParsedPolicy;
 
+/** Returns the package-mode preferences directory for runtime policy files. */
 static NSString *LHConfigProviderPackagePreferencesBasePath(void) {
     NSString *parentName = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
     if (parentName == nil) {
@@ -43,6 +44,7 @@ static NSString *LHConfigProviderPackagePreferencesBasePath(void) {
     return [base stringByAppendingPathComponent:parentName];
 }
 
+/** Returns the generated package-mode policy file path. */
 static NSString *LHConfigProviderPackagePolicyPath(void) {
     NSString *base = LHConfigProviderPackagePreferencesBasePath();
     NSString *fileName = [NSString stringWithUTF8String:LHGeneratedConfigPackagePolicyFileName];
@@ -52,6 +54,7 @@ static NSString *LHConfigProviderPackagePolicyPath(void) {
     return [base stringByAppendingPathComponent:fileName];
 }
 
+/** Parses an unsigned 32-bit integer from a full string. */
 static bool LHConfigProviderParseUnsigned(NSString *text, uint32_t *value) {
     if (![text isKindOfClass:[NSString class]] || value == 0 || [text length] == 0) {
         return false;
@@ -66,6 +69,7 @@ static bool LHConfigProviderParseUnsigned(NSString *text, uint32_t *value) {
     return true;
 }
 
+/** Parses a serialized boolean field. */
 static bool LHConfigProviderParseBool(NSString *text, bool *value) {
     uint32_t parsed = 0;
     if (!LHConfigProviderParseUnsigned(text, &parsed) || parsed > 1 || value == 0) {
@@ -75,6 +79,7 @@ static bool LHConfigProviderParseBool(NSString *text, bool *value) {
     return true;
 }
 
+/** Parses a serialized scope mode field. */
 static bool LHConfigProviderParseScopeMode(NSString *text, LHScopeMode *mode) {
     uint32_t parsed = 0;
     if (!LHConfigProviderParseUnsigned(text, &parsed) || parsed > LHScopeModeManualLinkedGroup || mode == 0) {
@@ -84,6 +89,7 @@ static bool LHConfigProviderParseScopeMode(NSString *text, LHScopeMode *mode) {
     return true;
 }
 
+/** Parses a comma-delimited module filter list. */
 static bool LHConfigProviderParseModules(NSString *text, LHParsedPolicy *policy) {
     if (text == nil || policy == 0) {
         return false;
@@ -120,6 +126,7 @@ static bool LHConfigProviderParseModules(NSString *text, LHParsedPolicy *policy)
     return true;
 }
 
+/** Parses one default or bundle-specific serialized policy record. */
 static bool LHConfigProviderParsePolicyFields(NSArray<NSString *> *fields, NSUInteger offset, LHParsedPolicy *policy) {
     if (fields == nil || policy == 0 || [fields count] < offset + 5) {
         return false;
@@ -157,6 +164,7 @@ static bool LHConfigProviderParsePolicyFields(NSArray<NSString *> *fields, NSUIn
     return true;
 }
 
+/** Copies a parsed policy record into the active runtime configuration. */
 static void LHConfigProviderApplyParsedPolicy(LHRuntimeConfig *config, const LHParsedPolicy *policy) {
     if (config == 0 || policy == 0) {
         return;
@@ -174,6 +182,7 @@ static void LHConfigProviderApplyParsedPolicy(LHRuntimeConfig *config, const LHP
     }
 }
 
+/** Applies the package-mode policy file to the active runtime configuration. */
 bool LHConfigProviderApplyRuntimePolicy(LHRuntimeConfig *config, const LHAppContext *context) {
     @autoreleasepool {
         if (config == 0 || context == 0) {

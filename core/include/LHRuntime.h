@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+/** Starts the runtime once for the current injected process. */
 LH_INTERNAL void LHRuntimeStart(void);
 
 #ifdef __cplusplus

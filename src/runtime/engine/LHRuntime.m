@@ -6,6 +6,7 @@
 
 #import <stdatomic.h>
 
+/** Starts the runtime exactly once in the current process. */
 void LHRuntimeStart(void) {
     static atomic_bool started = false;
     bool expected = false;

@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/** Initializes the current app context using the default per-install scope. */
 bool LHAppContextInitCurrent(LHAppContext *context) {
     return LHAppContextInitCurrentWithScopeMode(context, LHScopeModePerAppInstall);
 }
 
+/** Safely invokes a zero-argument Objective-C selector when the target supports it. */
 static id LHAppContextPerformSelector(id target, SEL selector) {
     if (target == nil || selector == 0 || ![target respondsToSelector:selector]) {
         return nil;
@@ -19,6 +21,7 @@ static id LHAppContextPerformSelector(id target, SEL selector) {
 #pragma clang diagnostic pop
 }
 
+/** Reads a test-only string override from the environment. */
 static NSString *LHAppContextTestingString(const char *name) {
 #if LH_STATE_TESTING
     const char *value = getenv(name);
@@ -31,6 +34,7 @@ static NSString *LHAppContextTestingString(const char *name) {
     return nil;
 }
 
+/** Returns whether a bundle identifier belongs to Apple system software. */
 static bool LHAppContextBundleIdentifierIsSystem(NSString *bundleIdentifier) {
     if (![bundleIdentifier isKindOfClass:[NSString class]] || [bundleIdentifier length] == 0) {
         return false;
@@ -38,10 +42,12 @@ static bool LHAppContextBundleIdentifierIsSystem(NSString *bundleIdentifier) {
     return [bundleIdentifier isEqualToString:@"com.apple"] || [bundleIdentifier hasPrefix:@"com.apple."];
 }
 
+/** Compares a path against both normal and `/private`-prefixed roots. */
 static bool LHAppContextPathHasPrefix(NSString *path, NSString *prefix) {
     return [path hasPrefix:prefix] || [path hasPrefix:[@"/private" stringByAppendingString:prefix]];
 }
 
+/** Returns whether a bundle/executable path lives under an installed-app root. */
 static bool LHAppContextPathIsInstalledAppRoot(NSString *path) {
     if (![path isKindOfClass:[NSString class]] || [path length] == 0) {
         return false;
@@ -54,6 +60,7 @@ static bool LHAppContextPathIsInstalledAppRoot(NSString *path) {
            LHAppContextPathHasPrefix(path, @"/procursus/Applications/");
 }
 
+/** Returns whether a path points at a main `.app` bundle rather than an extension. */
 static bool LHAppContextPathLooksLikeMainApp(NSString *path) {
     if (![path isKindOfClass:[NSString class]] || [path length] == 0) {
         return false;
@@ -64,6 +71,7 @@ static bool LHAppContextPathLooksLikeMainApp(NSString *path) {
     return [path containsString:@".app/"] || [path hasSuffix:@".app"];
 }
 
+/** Checks bundle and executable paths for a targetable app container. */
 static bool LHAppContextPathsLookTargetable(NSString *bundlePath, NSString *executablePath) {
     NSString *paths[] = { bundlePath, executablePath };
     for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
@@ -79,6 +87,7 @@ static bool LHAppContextPathsLookTargetable(NSString *bundlePath, NSString *exec
     return false;
 }
 
+/** Reads the unhooked UIDevice IDFV string for vendor-scope grouping. */
 static NSString *LHAppContextOriginalIDFVString(void) {
     Class deviceClass = NSClassFromString(@"UIDevice");
     id device = LHAppContextPerformSelector((id)deviceClass, NSSelectorFromString(@"currentDevice"));
@@ -90,6 +99,7 @@ static NSString *LHAppContextOriginalIDFVString(void) {
     return uuidString;
 }
 
+/** Initializes the current app context and resolves the selected scope mode. */
 bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mode) {
     if (!LHAppContextInitCurrentBundle(context)) {
         return false;
@@ -97,6 +107,7 @@ bool LHAppContextInitCurrentWithScopeMode(LHAppContext *context, LHScopeMode mod
     return LHAppContextResolveScope(context, mode);
 }
 
+/** Initializes bundle identity and targetability metadata for the current process. */
 bool LHAppContextInitCurrentBundle(LHAppContext *context) {
     if (context == 0) {
         return false;
@@ -135,10 +146,12 @@ bool LHAppContextInitCurrentBundle(LHAppContext *context) {
     return true;
 }
 
+/** Returns whether the context is a targetable non-system application. */
 bool LHAppContextIsTargetableThirdPartyApplication(const LHAppContext *context) {
     return context != 0 && context->targetableApplication && !context->systemBundle;
 }
 
+/** Resolves the current scope identifier for the selected scope mode. */
 bool LHAppContextResolveScope(LHAppContext *context, LHScopeMode mode) {
     if (context == 0) {
         return false;

@@ -27,6 +27,7 @@ typedef bool (*LHStateGenerateBytes)(const LHRuntimeConfig *config,
                                      uint8_t *output,
                                      size_t outputLength);
 
+/** Loads or creates a fixed-size state blob for the runtime configuration and app context. */
 LH_INTERNAL bool LHStateProviderLoadOrCreate(const LHRuntimeConfig *config,
                                              const LHAppContext *context,
                                              const LHStateKey *key,

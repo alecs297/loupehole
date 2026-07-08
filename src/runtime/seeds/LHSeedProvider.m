@@ -18,10 +18,12 @@ LH_DERIVATION_LABEL(seed_provider, app_install_marker_directory)
 LH_DERIVATION_LABEL(seed_provider, app_install_marker_record)
 LH_DERIVATION_LABEL(seed_provider, app_install_seed_value)
 
+/** Wraps seed bytes in immutable NSData for persistence. */
 static NSData *LHSeedProviderDataFromSeed(const LHSeed *seed) {
     return [NSData dataWithBytes:seed->bytes length:sizeof(seed->bytes)];
 }
 
+/** Reads a raw 16-byte seed from disk. */
 static bool LHSeedProviderReadSeedAtPath(NSString *path, LHSeed *seed) {
     if (path == nil || seed == 0) {
         return false;
@@ -36,6 +38,7 @@ static bool LHSeedProviderReadSeedAtPath(NSString *path, LHSeed *seed) {
     return true;
 }
 
+/** Writes a raw 16-byte seed to disk with private permissions. */
 static bool LHSeedProviderWriteSeedAtPath(NSString *path, const LHSeed *seed) {
     if (path == nil || seed == 0) {
         return false;
@@ -56,6 +59,7 @@ static bool LHSeedProviderWriteSeedAtPath(NSString *path, const LHSeed *seed) {
     return true;
 }
 
+/** Returns the package-mode parent directory for root seed storage. */
 static NSString *LHSeedProviderPackageParentBasePath(void) {
     NSString *parentName = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
     if (parentName == nil) {
@@ -74,6 +78,7 @@ static NSString *LHSeedProviderPackageParentBasePath(void) {
     return [base stringByAppendingPathComponent:parentName];
 }
 
+/** Returns the generated package-mode root seed file path. */
 static NSString *LHSeedProviderPackageRootSeedPath(void) {
     NSString *base = LHSeedProviderPackageParentBasePath();
     NSString *seedRoot = [NSString stringWithUTF8String:LHGeneratedConfigPackageSeedRootDirectoryName];
@@ -84,6 +89,7 @@ static NSString *LHSeedProviderPackageRootSeedPath(void) {
     return [[base stringByAppendingPathComponent:seedRoot] stringByAppendingPathComponent:seedFile];
 }
 
+/** Returns the local Application Support directory used by standalone mode. */
 static NSString *LHSeedProviderLocalApplicationSupportPath(void) {
 #if LH_STATE_TESTING
     const char *overrideHome = getenv("LH_APP_INSTALL_TEST_HOME");
@@ -99,6 +105,7 @@ static NSString *LHSeedProviderLocalApplicationSupportPath(void) {
     return [paths firstObject];
 }
 
+/** Builds a two-level opaque path from generated derivation labels. */
 static NSString *LHSeedProviderOpaquePath(NSString *base,
                                           const LHSeed *seed,
                                           const LHAppContext *context,
@@ -122,6 +129,7 @@ static NSString *LHSeedProviderOpaquePath(NSString *base,
     return [directory stringByAppendingPathComponent:[NSString stringWithUTF8String:recordName]];
 }
 
+/** Returns the persisted marker path for per-install scope rotation. */
 static NSString *LHSeedProviderAppInstallMarkerPath(const LHSeed *practicalSeed, const LHAppContext *context) {
     return LHSeedProviderOpaquePath(LHSeedProviderLocalApplicationSupportPath(),
                                     practicalSeed,
@@ -130,6 +138,7 @@ static NSString *LHSeedProviderAppInstallMarkerPath(const LHSeed *practicalSeed,
                                     &LHGeneratedDerivationLabel_seed_provider_app_install_marker_record);
 }
 
+/** Loads the package root seed or creates it on first run. */
 static bool LHSeedProviderLoadOrCreateRootSeed(LHSeed *rootSeed) {
     NSString *path = LHSeedProviderPackageRootSeedPath();
     if (LHSeedProviderReadSeedAtPath(path, rootSeed)) {
@@ -140,6 +149,7 @@ static bool LHSeedProviderLoadOrCreateRootSeed(LHSeed *rootSeed) {
     return LHSeedProviderWriteSeedAtPath(path, rootSeed);
 }
 
+/** Loads a seed from `path` or creates a random one when absent. */
 static bool LHSeedProviderLoadOrCreateRandomSeedAtPath(NSString *path, LHSeed *seed, bool requirePersistence) {
     if (LHSeedProviderReadSeedAtPath(path, seed)) {
         return true;
@@ -152,6 +162,7 @@ static bool LHSeedProviderLoadOrCreateRandomSeedAtPath(NSString *path, LHSeed *s
     return !requirePersistence;
 }
 
+/** Resolves the practical seed before scope-specific transformation. */
 static bool LHSeedProviderResolvePracticalSeed(const LHRuntimeConfig *config, LHSeed *practicalSeed) {
     if (config == 0 || practicalSeed == 0) {
         return false;
@@ -170,6 +181,7 @@ static bool LHSeedProviderResolvePracticalSeed(const LHRuntimeConfig *config, LH
     return LHSeedProviderLoadOrCreateRootSeed(practicalSeed);
 }
 
+/** Resolves a per-install active seed from the practical seed and install marker. */
 static bool LHSeedProviderResolveAppInstallSeed(const LHSeed *practicalSeed, const LHAppContext *context, LHSeed *activeSeed) {
     LHSeed marker = { 0 };
     NSString *path = LHSeedProviderAppInstallMarkerPath(practicalSeed, context);
@@ -186,6 +198,7 @@ static bool LHSeedProviderResolveAppInstallSeed(const LHSeed *practicalSeed, con
                                         sizeof(activeSeed->bytes));
 }
 
+/** Resolves a deterministic active seed for non-install scopes. */
 static bool LHSeedProviderResolveDeterministicScopedSeed(const LHSeed *practicalSeed,
                                                         const LHAppContext *context,
                                                         LHSeed *activeSeed) {
@@ -196,6 +209,7 @@ static bool LHSeedProviderResolveDeterministicScopedSeed(const LHSeed *practical
                              sizeof(activeSeed->bytes));
 }
 
+/** Resolves the active seed and stores it back into `config->buildSeed`. */
 bool LHSeedProviderResolveActiveSeed(LHRuntimeConfig *config, const LHAppContext *context) {
     @autoreleasepool {
         if (config == 0 || context == 0) {

@@ -32,7 +32,9 @@ typedef struct LHRuntimeConfig {
     LHSeed buildSeed;
 } LHRuntimeConfig;
 
+/** Builds the default runtime configuration from generated build inputs. */
 LH_INTERNAL LHRuntimeConfig LHRuntimeConfigDefault(void);
+/** Returns whether `moduleID` is enabled under `config` module-filter settings. */
 LH_INTERNAL bool LHRuntimeConfigIsModuleEnabled(const LHRuntimeConfig *config, uint32_t moduleID);
 
 #ifdef __cplusplus

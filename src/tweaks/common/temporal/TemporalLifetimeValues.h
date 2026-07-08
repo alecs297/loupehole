@@ -10,7 +10,9 @@
 extern "C" {
 #endif
 
+/** Copies the coherent synthetic boot time for the current policy engine. */
 LH_INTERNAL bool LHTemporalLifetimeCopyBootTime(const LHPolicyEngine *engine, struct timeval *bootTime);
+/** Copies the coherent synthetic volume creation timestamp for the current policy engine. */
 LH_INTERNAL bool LHTemporalLifetimeCopyVolumeCreationTime(const LHPolicyEngine *engine, double *volumeCreationTime);
 
 #ifdef __cplusplus

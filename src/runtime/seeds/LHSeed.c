@@ -3,6 +3,7 @@
 #include <CommonCrypto/CommonHMAC.h>
 #include <string.h>
 
+/** Converts a hexadecimal character into its numeric nibble value. */
 static int LHHexNibble(char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
@@ -16,6 +17,7 @@ static int LHHexNibble(char c) {
     return -1;
 }
 
+/** Parses a canonical UUID string into seed bytes. */
 bool LHSeedParseUUID(const char *uuid, LHSeed *seed) {
     if (uuid == 0 || seed == 0) {
         return false;
@@ -54,10 +56,12 @@ bool LHSeedParseUUID(const char *uuid, LHSeed *seed) {
     return true;
 }
 
+/** Computes a SHA-256 HMAC for HKDF-style seed expansion. */
 static void LHHmacSha256(const uint8_t *key, size_t keyLength, const uint8_t *data, size_t dataLength, uint8_t output[CC_SHA256_DIGEST_LENGTH]) {
     CCHmac(kCCHmacAlgSHA256, key, keyLength, data, dataLength, output);
 }
 
+/** Builds the seed derivation info transcript from label, scope, and context. */
 static bool LHSeedInfo(const LHScope *scope,
                        const LHDerivationLabel *label,
                        const uint8_t *context,
@@ -96,6 +100,7 @@ static bool LHSeedInfo(const LHScope *scope,
     return true;
 }
 
+/** Derives scoped bytes with optional caller-provided context bytes. */
 bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
                                   const LHDerivationLabel *label,
                                   const LHScope *scope,
@@ -143,10 +148,12 @@ bool LHSeedDeriveBytesWithContext(const LHSeed *seed,
     return true;
 }
 
+/** Derives scoped bytes without additional context. */
 bool LHSeedDeriveBytes(const LHSeed *seed, const LHDerivationLabel *label, const LHScope *scope, uint8_t *output, size_t outputLength) {
     return LHSeedDeriveBytesWithContext(seed, label, scope, 0, 0, output, outputLength);
 }
 
+/** Derives a lowercase hex opaque name from scoped seed material. */
 bool LHSeedDeriveOpaqueName(const LHSeed *seed, const LHDerivationLabel *label, const LHScope *scope, char *output, size_t outputLength) {
     if (output == 0 || outputLength < 33) {
         return false;

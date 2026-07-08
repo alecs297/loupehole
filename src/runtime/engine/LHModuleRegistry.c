@@ -1,6 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
+/** Installs all generated mitigation descriptors allowed by the active policy. */
 bool LHModuleRegistryInstall(LHHookBackend *backend, LHPolicyEngine *policy) {
     if (backend == 0 || policy == 0) {
         return false;

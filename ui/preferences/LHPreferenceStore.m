@@ -17,6 +17,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 
 @implementation LHPreferencePolicy
 
+/** Returns a disabled default policy using per-install scope. */
 + (instancetype)defaultPolicy {
     LHPreferencePolicy *policy = [[self alloc] init];
     policy.enabled = NO;
@@ -27,6 +28,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return policy;
 }
 
+/** Copies a preference policy value object. */
 - (id)copyWithZone:(NSZone *)zone {
     LHPreferencePolicy *copy = [[[self class] allocWithZone:zone] init];
     copy.enabled = self.enabled;
@@ -45,6 +47,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 
 @implementation LHPreferenceStore
 
+/** Returns the singleton preference store. */
 + (instancetype)sharedStore {
     static LHPreferenceStore *store;
     static dispatch_once_t onceToken;
@@ -54,6 +57,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return store;
 }
 
+/** Initializes a store with an optional rootless prefix override. */
 - (instancetype)initWithRootPrefix:(NSString *)rootPrefix {
     self = [super init];
     if (self) {
@@ -70,6 +74,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return self;
 }
 
+/** Returns generated mitigation metadata for the UI. */
 + (NSArray<NSDictionary<NSString *, id> *> *)availableModules {
     NSMutableArray<NSDictionary<NSString *, id> *> *modules = [NSMutableArray array];
     for (size_t index = 0; index < LHPreferenceGeneratedModuleCount; index++) {
@@ -85,6 +90,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return modules;
 }
 
+/** Returns all generated mitigation module IDs. */
 + (NSArray<NSNumber *> *)allModuleIDs {
     NSMutableArray<NSNumber *> *moduleIDs = [NSMutableArray array];
     for (NSDictionary<NSString *, id> *module in [self availableModules]) {
@@ -96,6 +102,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return moduleIDs;
 }
 
+/** Returns a display label for a serialized scope mode. */
 + (NSString *)scopeLabelForMode:(NSInteger)mode {
     switch (mode) {
         case 0: return @"Per app install";
@@ -106,6 +113,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     }
 }
 
+/** Returns detail text for a serialized scope mode. */
 + (NSString *)scopeDescriptionForMode:(NSInteger)mode {
     switch (mode) {
         case 0: return @"Values stay stable for the current app install and reset when that app is reinstalled.";
@@ -116,10 +124,12 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     }
 }
 
+/** Returns whether a seed string is a valid UUID. */
 + (BOOL)isValidSeedString:(NSString *)seed {
     return [self normalizedSeedString:seed] != nil;
 }
 
+/** Normalizes a UUID seed string. */
 + (NSString *)normalizedSeedString:(NSString *)seed {
     if (![seed isKindOfClass:[NSString class]]) {
         return nil;
@@ -132,10 +142,12 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return uuid == nil ? nil : [uuid UUIDString];
 }
 
+/** Creates a random UUID seed string. */
 + (NSString *)randomSeedString {
     return [[NSUUID UUID] UUIDString];
 }
 
+/** Appends an absolute path component below the configured rootless prefix. */
 - (NSString *)pathByAppendingRootlessComponent:(NSString *)component {
     NSString *prefix = self.rootPrefix ?: @"";
     if ([prefix length] == 0) {
@@ -144,48 +156,57 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [prefix stringByAppendingPathComponent:[component stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]]];
 }
 
+/** Returns the generated package preferences directory. */
 - (NSString *)preferencesDirectoryPath {
     NSString *parent = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
     return [[self pathByAppendingRootlessComponent:@"/var/mobile/Library/Preferences"] stringByAppendingPathComponent:parent];
 }
 
+/** Returns the generated package support directory. */
 - (NSString *)supportDirectoryPath {
     NSString *parent = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
     return [[self pathByAppendingRootlessComponent:@"/var/mobile/Library/Application Support"] stringByAppendingPathComponent:parent];
 }
 
+/** Returns the generated package cache directory. */
 - (NSString *)cacheDirectoryPath {
     NSString *parent = [NSString stringWithUTF8String:LHGeneratedConfigPackageStateParentDirectoryName];
     return [[self pathByAppendingRootlessComponent:@"/var/mobile/Library/Caches"] stringByAppendingPathComponent:parent];
 }
 
+/** Returns the generated package policy file path. */
 - (NSString *)policyPath {
     NSString *fileName = [NSString stringWithUTF8String:LHGeneratedConfigPackagePolicyFileName];
     return [[self preferencesDirectoryPath] stringByAppendingPathComponent:fileName];
 }
 
+/** Returns the generated loader dylib path. */
 - (NSString *)loaderDylibPath {
     NSString *loaderBaseName = [NSString stringWithUTF8String:LHGeneratedConfigPackageLoaderBaseName];
     NSString *fileName = [loaderBaseName stringByAppendingPathExtension:@"dylib"];
     return [[self pathByAppendingRootlessComponent:@"/Library/MobileSubstrate/DynamicLibraries"] stringByAppendingPathComponent:fileName];
 }
 
+/** Returns the generated MobileSubstrate filter path. */
 - (NSString *)filterPath {
     NSString *loaderBaseName = [NSString stringWithUTF8String:LHGeneratedConfigPackageLoaderBaseName];
     NSString *fileName = [loaderBaseName stringByAppendingPathExtension:@"plist"];
     return [[self pathByAppendingRootlessComponent:@"/Library/MobileSubstrate/DynamicLibraries"] stringByAppendingPathComponent:fileName];
 }
 
+/** Returns the generated package root seed path. */
 - (NSString *)rootSeedPath {
     NSString *seedRoot = [NSString stringWithUTF8String:LHGeneratedConfigPackageSeedRootDirectoryName];
     NSString *seedFile = [NSString stringWithUTF8String:LHGeneratedConfigPackageRootSeedFileName];
     return [[[self supportDirectoryPath] stringByAppendingPathComponent:seedRoot] stringByAppendingPathComponent:seedFile];
 }
 
+/** Creates a preference-store NSError with localized text. */
 - (NSError *)errorWithDescription:(NSString *)description {
     return [NSError errorWithDomain:LHPreferenceErrorDomain code:1 userInfo:@{NSLocalizedDescriptionKey: description ?: @"Unknown preference error"}];
 }
 
+/** Writes a private UTF-8 text file, creating its parent directory. */
 - (BOOL)writeString:(NSString *)string toPath:(NSString *)path error:(NSError **)error {
     NSString *directory = [path stringByDeletingLastPathComponent];
     if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:error]) {
@@ -199,6 +220,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return YES;
 }
 
+/** Writes a private data file, creating its parent directory. */
 - (BOOL)writeData:(NSData *)data toPath:(NSString *)path error:(NSError **)error {
     NSString *directory = [path stringByDeletingLastPathComponent];
     if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:error]) {
@@ -212,6 +234,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return YES;
 }
 
+/** Ensures the serialized policy file exists. */
 - (BOOL)ensurePolicyWithError:(NSError **)error {
     NSString *path = [self policyPath];
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
@@ -221,6 +244,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self writeString:@"D|0|0|0||\n" toPath:path error:error];
 }
 
+/** Reads non-empty serialized policy lines. */
 - (NSArray<NSString *> *)policyLinesWithError:(NSError **)error {
     if (![self ensurePolicyWithError:error]) {
         return nil;
@@ -239,6 +263,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return lines;
 }
 
+/** Parses one serialized policy record into a policy object. */
 - (LHPreferencePolicy *)policyFromFields:(NSArray<NSString *> *)fields offset:(NSUInteger)offset {
     if ([fields count] < offset + 5) {
         return nil;
@@ -281,6 +306,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return policy;
 }
 
+/** Parses default and override policies from serialized lines. */
 - (NSMutableDictionary<NSString *, LHPreferencePolicy *> *)mutableOverridesFromLines:(NSArray<NSString *> *)lines defaultPolicy:(LHPreferencePolicy **)defaultPolicy {
     NSMutableDictionary<NSString *, LHPreferencePolicy *> *overrides = [NSMutableDictionary dictionary];
     LHPreferencePolicy *parsedDefault = nil;
@@ -306,6 +332,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return overrides;
 }
 
+/** Returns the serialized default policy. */
 - (LHPreferencePolicy *)defaultPolicy {
     NSError *error = nil;
     NSArray<NSString *> *lines = [self policyLinesWithError:&error];
@@ -314,6 +341,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return defaultPolicy ?: [LHPreferencePolicy defaultPolicy];
 }
 
+/** Returns serialized bundle override policies. */
 - (NSDictionary<NSString *, LHPreferencePolicy *> *)overridePolicies {
     NSError *error = nil;
     NSArray<NSString *> *lines = [self policyLinesWithError:&error];
@@ -321,19 +349,23 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self mutableOverridesFromLines:lines ?: @[] defaultPolicy:&defaultPolicy];
 }
 
+/** Returns one serialized bundle override policy. */
 - (LHPreferencePolicy *)overridePolicyForBundleIdentifier:(NSString *)bundleIdentifier {
     return [self overridePolicies][bundleIdentifier];
 }
 
+/** Returns whether one bundle has a serialized override. */
 - (BOOL)hasOverrideForBundleIdentifier:(NSString *)bundleIdentifier {
     return [self overridePolicyForBundleIdentifier:bundleIdentifier] != nil;
 }
 
+/** Returns the bundle override policy or the default policy. */
 - (LHPreferencePolicy *)effectivePolicyForBundleIdentifier:(NSString *)bundleIdentifier {
     LHPreferencePolicy *override = [self overridePolicyForBundleIdentifier:bundleIdentifier];
     return override ?: [self defaultPolicy];
 }
 
+/** Serializes the default policy record. */
 - (NSString *)lineForDefaultPolicy:(LHPreferencePolicy *)policy {
     return [NSString stringWithFormat:@"D|%d|%ld|%d|%@|%@",
             policy.enabled ? 1 : 0,
@@ -343,6 +375,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
             [LHPreferenceStore normalizedSeedString:policy.customSeed] ?: @""];
 }
 
+/** Serializes one bundle override policy record. */
 - (NSString *)lineForBundleIdentifier:(NSString *)bundleIdentifier policy:(LHPreferencePolicy *)policy {
     return [NSString stringWithFormat:@"B|%@|%d|%ld|%d|%@|%@",
             bundleIdentifier,
@@ -353,6 +386,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
             [LHPreferenceStore normalizedSeedString:policy.customSeed] ?: @""];
 }
 
+/** Serializes a policy module ID list. */
 - (NSString *)modulesTextForPolicy:(LHPreferencePolicy *)policy {
     if (![policy.moduleIDs count]) {
         return @"";
@@ -364,6 +398,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [items componentsJoinedByString:@","];
 }
 
+/** Validates a policy before persistence. */
 - (BOOL)validatePolicy:(LHPreferencePolicy *)policy error:(NSError **)error {
     if (policy.scopeMode < 0 || policy.scopeMode > 3) {
         if (error != NULL) {
@@ -380,6 +415,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return YES;
 }
 
+/** Writes the complete policy file from default and override policy objects. */
 - (BOOL)writeDefaultPolicy:(LHPreferencePolicy *)defaultPolicy overrides:(NSDictionary<NSString *, LHPreferencePolicy *> *)overrides error:(NSError **)error {
     LHPreferencePolicy *defaultToWrite = defaultPolicy ?: [LHPreferencePolicy defaultPolicy];
     if (![self validatePolicy:defaultToWrite error:error]) {
@@ -400,6 +436,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self writeString:text toPath:[self policyPath] error:error];
 }
 
+/** Persists a new default policy. */
 - (BOOL)setDefaultPolicy:(LHPreferencePolicy *)policy error:(NSError **)error {
     NSArray<NSString *> *lines = [self policyLinesWithError:error];
     if (lines == nil) {
@@ -413,6 +450,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+/** Persists a bundle-specific override policy. */
 - (BOOL)setOverridePolicy:(LHPreferencePolicy *)policy forBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error {
     if (![self isValidConfigurableBundleIdentifier:bundleIdentifier]) {
         if (error != NULL) {
@@ -433,6 +471,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+/** Removes a bundle-specific override policy. */
 - (BOOL)removeOverrideForBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error {
     NSArray<NSString *> *lines = [self policyLinesWithError:error];
     if (lines == nil) {
@@ -447,6 +486,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+/** Resets policy state to its disabled default. */
 - (BOOL)resetAllWithError:(NSError **)error {
     if (![self writeDefaultPolicy:[LHPreferencePolicy defaultPolicy] overrides:@{} error:error]) {
         return NO;
@@ -454,6 +494,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+/** Generates and writes a fresh package root seed. */
 - (BOOL)resetRootSeedWithError:(NSError **)error {
     uint8_t bytes[16] = { 0 };
     arc4random_buf(bytes, sizeof(bytes));
@@ -461,6 +502,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self writeData:data toPath:[self rootSeedPath] error:error];
 }
 
+/** Replaces a custom seed across associated policies. */
 - (BOOL)replaceCustomSeed:(NSString *)oldSeed withSeed:(NSString *)newSeed includingBundleIdentifier:(NSString *)bundleIdentifier error:(NSError **)error {
     NSString *normalizedOld = [LHPreferenceStore normalizedSeedString:oldSeed];
     NSString *normalizedNew = [LHPreferenceStore normalizedSeedString:newSeed];
@@ -500,6 +542,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [self refreshFilterWithError:error];
 }
 
+/** Rewrites the filter plist from the current enabled policy set. */
 - (BOOL)refreshFilterWithError:(NSError **)error {
     LHPreferencePolicy *defaultPolicy = [self defaultPolicy];
     NSDictionary<NSString *, LHPreferencePolicy *> *overrides = [self overridePolicies];
@@ -537,6 +580,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return wrote;
 }
 
+/** Returns whether a bundle identifier may be configured by the UI. */
 - (BOOL)isValidConfigurableBundleIdentifier:(NSString *)bundleIdentifier {
     if (![bundleIdentifier isKindOfClass:[NSString class]] || [bundleIdentifier length] == 0) {
         return NO;
@@ -552,6 +596,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     return [[NSCharacterSet alphanumericCharacterSet] characterIsMember:first];
 }
 
+/** Returns the generated build seed string or the package-mode redaction marker. */
 - (NSString *)buildSeedString {
     if (!LHGeneratedConfigHasBuildSeed) {
         return @"runtime-random";
@@ -565,6 +610,7 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
             bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]];
 }
 
+/** Returns the package root seed as hexadecimal text. */
 - (NSString *)rootSeedHexString {
     NSData *data = [NSData dataWithContentsOfFile:[self rootSeedPath]];
     if ([data length] == 0) {

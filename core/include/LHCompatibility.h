@@ -13,6 +13,7 @@ typedef enum LHCompatibilityDecision {
     LHCompatibilityDecisionUsePolicy = 1
 } LHCompatibilityDecision;
 
+/** Returns the default fallback behavior when a mitigation cannot synthesize a value. */
 LH_INTERNAL LHCompatibilityDecision LHCompatibilityDefaultDecision(void);
 
 #ifdef __cplusplus

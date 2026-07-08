@@ -13,6 +13,7 @@ static LHGetResourceValueOriginal LHGetResourceValueOriginalImplementation;
 static LHResourceValuesOriginal LHResourceValuesOriginalImplementation;
 static LHPolicyEngine *LHVolumeTimePolicy;
 
+/** Builds an NSDate from the coherent synthetic volume creation timestamp. */
 static NSDate *LHVolumeCreationDate(void) {
     double timestamp = 0.0;
     if (!LHTemporalLifetimeCopyVolumeCreationTime(LHVolumeTimePolicy, &timestamp)) {
@@ -21,6 +22,7 @@ static NSDate *LHVolumeCreationDate(void) {
     return [NSDate dateWithTimeIntervalSince1970:timestamp];
 }
 
+/** Replacement for `getResourceValue:forKey:error:` volume-creation requests. */
 static BOOL LHGetResourceValueReplacement(NSURL *self, SEL selector, id _Nullable *value, NSURLResourceKey key, NSError **error) {
     if ([key isEqualToString:NSURLVolumeCreationDateKey]) {
         NSDate *date = LHVolumeCreationDate();
@@ -39,6 +41,7 @@ static BOOL LHGetResourceValueReplacement(NSURL *self, SEL selector, id _Nullabl
     return NO;
 }
 
+/** Replacement for `resourceValuesForKeys:error:` volume-creation requests. */
 static NSDictionary<NSURLResourceKey, id> *LHResourceValuesReplacement(NSURL *self, SEL selector, NSArray<NSURLResourceKey> *keys, NSError **error) {
     BOOL wantsVolumeDate = [keys containsObject:NSURLVolumeCreationDateKey];
     NSDictionary<NSURLResourceKey, id> *original = nil;
@@ -60,6 +63,7 @@ static NSDictionary<NSURLResourceKey, id> *LHResourceValuesReplacement(NSURL *se
     return values;
 }
 
+/** Installs Foundation URL resource hooks for volume creation time. */
 bool LHMitigation_storage_volume_creation_time_foundation_synthetic_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHVolumeTimePolicy = policy;
 
