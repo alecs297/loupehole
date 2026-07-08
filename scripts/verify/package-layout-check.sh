@@ -190,6 +190,28 @@ static NSArray *policyLinesAtPath(NSString *path) {
     return lines;
 }
 
+/** Returns whether a string has lowercase UUID seed formatting. */
+static BOOL uuidShaped(NSString *value) {
+    if ([value length] != 36) {
+        return NO;
+    }
+    NSMutableIndexSet *expectedHyphens = [NSMutableIndexSet indexSetWithIndex:8];
+    [expectedHyphens addIndex:13];
+    [expectedHyphens addIndex:18];
+    [expectedHyphens addIndex:23];
+    for (NSUInteger index = 0; index < [value length]; index++) {
+        unichar character = [value characterAtIndex:index];
+        BOOL shouldBeHyphen = [expectedHyphens containsIndex:index];
+        if (shouldBeHyphen && character != '-') {
+            return NO;
+        }
+        if (!shouldBeHyphen && ![[NSCharacterSet characterSetWithCharactersInString:@"0123456789abcdef"] characterIsMember:character]) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
 int main(void) {
     @autoreleasepool {
         LHPreferenceStore *store = [[LHPreferenceStore alloc] initWithRootPrefix:nil];
@@ -288,6 +310,9 @@ int main(void) {
         NSData *firstRootSeed = [NSData dataWithContentsOfFile:[store rootSeedPath]];
         if ([firstRootSeed length] != 16) {
             return 20;
+        }
+        if (!uuidShaped([store rootSeedUUIDString])) {
+            return 30;
         }
         struct stat st;
         if (stat([[store rootSeedPath] fileSystemRepresentation], &st) != 0 || (st.st_mode & 0777) != 0600) {

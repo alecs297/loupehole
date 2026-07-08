@@ -1482,10 +1482,10 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
         _specifiers = [@[
             LHGroupSpecifier(@"Seeds", @"Seeds shown here are internal Loupehole inputs, not values returned to protected apps."),
             LHValueSpecifier(@"Build seed", [store buildSeedString]),
-            LHValueSpecifier(@"Root seed", [store rootSeedHexString]),
+            LHValueSpecifier(@"Root seed", [store rootSeedUUIDString]),
             LHGroupSpecifier(@"Seed roles", nil),
             LHValueSpecifier(@"Build seed role", @"Compile-time UUID used to derive generated package paths, loader/filter names, and seed-derivation labels. Package builds may show it in Settings metadata, but it is not embedded in the injected runtime dylib."),
-            LHValueSpecifier(@"Root seed role", @"Random per-install package seed used as the practical runtime seed. Resetting it rotates generated values and seed-derived state paths for enabled apps."),
+            LHValueSpecifier(@"Root seed role", @"Random per-install package seed used as the practical runtime seed for root-derived scopes. Resetting it does not affect manually set custom seeds."),
             LHValueSpecifier(@"Active scoped seed", @"Derived inside each target app from the root seed plus the selected scope. Custom seed scope uses its configured UUID instead of the root seed."),
             LHValueSpecifier(@"App-install marker", @"Per-app-install scope adds a random marker stored in that app's data. Deleting and reinstalling the app creates a new marker and rotates that app's seed."),
             LHGroupSpecifier(@"Seed Actions", nil),
@@ -1506,7 +1506,7 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
 
 - (void)confirmResetRootSeed {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset Root Seed"
-                                                                   message:@"This writes a new random root seed. All enabled apps will derive new replacement values and new seed-derived state paths after they restart. Existing state is not migrated or deleted, and this cannot be undone unless you kept the old seed."
+                                                                   message:@"This writes a new random root seed. Apps using root-derived scopes will derive new replacement values and new seed-derived state paths after they restart. Apps using manually set custom seeds are not affected. Existing state is not migrated or deleted, and this cannot be undone unless you kept the old seed."
                                                             preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     UIAlertAction *resetAction = [UIAlertAction actionWithTitle:@"Reset Root Seed" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {

@@ -15,6 +15,16 @@
 static NSString * const LHPreferenceErrorDomain = @"com.loupehole.preferences";
 static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
 
+/** Formats 16 seed bytes as UUID-shaped lowercase text. */
+static NSString *LHPreferenceSeedUUIDString(const uint8_t bytes[16]) {
+    return [NSString stringWithFormat:@"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5],
+            bytes[6], bytes[7],
+            bytes[8], bytes[9],
+            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]];
+}
+
 @implementation LHPreferencePolicy
 
 /** Returns a disabled default policy using per-install scope. */
@@ -601,27 +611,19 @@ static NSString * const LHPreferenceAppFilterBundle = @"com.apple.UIKit";
     if (!LHGeneratedConfigHasBuildSeed) {
         return @"runtime-random";
     }
-    const uint8_t *bytes = LHGeneratedConfigBuildSeed.bytes;
-    return [NSString stringWithFormat:@"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            bytes[4], bytes[5],
-            bytes[6], bytes[7],
-            bytes[8], bytes[9],
-            bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]];
+    return LHPreferenceSeedUUIDString(LHGeneratedConfigBuildSeed.bytes);
 }
 
-/** Returns the package root seed as hexadecimal text. */
-- (NSString *)rootSeedHexString {
+/** Returns the package root seed as UUID-shaped text. */
+- (NSString *)rootSeedUUIDString {
     NSData *data = [NSData dataWithContentsOfFile:[self rootSeedPath]];
     if ([data length] == 0) {
         return @"missing";
     }
-    const unsigned char *bytes = [data bytes];
-    NSMutableString *output = [NSMutableString stringWithCapacity:[data length] * 2];
-    for (NSUInteger index = 0; index < [data length]; index++) {
-        [output appendFormat:@"%02x", bytes[index]];
+    if ([data length] != 16) {
+        return @"invalid";
     }
-    return output;
+    return LHPreferenceSeedUUIDString((const uint8_t *)[data bytes]);
 }
 
 @end

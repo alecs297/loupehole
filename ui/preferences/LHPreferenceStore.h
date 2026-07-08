@@ -74,7 +74,7 @@
 - (NSString *)rootSeedPath;
 /** Returns the build seed embedded in preference metadata, or a runtime-only marker. */
 - (NSString *)buildSeedString;
-/** Returns the package root seed as lowercase hex when readable. */
-- (NSString *)rootSeedHexString;
+/** Returns the package root seed as UUID-shaped lowercase text when readable. */
+- (NSString *)rootSeedUUIDString;
 
 @end

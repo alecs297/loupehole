@@ -26,6 +26,8 @@ The runtime field is named `buildSeed` in both modes:
 
 This single name avoids a split build/instance vocabulary in the injected dylib. The important boundary is that package mode can carry the build seed in the deb's preference metadata, but not in the injected runtime dylib.
 
+The package root seed is stored as 16 raw random bytes. The preferences debug pane displays those bytes in UUID-shaped lowercase text for readability; this formatting does not make the root seed an identity UUID.
+
 ## Why Seeds Rather Than Literal Values
 
 Literal replacement values are difficult to rotate, easy to share accidentally, and can reveal a custom build. Seeds allow the project to derive outputs without storing every output in the binary. They also let a reset or scope change rotate a family of dependent values together.
