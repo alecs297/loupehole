@@ -1,6 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
-#include "LHGeneratedPolicyValueRegistry.h"
+
+#include "common/temporal/TemporalLifetimeValues.h"
 
 #include <dlfcn.h>
 #include <errno.h>
@@ -19,13 +20,7 @@ static LHPolicyEngine *LHBootTimePolicy;
 
 static int LHBootTimeCopyOut(void *oldp, size_t *oldlenp) {
     struct timeval bootTime;
-    LHPolicyValueRequest request = {
-        .valueID = LHPolicyValueID_boot_time,
-        .expectedKind = LHPolicyValueKindTimeval,
-        .output = &bootTime,
-        .outputLength = sizeof(bootTime)
-    };
-    if (!LHPolicyEngineCopyValue(LHBootTimePolicy, &request, 0)) {
+    if (!LHTemporalLifetimeCopyBootTime(LHBootTimePolicy, &bootTime)) {
         errno = ENOENT;
         return -1;
     }

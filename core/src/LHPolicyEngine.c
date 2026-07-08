@@ -1,6 +1,5 @@
 #include "LHPolicyEngine.h"
 #include "LHConfigProvider.h"
-#include "LHGeneratedPolicyValueRegistry.h"
 #include "LHSeedProvider.h"
 
 #include <string.h>
@@ -13,11 +12,6 @@ bool LHPolicyEngineInit(LHPolicyEngine *engine) {
     memset(engine, 0, sizeof(*engine));
     engine->config = LHRuntimeConfigDefault();
     if (!LHAppContextInitCurrentBundle(&engine->appContext)) {
-        return false;
-    }
-
-    engine->profile = LHProfileDefault();
-    if (engine->profile == 0 || engine->profile->version == 0) {
         return false;
     }
 
@@ -98,32 +92,4 @@ bool LHPolicyEngineIsModuleEnabled(const LHPolicyEngine *engine, uint32_t module
         return false;
     }
     return LHRuntimeConfigIsModuleEnabled(&engine->config, moduleID);
-}
-
-bool LHPolicyEngineCopyValue(const LHPolicyEngine *engine,
-                             const LHPolicyValueRequest *request,
-                             LHPolicyValueResponse *response) {
-    if (engine == 0 || request == 0 || !engine->initialized) {
-        return false;
-    }
-    if (!engine->config.policyEnabled) {
-        return false;
-    }
-
-    if (response != 0) {
-        memset(response, 0, sizeof(*response));
-    }
-
-    for (size_t i = 0; i < LHGeneratedPolicyValueDescriptorCount; i++) {
-        const LHPolicyValueDescriptor *descriptor = &LHGeneratedPolicyValueDescriptors[i];
-        if (descriptor->valueID != request->valueID) {
-            continue;
-        }
-        if (descriptor->kind != request->expectedKind || descriptor->resolver == 0) {
-            return false;
-        }
-        return descriptor->resolver(engine, request, response);
-    }
-
-    return false;
 }

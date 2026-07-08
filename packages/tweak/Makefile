@@ -17,11 +17,10 @@ BUNDLE_NAME := LoupeholePreferences
 $(LH_LOADER_BASENAME)_FILES := \
 	sources/Runtime.mm \
 	$(LH_SELECTED_MITIGATION_SOURCES) \
-	$(LH_SELECTED_POLICY_VALUE_SOURCES) \
 	../../core/generated/LHGeneratedConfig.c \
 	../../core/generated/LHGeneratedDerivationLabels.c \
 	../../core/generated/LHGeneratedMitigationRegistry.c \
-	../../core/generated/LHGeneratedPolicyValueRegistry.c \
+	../../core/generated/LHGeneratedPolicySeeds.c \
 	../../core/src/LHAppContext.m \
 	../../core/src/LHConfig.c \
 	../../core/src/LHConfigProvider.m \
@@ -30,17 +29,18 @@ $(LH_LOADER_BASENAME)_FILES := \
 	../../core/src/LHHookBackendTheos.c \
 	../../core/src/LHModuleRegistry.c \
 	../../core/src/LHPolicyEngine.c \
-	../../core/src/LHProfile.c \
 	../../core/src/LHRuntime.m \
 	../../core/src/LHScope.c \
 	../../core/src/LHSeed.c \
 	../../core/src/LHSeedProvider.m \
 	../../core/src/LHStateProvider.m \
+	../../core/src/LHTweakValues.c \
 	../../core/src/LHValueQuantizer.c
 
 $(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \
 	-I../../core/generated \
+	-Isources \
 	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
 	-fvisibility=hidden \
 	-fdata-sections \

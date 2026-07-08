@@ -17,12 +17,20 @@ typedef struct LHDerivationLabel {
     uint8_t bytes[16];
 } LHDerivationLabel;
 
+typedef struct LHPolicySeed {
+    uint8_t bytes[16];
+} LHPolicySeed;
+
 #ifdef __cplusplus
 #define LH_DERIVATION_LABEL(domain, name) \
     extern "C" { LH_INTERNAL extern const LHDerivationLabel LHGeneratedDerivationLabel_##domain##_##name; }
+#define LH_POLICY_SEED(domain, name, literal) \
+    extern "C" { LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##domain##_##name; }
 #else
 #define LH_DERIVATION_LABEL(domain, name) \
     LH_INTERNAL extern const LHDerivationLabel LHGeneratedDerivationLabel_##domain##_##name;
+#define LH_POLICY_SEED(domain, name, literal) \
+    LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##domain##_##name;
 #endif
 
 LH_INTERNAL bool LHSeedParseUUID(const char *uuid, LHSeed *seed);

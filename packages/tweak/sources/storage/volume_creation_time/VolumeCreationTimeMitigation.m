@@ -1,6 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
-#include "LHGeneratedPolicyValueRegistry.h"
+
+#include "common/temporal/TemporalLifetimeValues.h"
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -14,13 +15,7 @@ static LHPolicyEngine *LHVolumeTimePolicy;
 
 static NSDate *LHVolumeCreationDate(void) {
     double timestamp = 0.0;
-    LHPolicyValueRequest request = {
-        .valueID = LHPolicyValueID_volume_creation_time,
-        .expectedKind = LHPolicyValueKindTimeInterval,
-        .output = &timestamp,
-        .outputLength = sizeof(timestamp)
-    };
-    if (!LHPolicyEngineCopyValue(LHVolumeTimePolicy, &request, 0)) {
+    if (!LHTemporalLifetimeCopyVolumeCreationTime(LHVolumeTimePolicy, &timestamp)) {
         return nil;
     }
     return [NSDate dateWithTimeIntervalSince1970:timestamp];

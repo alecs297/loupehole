@@ -4,9 +4,11 @@ set -eu
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-cat >"$tmpdir/policy_check.m" <<'SOURCE'
+cat >"$tmpdir/tweak_value_check.m" <<'SOURCE'
 #include "LHPolicyEngine.h"
-#include "LHGeneratedPolicyValueRegistry.h"
+#include "LHGeneratedPolicySeeds.h"
+#include "LHTweakValues.h"
+#include "common/temporal/TemporalLifetimeValues.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -20,67 +22,48 @@ int main(void) {
     }
 
     char idfv[LH_TEST_UUID_STRING_LENGTH] = {0};
-    struct timeval bootTime = {0};
-    double volumeTime = 0.0;
-    LHPolicyValueResponse response;
-
-    LHPolicyValueRequest idfvRequest = {
-        .valueID = LHPolicyValueID_identifier_for_vendor,
-        .expectedKind = LHPolicyValueKindUTF8String,
-        .output = idfv,
-        .outputLength = sizeof(idfv)
-    };
-    if (!LHPolicyEngineCopyValue(&engine, &idfvRequest, &response)) {
+    if (!LHTweakDeriveUUIDString(&engine.config.buildSeed,
+                                 &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                 &engine.appContext.scope,
+                                 idfv,
+                                 sizeof(idfv))) {
         return 2;
     }
-    if (response.kind != LHPolicyValueKindUTF8String || response.bytesWritten != sizeof(idfv) || strlen(idfv) != 36) {
+    if (strlen(idfv) != 36 || idfv[14] != '4') {
         return 3;
     }
 
-    LHPolicyValueRequest bootRequest = {
-        .valueID = LHPolicyValueID_boot_time,
-        .expectedKind = LHPolicyValueKindTimeval,
-        .output = &bootTime,
-        .outputLength = sizeof(bootTime)
-    };
-    if (!LHPolicyEngineCopyValue(&engine, &bootRequest, &response)) {
+    char small[4] = {0};
+    if (LHTweakDeriveUUIDString(&engine.config.buildSeed,
+                                &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                &engine.appContext.scope,
+                                small,
+                                sizeof(small))) {
         return 4;
     }
-    if (response.kind != LHPolicyValueKindTimeval || response.bytesWritten != sizeof(bootTime) || bootTime.tv_sec <= 0) {
+
+    struct timeval bootTime = {0};
+    double volumeTime = 0.0;
+    if (!LHTemporalLifetimeCopyBootTime(&engine, &bootTime)) {
         return 5;
     }
-
-    LHPolicyValueRequest volumeRequest = {
-        .valueID = LHPolicyValueID_volume_creation_time,
-        .expectedKind = LHPolicyValueKindTimeInterval,
-        .output = &volumeTime,
-        .outputLength = sizeof(volumeTime)
-    };
-    if (!LHPolicyEngineCopyValue(&engine, &volumeRequest, &response)) {
+    if (!LHTemporalLifetimeCopyVolumeCreationTime(&engine, &volumeTime)) {
         return 6;
     }
-    if (response.kind != LHPolicyValueKindTimeInterval || response.bytesWritten != sizeof(volumeTime) || !(volumeTime < (double)bootTime.tv_sec)) {
+    if (bootTime.tv_sec <= 0 || !(volumeTime < (double)bootTime.tv_sec)) {
         return 7;
     }
 
-    LHPolicyValueRequest wrongKind = {
-        .valueID = LHPolicyValueID_boot_time,
-        .expectedKind = LHPolicyValueKindUTF8String,
-        .output = idfv,
-        .outputLength = sizeof(idfv)
-    };
-    if (LHPolicyEngineCopyValue(&engine, &wrongKind, &response)) {
+    uint64_t bounded = 0;
+    if (!LHTweakDeriveBoundedU64(&engine.config.buildSeed,
+                                 &LHGeneratedPolicySeed_temporal_lifetime_boot_time,
+                                 &engine.appContext.scope,
+                                 0,
+                                 0,
+                                 10,
+                                 &bounded) ||
+        bounded >= 10) {
         return 8;
-    }
-
-    LHPolicyValueRequest smallBuffer = {
-        .valueID = LHPolicyValueID_identifier_for_vendor,
-        .expectedKind = LHPolicyValueKindUTF8String,
-        .output = idfv,
-        .outputLength = 4
-    };
-    if (LHPolicyEngineCopyValue(&engine, &smallBuffer, &response)) {
-        return 9;
     }
 
     return 0;
@@ -91,34 +74,32 @@ cc \
   -DLH_STATE_TESTING=1 \
   -Icore/include \
   -Icore/generated \
+  -Ipackages/tweak/sources \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
-  core/generated/LHGeneratedPolicyValueRegistry.c \
+  core/generated/LHGeneratedPolicySeeds.c \
   core/src/LHAppContext.m \
   core/src/LHConfig.c \
   core/src/LHConfigProvider.m \
   core/src/LHPolicyEngine.c \
-  core/src/LHProfile.c \
   core/src/LHScope.c \
   core/src/LHSeed.c \
   core/src/LHSeedProvider.m \
   core/src/LHStateProvider.m \
-  packages/tweak/sources/identity/idfv/IDFVPolicyValue.c \
-  packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c \
-  "$tmpdir/policy_check.m" \
+  core/src/LHTweakValues.c \
+  packages/tweak/sources/common/temporal/TemporalLifetimeValues.c \
+  "$tmpdir/tweak_value_check.m" \
   -framework Foundation \
-  -o "$tmpdir/policy_check"
+  -o "$tmpdir/tweak_value_check"
 
-LH_STATE_TEST_HOME="$tmpdir" "$tmpdir/policy_check"
+LH_STATE_TEST_HOME="$tmpdir" "$tmpdir/tweak_value_check"
 
-cat >"$tmpdir/package_policy_check.m" <<'SOURCE'
+cat >"$tmpdir/package_enablement_check.m" <<'SOURCE'
 #include "LHPolicyEngine.h"
-#include "LHGeneratedPolicyValueRegistry.h"
+#include "LHGeneratedMitigationRegistry.h"
 
 #include <stdio.h>
 #include <string.h>
-
-#define LH_TEST_UUID_STRING_LENGTH 37
 
 int main(int argc, char **argv) {
     bool expectEnabled = argc > 1 && strcmp(argv[1], "enabled") == 0;
@@ -128,44 +109,33 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    char idfv[LH_TEST_UUID_STRING_LENGTH] = {0};
-    LHPolicyValueRequest request = {
-        .valueID = LHPolicyValueID_identifier_for_vendor,
-        .expectedKind = LHPolicyValueKindUTF8String,
-        .output = idfv,
-        .outputLength = sizeof(idfv)
-    };
-
-    bool resolved = LHPolicyEngineCopyValue(&engine, &request, 0);
+    bool enabled = LHPolicyEngineIsModuleEnabled(&engine, LHModuleID_identity_idfv_uidevice_scoped_uuid);
     if (expectEnabled) {
-        return resolved && strlen(idfv) == 36 ? 0 : 2;
+        return enabled ? 0 : 2;
     }
-    return resolved ? 3 : 0;
+    return enabled ? 3 : 0;
 }
 SOURCE
 
 cc \
   -DLH_STATE_TESTING=1 \
   -DLH_DEFAULT_STATE_PROVIDER_KIND=LHStateProviderKindPackage \
+  -DLH_EMBED_BUILD_SEED=0 \
   -Icore/include \
   -Icore/generated \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
-  core/generated/LHGeneratedPolicyValueRegistry.c \
   core/src/LHAppContext.m \
   core/src/LHConfig.c \
   core/src/LHConfigProvider.m \
   core/src/LHPolicyEngine.c \
-  core/src/LHProfile.c \
   core/src/LHScope.c \
   core/src/LHSeed.c \
   core/src/LHSeedProvider.m \
   core/src/LHStateProvider.m \
-  packages/tweak/sources/identity/idfv/IDFVPolicyValue.c \
-  packages/tweak/sources/state_domains/temporal_lifetime/TemporalLifetimeState.c \
-  "$tmpdir/package_policy_check.m" \
+  "$tmpdir/package_enablement_check.m" \
   -framework Foundation \
-  -o "$tmpdir/package_policy_check"
+  -o "$tmpdir/package_enablement_check"
 
 state_parent_and_policy=$(python3 - <<'PY'
 import re
@@ -186,7 +156,7 @@ target_env() {
   LH_APP_CONTEXT_TEST_BUNDLE_ID=com.example.host \
   LH_APP_CONTEXT_TEST_BUNDLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app \
   LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/Host \
-    "$tmpdir/package_policy_check" "$@"
+    "$tmpdir/package_enablement_check" "$@"
 }
 
 printf 'D|0|0|0||\n' > "$policy_dir/$policy_file"
@@ -209,12 +179,12 @@ LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
 LH_APP_CONTEXT_TEST_BUNDLE_ID=com.apple.Maps \
 LH_APP_CONTEXT_TEST_BUNDLE_PATH=/Applications/Maps.app \
 LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/Applications/Maps.app/Maps \
-  "$tmpdir/package_policy_check" disabled
+  "$tmpdir/package_enablement_check" disabled
 
 LH_PACKAGE_STATE_TEST_ROOT="$tmpdir/package" \
 LH_APP_CONTEXT_TEST_BUNDLE_ID=com.example.extension \
 LH_APP_CONTEXT_TEST_BUNDLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/PlugIns/Widget.appex \
 LH_APP_CONTEXT_TEST_EXECUTABLE_PATH=/var/containers/Bundle/Application/AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE/Host.app/PlugIns/Widget.appex/Widget \
-  "$tmpdir/package_policy_check" disabled
+  "$tmpdir/package_enablement_check" disabled
 
-printf '%s\n' "policy query check passed"
+printf '%s\n' "tweak value check passed"

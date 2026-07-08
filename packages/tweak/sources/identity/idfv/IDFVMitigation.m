@@ -1,6 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
-#include "LHGeneratedPolicyValueRegistry.h"
+
+#include "LHTweakValues.h"
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -9,18 +10,19 @@ typedef NSUUID *(*LHIDFVOriginal)(id self, SEL selector);
 
 #define LH_IDFV_UUID_STRING_LENGTH 37
 
+LH_POLICY_SEED(identifier_for_vendor, value, "identifier_for_vendor")
+
 static LHIDFVOriginal LHIDFVOriginalImplementation;
 static LHPolicyEngine *LHIDFVPolicy;
 
 static NSUUID *LHIDFVReplacement(id self, SEL selector) {
     char uuid[LH_IDFV_UUID_STRING_LENGTH] = { 0 };
-    LHPolicyValueRequest request = {
-        .valueID = LHPolicyValueID_identifier_for_vendor,
-        .expectedKind = LHPolicyValueKindUTF8String,
-        .output = uuid,
-        .outputLength = sizeof(uuid)
-    };
-    if (LHPolicyEngineCopyValue(LHIDFVPolicy, &request, 0)) {
+    if (LHIDFVPolicy != 0 &&
+        LHTweakDeriveUUIDString(&LHIDFVPolicy->config.buildSeed,
+                                &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                &LHIDFVPolicy->appContext.scope,
+                                uuid,
+                                sizeof(uuid))) {
         NSString *uuidString = [NSString stringWithUTF8String:uuid];
         NSUUID *replacement = [[NSUUID alloc] initWithUUIDString:uuidString];
         if (replacement != nil) {

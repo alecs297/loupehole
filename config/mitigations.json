@@ -15,45 +15,35 @@
       "sources": [
         "packages/tweak/sources/identity/idfv/IDFVMitigation.m"
       ],
-      "policyValues": [
-        "identifier_for_vendor"
-      ],
-      "language": "objc",
       "status": "experimental",
-      "optionDoc": "docs/options/identity-idfv.md"
+      "optionDoc": "docs/mitigations/identity-idfv.md"
     },
     {
       "id": "system.boot_time.composite.synthetic",
       "sources": [
         "packages/tweak/sources/system/boot_time/BootTimeMitigation.m",
         "packages/tweak/sources/system/boot_time/BootTimeSysctlMitigation.c",
-        "packages/tweak/sources/system/boot_time/BootTimeProcessInfoMitigation.m"
-      ],
-      "policyValues": [
-        "boot_time"
+        "packages/tweak/sources/system/boot_time/BootTimeProcessInfoMitigation.m",
+        "packages/tweak/sources/common/temporal/TemporalLifetimeValues.c"
       ],
       "conflicts": [],
       "frameworks": [
         "Foundation"
       ],
-      "language": "objc",
       "status": "experimental",
-      "optionDoc": "docs/options/system-boot-time.md"
+      "optionDoc": "docs/mitigations/system-boot-time.md"
     },
     {
       "id": "storage.volume_creation_time.foundation.synthetic",
       "sources": [
-        "packages/tweak/sources/storage/volume_creation_time/VolumeCreationTimeMitigation.m"
-      ],
-      "policyValues": [
-        "volume_creation_time"
+        "packages/tweak/sources/storage/volume_creation_time/VolumeCreationTimeMitigation.m",
+        "packages/tweak/sources/common/temporal/TemporalLifetimeValues.c"
       ],
       "frameworks": [
         "Foundation"
       ],
-      "language": "objc",
       "status": "experimental",
-      "optionDoc": "docs/options/storage-volume-time.md"
+      "optionDoc": "docs/mitigations/storage-volume-time.md"
     }
   ]
 }

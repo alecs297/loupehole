@@ -4,8 +4,6 @@
 #include "LHAppContext.h"
 #include "LHBuildConfig.h"
 #include "LHConfig.h"
-#include "LHPolicyValue.h"
-#include "LHProfile.h"
 #include "LHSeed.h"
 #include "LHStateProvider.h"
 #include "LHTypes.h"
@@ -19,7 +17,6 @@ extern "C" {
 typedef struct LHPolicyEngine {
     LHRuntimeConfig config;
     LHAppContext appContext;
-    const LHProfile *profile;
     bool initialized;
 } LHPolicyEngine;
 
@@ -37,9 +34,6 @@ LH_INTERNAL bool LHPolicyEngineLoadOrCreateState(const LHPolicyEngine *engine,
                                                  void *generatorContext,
                                                  LHStateLoadResult *result);
 LH_INTERNAL bool LHPolicyEngineIsModuleEnabled(const LHPolicyEngine *engine, uint32_t moduleID);
-LH_INTERNAL bool LHPolicyEngineCopyValue(const LHPolicyEngine *engine,
-                                         const LHPolicyValueRequest *request,
-                                         LHPolicyValueResponse *response);
 
 #ifdef __cplusplus
 }
