@@ -63,10 +63,8 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | Mitigation ID | Detailed page | Source entrypoint(s) |
 | --- | --- | --- |
 | `identity.idfv.uidevice.scoped_uuid` | [IDFV](../mitigations/identity-idfv.md) | `src/mitigations/identity/idfv/IDFVMitigation.m` |
-| `system.boot_time.composite.synthetic` | [Boot time](../mitigations/system-boot-time.md) | `src/mitigations/system/boot_time/BootTimeMitigation.m`, sysctl adapter, ProcessInfo adapter |
-| `storage.volume_creation_time.foundation.synthetic` | [Volume creation time](../mitigations/storage-volume-time.md) | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m` |
-
-The boot-time and volume-creation-time mitigations share `src/mitigations/common/temporal/TemporalLifetimeValues.c`.
+| `system.boot_time.composite.synthetic` | [Boot time](../mitigations/system-boot-time.md) | `src/mitigations/system/boot_time/BootTimeMitigation.m`, sysctl adapter, ProcessInfo adapter, boot-time value owner |
+| `storage.volume_creation_time.foundation.synthetic` | [Volume creation time](../mitigations/storage-volume-time.md) | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m`, volume-time value owner |
 
 ## Naming and Entry Points
 
@@ -96,7 +94,6 @@ Source folders should mirror ownership:
 | `src/runtime/` | Injected runtime, policy engine, scope, seed, state, and hook backend. |
 | `src/mitigationkit/` | Helpers intended for mitigations to import. |
 | `src/mitigations/<surface>/...` | Individual mitigation adapters. |
-| `src/mitigations/common/...` | Shared mitigation-owned state/value helpers. |
 | `packaging/theos/` | Theos/deb package scaffold. |
 | `ui/preferences/` | PreferenceLoader Settings UI. |
 

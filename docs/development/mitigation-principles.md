@@ -19,7 +19,7 @@ Every replacement value has a stated relationship to values an app can compare w
 - vendor-scoped identifiers must use an appropriate sharing scope;
 - future hardware/model values must agree across model, display, GPU, camera, and WebKit claims.
 
-Coherence is implemented by the relevant mitigations or shared mitigation helpers. It is not a central profile system. When the project cannot establish coherence, it documents the gap and prefers pass-through over a broad false claim.
+Coherence is implemented by the relevant mitigations through documented policy seed identifiers and matching computations. It is not a central profile system. When the project cannot establish coherence, it documents the gap and prefers pass-through over a broad false claim.
 
 ### 4. Stable Where A Stable Value Is Expected
 

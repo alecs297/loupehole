@@ -54,7 +54,7 @@ The startup path is intentionally narrow. No hook should require its own indepen
 | `src/runtime/hooks/LHHookBackend.c` | Backend-neutral wrapper functions. |
 | `src/runtime/hooks/LHHookBackendTheos.c` | Theos/MobileSubstrate-compatible hook implementation. |
 | `src/runtime/engine/LHModuleRegistry.c` | Iteration over generated mitigation descriptors and no-op registration. |
-| `src/mitigations/` | Mitigation installers, hook adapters, and mitigation-owned shared helpers. |
+| `src/mitigations/` | Mitigation installers, hook adapters, and mitigation-owned value/state helpers. |
 | `core/generated/` | Generated configuration, derivation labels, mitigation registry, and policy seeds. Never hand-edit. |
 
 ## Generated Outputs

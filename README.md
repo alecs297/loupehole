@@ -36,10 +36,10 @@ The documentation links below target those final names.
 | Surface | Mitigation | Source folder | ID |
 | --- | --- | --- | --- |
 | [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | `identity.idfv.uidevice.scoped_uuid` |
-| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) + [shared temporal state](src/mitigations/common/temporal/) | `system.boot_time.composite.synthetic` |
-| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) + [shared temporal state](src/mitigations/common/temporal/) | `storage.volume_creation_time.foundation.synthetic` |
+| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) | `system.boot_time.composite.synthetic` |
+| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) | `storage.volume_creation_time.foundation.synthetic` |
 
-The boot-time and volume-creation-time mitigations are one coherent temporal group: `volume creation time < boot time < now` is preserved by a shared mitigation helper. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
+The boot-time and volume-creation-time mitigations are coherent without shared mitigation-owned code: both use the documented `volume_creation_date` policy seed identifier when they need that baseline, and boot time persists its own state after deriving a value later than that baseline. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
 
 ## Documentation
 

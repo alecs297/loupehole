@@ -41,7 +41,7 @@ Answer before writing the hook:
 - Which existing mitigation state/value helper must agree with it?
 - What must happen when storage, seed derivation, the original symbol, or the target selector is unavailable?
 
-Coherence is a mitigation-development responsibility, not a central profile feature. If two values must agree, make the involved mitigations share the same helper or reproduce the same computation from the same policy seed. Do not introduce a global coherence profile or cohort profile.
+Coherence is a mitigation-development responsibility, not a central profile feature. If two values must agree, make the involved mitigations use the same documented policy seed identifier and the same documented computation. Do not introduce a global coherence profile, cohort profile, or shared mitigation-owned state module.
 
 ## 3. Add Declarative Metadata
 

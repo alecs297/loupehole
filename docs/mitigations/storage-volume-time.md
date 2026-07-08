@@ -8,7 +8,7 @@ The volume creation-time option normalizes Foundation URL resource metadata for 
 | --- | --- |
 | Option ID | `storage.volume_creation_time` |
 | Implemented mitigation | `storage.volume_creation_time.foundation.synthetic` |
-| Policy seeds | `temporal_lifetime.state`, `temporal_lifetime.boot_time`, `temporal_lifetime.volume_creation_date` |
+| Policy seeds | `volume_creation_date` |
 | User-facing name | Volume creation time |
 | Status | Experimental |
 | Surface | Storage lifetime |
@@ -37,38 +37,36 @@ The selected mitigation hooks `NSURL` methods that return resource values:
 - `getResourceValue:forKey:error:` returns a synthetic `NSDate` when the key is `NSURLVolumeCreationDateKey`.
 - `resourceValuesForKeys:error:` calls the original implementation, then replaces or inserts `NSURLVolumeCreationDateKey` in the returned dictionary when that key was requested.
 
-Other resource keys pass through unchanged. The hook reads the shared temporal helper and converts the Unix timestamp to `NSDate`. Hook code does not derive or embed the date itself.
+Other resource keys pass through unchanged. The hook reads the storage mitigation's value owner and converts the Unix timestamp to `NSDate`. Hook code does not embed the date itself.
 
 If the `NSURL` class or both selectors are unavailable, the mitigation registers as a no-op for this module.
 
 ## Derivation And Lifetime
 
-The shared temporal helper declares:
+The storage mitigation declares:
 
 ```c
-LH_POLICY_SEED(temporal_lifetime_state)
-LH_POLICY_SEED(boot_time)
 LH_POLICY_SEED(volume_creation_date)
 ```
 
 | Item | Value |
 | --- | --- |
-| State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
-| State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
-| Volume helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_volume_creation_date` |
+| Value owner | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeValues.c` |
+| State key | None. |
+| Volume helper | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_volume_creation_date` |
 | Value shape | `double` Unix timestamp returned to Foundation as an `NSDate`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
-| Volume age | Generated from the same synthetic boot time, then shifted earlier by at least 7 days plus a seed-derived offset inside a 180-day window. |
-| Storage behavior | `LHPolicyEngineLoadOrCreateState` keeps the generated timeline stable across relaunches for the same scope. |
-| Temporal dependency | `volumeCreationTime < bootTime < now`. |
+| Volume range | Derived inside the documented Unix timestamp range from 2020-01-01 UTC up to 2025-01-01 UTC. |
+| Storage behavior | No mitigation-owned state blob; stability comes from seed, policy seed, scope, and the fixed documented range. |
+| Temporal dependency | The boot-time mitigation also declares `volume_creation_date` and derives its boot time after this baseline. |
 
-The volume creation date intentionally uses the same temporal state as boot time so the implemented ordering is true by construction.
+The volume creation date is owned by this mitigation. Other mitigations that need to agree with it must declare the same `volume_creation_date` policy seed identifier and reproduce the documented computation.
 
 ## Impact And Tradeoffs
 
 Only the Foundation URL resource-value surface is implemented here. Lower-level file and filesystem metadata APIs such as `stat`, `fstat`, `lstat`, `getattrlist`, and direct filesystem queries remain separate future mitigation work. Apps that compare Foundation output with those lower-level surfaces may still find mismatches until those modules exist.
 
-The main detection risk is a contradictory timeline. A volume creation date after boot time, after app install time, or after files that supposedly live on the volume would be suspicious. This mitigation shares the temporal state used by boot time so the first hard ordering is true by construction.
+The main detection risk is a contradictory timeline. A volume creation date after boot time, after app install time, or after files that supposedly live on the volume would be suspicious. The boot-time mitigation handles the first hard ordering by deriving its own boot time after the same documented `volume_creation_date` baseline.
 
 ## Validation
 
@@ -76,13 +74,13 @@ Manual Loupe validation passed on 2026-06-18. Expected observations:
 
 - Loupe's Foundation volume creation date path reports a synthetic date.
 - The synthetic volume creation time remains stable across relaunches for the same seed and scope.
-- The value is earlier than the synthetic boot time.
+- The value is earlier than the synthetic boot time when the boot-time mitigation is selected.
 - Other requested URL resource keys preserve original behavior.
 
 ## Rollback And Pass-Through
 
-If temporal state loading fails for `getResourceValue:forKey:error:`, the hook calls the original method. If no original method is available, it returns `NO` for that query rather than inventing an unrelated date.
+If derivation fails for `getResourceValue:forKey:error:`, the hook calls the original method. If no original method is available, it returns `NO` for that query rather than inventing an unrelated date.
 
-For `resourceValuesForKeys:error:`, the hook obtains the original dictionary first. If temporal state loading fails, it returns that original dictionary unchanged. When state loading succeeds, only `NSURLVolumeCreationDateKey` is replaced or inserted.
+For `resourceValuesForKeys:error:`, the hook obtains the original dictionary first. If derivation fails, it returns that original dictionary unchanged. When derivation succeeds, only `NSURLVolumeCreationDateKey` is replaced or inserted.
 
 Disabling this mitigation should affect only Foundation volume creation date queries. Boot-time and IDFV behavior are controlled by their own options.

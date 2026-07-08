@@ -8,7 +8,7 @@ The boot-time option normalizes app-visible device lifetime values. It covers pa
 | --- | --- |
 | Option ID | `system.boot_time` |
 | Implemented mitigation | `system.boot_time.composite.synthetic` |
-| Policy seeds | `temporal_lifetime.state`, `temporal_lifetime.boot_time`, `temporal_lifetime.volume_creation_date` |
+| Policy seeds | `boot_time_state`, `boot_time`, `volume_creation_date` |
 | User-facing name | Device boot time |
 | Status | Experimental |
 | Surface | System lifetime |
@@ -39,38 +39,39 @@ The selected mitigation is a composite installer. It imports:
 
 The sysctl adapter handles read-only boot-time queries only. It recognizes `CTL_KERN, KERN_BOOTTIME` and `"kern.boottime"` when `newp == NULL`, copies out the synthetic `struct timeval`, and preserves the normal `oldp`/`oldlenp` size-query pattern. Non-boot-time sysctl calls and write attempts pass through to the original functions.
 
-The ProcessInfo adapter reads the same temporal helper and returns `now - bootTime` when the result is coherent and nonnegative. This keeps uptime and boot timestamp tied to the same synthetic timeline.
+The ProcessInfo adapter reads the same boot-time value owner and returns `now - bootTime` when the result is coherent and nonnegative. This keeps uptime and boot timestamp tied to the same synthetic timeline.
 
 The hook backend attempts direct function patching and imported-symbol rebinding for the sysctl names because app, Swift, and libSystem call sites may not all pass through a single public wrapper.
 
 ## Derivation And Lifetime
 
-The shared temporal helper declares:
+The boot-time mitigation declares:
 
 ```c
-LH_POLICY_SEED(temporal_lifetime_state)
+LH_POLICY_SEED(boot_time_state)
 LH_POLICY_SEED(boot_time)
 LH_POLICY_SEED(volume_creation_date)
 ```
 
 | Item | Value |
 | --- | --- |
-| State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
-| State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
-| Boot helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_boot_time` |
+| Value owner | `src/mitigations/system/boot_time/BootTimeValues.c` |
+| State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_boot_time_state, 1)` |
+| Boot helper | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_boot_time` |
+| Volume baseline | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_volume_creation_date` |
 | Value shape | `struct timeval` with microseconds set to `0`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
-| Boot age | At least 6 hours before `now`, plus a seed-derived offset inside a 14-day window. |
-| Storage behavior | `LHPolicyEngineLoadOrCreateState` keeps the generated timeline stable across relaunches for the same scope. |
+| Boot range | Between the documented volume-creation baseline and current wall clock, constrained to at least 6 hours before `now` and normally inside a 14-day lookback window. |
+| Storage behavior | `LHPolicyEngineLoadOrCreateState` keeps the generated boot time stable across relaunches for the same scope. |
 | Temporal dependency | `volumeCreationTime < bootTime < now`. |
 
-The boot-time helper intentionally recomputes the volume-creation dependency from the same shared state so both implemented temporal mitigations agree.
+The boot-time mitigation intentionally declares and uses `volume_creation_date` so it can reproduce the storage mitigation's volume baseline before choosing a later boot time. This is per-mitigation coherence, not a shared state module.
 
 ## Impact And Tradeoffs
 
 Apps that compare unimplemented uptime-adjacent APIs can still observe real values until those surfaces receive separate mitigation modules. The composite currently covers the sysctl-family boot timestamp and Foundation `systemUptime`; it does not claim to normalize every possible monotonic clock, mach time, log timestamp, or process lifetime value.
 
-The highest detection risk is temporal contradiction. Returning a boot time that is earlier than impossible storage events, later than `now`, or inconsistent with `systemUptime` would stand out. This mitigation reduces that risk by serving boot timestamp and uptime from one temporal state.
+The highest detection risk is temporal contradiction. Returning a boot time that is earlier than impossible storage events, later than `now`, or inconsistent with `systemUptime` would stand out. This mitigation reduces that risk by deriving boot time after the documented volume baseline and serving boot timestamp plus uptime from its own persisted state.
 
 ## Validation
 
@@ -84,7 +85,7 @@ Manual Loupe validation passed on 2026-06-18. Expected observations:
 
 ## Rollback And Pass-Through
 
-If no boot-time adapter installs, the composite mitigation registers as a no-op. If temporal state loading fails inside an installed sysctl replacement, the replacement falls through to the original function. If no original function is available as a final safety path, the C replacement returns `-1` with `errno` set rather than manufacturing an unrelated timestamp.
+If no boot-time adapter installs, the composite mitigation registers as a no-op. If boot-time state loading fails inside an installed sysctl replacement, the replacement falls through to the original function. If no original function is available as a final safety path, the C replacement returns `-1` with `errno` set rather than manufacturing an unrelated timestamp.
 
 For `NSProcessInfo.systemUptime`, state loading failure or an incoherent negative uptime falls through to the original implementation. If no original method is available, the last-resort return is `0.0`.
 
