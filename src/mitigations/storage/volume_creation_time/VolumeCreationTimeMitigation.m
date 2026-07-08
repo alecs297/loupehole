@@ -1,7 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
-#include "common/temporal/TemporalLifetimeValues.h"
+#include "VolumeCreationTimeValues.h"
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -16,7 +16,7 @@ static LHPolicyEngine *LHVolumeTimePolicy;
 /** Builds an NSDate from the coherent synthetic volume creation timestamp. */
 static NSDate *LHVolumeCreationDate(void) {
     double timestamp = 0.0;
-    if (!LHTemporalLifetimeCopyVolumeCreationTime(LHVolumeTimePolicy, &timestamp)) {
+    if (!LHVolumeCreationTimeCopySyntheticTimestamp(LHVolumeTimePolicy, &timestamp)) {
         return nil;
     }
     return [NSDate dateWithTimeIntervalSince1970:timestamp];

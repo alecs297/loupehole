@@ -23,7 +23,7 @@
         "src/mitigations/system/boot_time/BootTimeMitigation.m",
         "src/mitigations/system/boot_time/BootTimeSysctlMitigation.c",
         "src/mitigations/system/boot_time/BootTimeProcessInfoMitigation.m",
-        "src/mitigations/common/temporal/TemporalLifetimeValues.c"
+        "src/mitigations/system/boot_time/BootTimeValues.c"
       ],
       "conflicts": [],
       "frameworks": [
@@ -35,7 +35,7 @@
       "id": "storage.volume_creation_time.foundation.synthetic",
       "sources": [
         "src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m",
-        "src/mitigations/common/temporal/TemporalLifetimeValues.c"
+        "src/mitigations/storage/volume_creation_time/VolumeCreationTimeValues.c"
       ],
       "frameworks": [
         "Foundation"

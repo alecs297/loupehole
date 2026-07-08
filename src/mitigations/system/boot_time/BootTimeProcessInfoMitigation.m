@@ -1,7 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
-#include "common/temporal/TemporalLifetimeValues.h"
+#include "BootTimeValues.h"
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -14,7 +14,7 @@ static LHPolicyEngine *LHProcessInfoBootTimePolicy;
 /** Replacement for `-[NSProcessInfo systemUptime]`. */
 static NSTimeInterval LHSystemUptimeReplacement(NSProcessInfo *self, SEL selector) {
     struct timeval bootTime;
-    if (LHTemporalLifetimeCopyBootTime(LHProcessInfoBootTimePolicy, &bootTime)) {
+    if (LHBootTimeCopySyntheticBootTime(LHProcessInfoBootTimePolicy, &bootTime)) {
         NSTimeInterval bootTimestamp = (NSTimeInterval)bootTime.tv_sec + ((NSTimeInterval)bootTime.tv_usec / 1000000.0);
         NSTimeInterval uptime = [[NSDate date] timeIntervalSince1970] - bootTimestamp;
         if (uptime >= 0.0) {

@@ -8,7 +8,8 @@ cat >"$tmpdir/mitigation_value_check.m" <<'SOURCE'
 #include "LHPolicyEngine.h"
 #include "LHGeneratedPolicySeeds.h"
 #include "LHMitigationValues.h"
-#include "common/temporal/TemporalLifetimeValues.h"
+#include "system/boot_time/BootTimeValues.h"
+#include "storage/volume_creation_time/VolumeCreationTimeValues.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -44,10 +45,10 @@ int main(void) {
 
     struct timeval bootTime = {0};
     double volumeTime = 0.0;
-    if (!LHTemporalLifetimeCopyBootTime(&engine, &bootTime)) {
+    if (!LHBootTimeCopySyntheticBootTime(&engine, &bootTime)) {
         return 5;
     }
-    if (!LHTemporalLifetimeCopyVolumeCreationTime(&engine, &volumeTime)) {
+    if (!LHVolumeCreationTimeCopySyntheticTimestamp(&engine, &volumeTime)) {
         return 6;
     }
     if (bootTime.tv_sec <= 0 || !(volumeTime < (double)bootTime.tv_sec)) {
@@ -87,7 +88,8 @@ cc \
   src/runtime/seeds/LHSeedProvider.m \
   src/runtime/state/LHStateProvider.m \
   src/mitigationkit/LHMitigationValues.c \
-  src/mitigations/common/temporal/TemporalLifetimeValues.c \
+  src/mitigations/system/boot_time/BootTimeValues.c \
+  src/mitigations/storage/volume_creation_time/VolumeCreationTimeValues.c \
   "$tmpdir/mitigation_value_check.m" \
   -framework Foundation \
   -o "$tmpdir/mitigation_value_check"

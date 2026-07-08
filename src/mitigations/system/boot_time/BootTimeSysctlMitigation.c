@@ -1,7 +1,7 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
-#include "common/temporal/TemporalLifetimeValues.h"
+#include "BootTimeValues.h"
 
 #include <dlfcn.h>
 #include <errno.h>
@@ -21,7 +21,7 @@ static LHPolicyEngine *LHBootTimePolicy;
 /** Copies the synthetic boot-time timeval into a sysctl output buffer. */
 static int LHBootTimeCopyOut(void *oldp, size_t *oldlenp) {
     struct timeval bootTime;
-    if (!LHTemporalLifetimeCopyBootTime(LHBootTimePolicy, &bootTime)) {
+    if (!LHBootTimeCopySyntheticBootTime(LHBootTimePolicy, &bootTime)) {
         errno = ENOENT;
         return -1;
     }
