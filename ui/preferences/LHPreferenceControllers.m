@@ -133,7 +133,7 @@ static PSSpecifier *LHValueSpecifier(NSString *label, NSString *value) {
         self.lhCopyValue = [specifier propertyForKey:@"value"] ?: @"";
         self.detailTextLabel.text = self.lhCopyValue;
         self.detailTextLabel.numberOfLines = 0;
-        self.detailTextLabel.lineBreakMode = NSLineBreakByCharWrapping;
+        self.detailTextLabel.lineBreakMode = NSLineBreakByWordWrapping;
         self.selectionStyle = UITableViewCellSelectionStyleNone;
         [self.contentView addInteraction:[[UIContextMenuInteraction alloc] initWithDelegate:self]];
     }
