@@ -48,16 +48,16 @@ The hook backend attempts direct function patching and imported-symbol rebinding
 The shared temporal helper declares:
 
 ```c
-LH_POLICY_SEED(temporal_lifetime, state, "temporal_lifetime_state")
-LH_POLICY_SEED(temporal_lifetime, boot_time, "boot_time")
-LH_POLICY_SEED(temporal_lifetime, volume_creation_date, "volume_creation_date")
+LH_POLICY_SEED(temporal_lifetime_state)
+LH_POLICY_SEED(boot_time)
+LH_POLICY_SEED(volume_creation_date)
 ```
 
 | Item | Value |
 | --- | --- |
 | State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
 | State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
-| Boot helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_temporal_lifetime_boot_time` |
+| Boot helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_boot_time` |
 | Value shape | `struct timeval` with microseconds set to `0`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
 | Boot age | At least 6 hours before `now`, plus a seed-derived offset inside a 14-day window. |

@@ -14,7 +14,7 @@ The seed model exists to make stability and rotation explicit. The same active s
 | Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding the selection build seed in the deb-mode dylib. |
 | Practical seed | Effective parent seed before scoping. | Custom manual-group seed, embedded build seed, or package root seed. | Unifies package and standalone modes. |
 | Active seed | Seed used by mitigations after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces mitigation values and opaque names for the current context. |
-| Policy seed | Compile-time generated domain separator declared by a mitigation. | `LH_POLICY_SEED(domain, name, "literal")`. | Separates semantic value streams. |
+| Policy seed | Compile-time generated domain separator declared by a mitigation. | `LH_POLICY_SEED(identifier)`. | Separates semantic value streams. |
 | State-derived value | Persisted or generated value associated with active seed and scope. | `LHStateProviderLoadOrCreate`. | Preserves a value that needs stateful lifetime. |
 
 ## Build Seed Behavior
@@ -40,7 +40,7 @@ Mitigation derivation should use:
 active/practical seed + generated policy seed + scope mode + scope identifier [+ optional context]
 ```
 
-The current implementation uses HMAC-SHA256/HKDF-style expansion in `LHSeed.c`. The generator emits policy seeds and internal labels into generated C data so literals are not scattered through runtime code.
+The current implementation uses HMAC-SHA256/HKDF-style expansion in `LHSeed.c`. The generator emits policy seeds and internal labels into generated C data so policy-key strings are not scattered through runtime code.
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,7 @@ A derived value may rotate when:
 - a per-app-install marker changes because an app is reinstalled or reset;
 - scope mode or scope identifier changes;
 - a manual linked-group custom seed changes;
-- a policy seed literal changes;
+- a policy seed identifier changes;
 - a state schema change deliberately invalidates old state.
 
 The expected rotation behavior belongs in each mitigation's documentation. Rotation that is invisible in source but surprising to a user or app is a defect in the model.

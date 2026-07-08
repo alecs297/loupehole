@@ -10,7 +10,7 @@ typedef NSUUID *(*LHIDFVOriginal)(id self, SEL selector);
 
 #define LH_IDFV_UUID_STRING_LENGTH 37
 
-LH_POLICY_SEED(identifier_for_vendor, value, "identifier_for_vendor")
+LH_POLICY_SEED(identifier_for_vendor)
 
 static LHIDFVOriginal LHIDFVOriginalImplementation;
 static LHPolicyEngine *LHIDFVPolicy;
@@ -20,7 +20,7 @@ static NSUUID *LHIDFVReplacement(id self, SEL selector) {
     char uuid[LH_IDFV_UUID_STRING_LENGTH] = { 0 };
     if (LHIDFVPolicy != 0 &&
         LHMitigationDeriveUUIDString(&LHIDFVPolicy->config.buildSeed,
-                                &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                &LHGeneratedPolicySeed_identifier_for_vendor,
                                 &LHIDFVPolicy->appContext.scope,
                                 uuid,
                                 sizeof(uuid))) {

@@ -23,7 +23,7 @@ int main(void) {
 
     char idfv[LH_TEST_UUID_STRING_LENGTH] = {0};
     if (!LHMitigationDeriveUUIDString(&engine.config.buildSeed,
-                                 &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                 &LHGeneratedPolicySeed_identifier_for_vendor,
                                  &engine.appContext.scope,
                                  idfv,
                                  sizeof(idfv))) {
@@ -35,7 +35,7 @@ int main(void) {
 
     char small[4] = {0};
     if (LHMitigationDeriveUUIDString(&engine.config.buildSeed,
-                                &LHGeneratedPolicySeed_identifier_for_vendor_value,
+                                &LHGeneratedPolicySeed_identifier_for_vendor,
                                 &engine.appContext.scope,
                                 small,
                                 sizeof(small))) {
@@ -56,7 +56,7 @@ int main(void) {
 
     uint64_t bounded = 0;
     if (!LHMitigationDeriveBoundedU64(&engine.config.buildSeed,
-                                 &LHGeneratedPolicySeed_temporal_lifetime_boot_time,
+                                 &LHGeneratedPolicySeed_boot_time,
                                  &engine.appContext.scope,
                                  0,
                                  0,

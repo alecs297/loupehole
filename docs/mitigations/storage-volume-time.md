@@ -46,16 +46,16 @@ If the `NSURL` class or both selectors are unavailable, the mitigation registers
 The shared temporal helper declares:
 
 ```c
-LH_POLICY_SEED(temporal_lifetime, state, "temporal_lifetime_state")
-LH_POLICY_SEED(temporal_lifetime, boot_time, "boot_time")
-LH_POLICY_SEED(temporal_lifetime, volume_creation_date, "volume_creation_date")
+LH_POLICY_SEED(temporal_lifetime_state)
+LH_POLICY_SEED(boot_time)
+LH_POLICY_SEED(volume_creation_date)
 ```
 
 | Item | Value |
 | --- | --- |
 | State owner | `src/mitigations/common/temporal/TemporalLifetimeValues.c` |
 | State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_temporal_lifetime_state, 1)` |
-| Volume helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_temporal_lifetime_volume_creation_date` |
+| Volume helper | `LHMitigationDeriveU64` with `LHGeneratedPolicySeed_volume_creation_date` |
 | Value shape | `double` Unix timestamp returned to Foundation as an `NSDate`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
 | Volume age | Generated from the same synthetic boot time, then shifted earlier by at least 7 days plus a seed-derived offset inside a 180-day window. |

@@ -59,21 +59,21 @@ Add the mitigation ID to `config/build.default.json` only when it should be comp
 
 ## 4. Declare Policy Seeds In The Mitigation
 
-Use `LH_POLICY_SEED(domain, name, "literal")` in selected source:
+Use `LH_POLICY_SEED(identifier)` in selected source:
 
 ```c
-LH_POLICY_SEED(storage_volume, creation_date, "volume_creation_date")
+LH_POLICY_SEED(volume_creation_date)
 ```
 
-The generator hashes the build seed and literal at compile time and emits generated policy seed bytes. The literal should not appear in the built artifact.
+The generator hashes the build seed and identifier at compile time and emits generated policy seed bytes. The identifier should not appear in the built artifact.
 
 Rules:
 
 - pass both the active/practical seed and policy seed to mitigationkit helpers;
 - use a distinct policy seed for each semantic identifier or random stream;
-- reuse the same literal only when two mitigations intentionally need the same policy seed;
-- list every policy seed literal and meaning in the mitigation page;
-- treat a policy seed literal change as a compatibility change because derived values rotate.
+- reuse the same identifier only when two mitigations intentionally need the same policy seed;
+- list every policy seed identifier and meaning in the mitigation page;
+- treat a policy seed identifier change as a compatibility change because derived values rotate.
 
 ## 5. Use The Mitigationkit Helpers
 

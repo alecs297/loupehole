@@ -29,7 +29,7 @@ PACKAGE_LOADER_BASENAME_NAMESPACE = b"lh.package-loader-basename.v1\0"
 LABEL_COMPONENT_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 LABEL_DECL_RE = re.compile(r"\bLH_DERIVATION_LABEL\s*\(\s*([a-z][a-z0-9_]*)\s*,\s*([a-z][a-z0-9_]*)\s*\)")
 POLICY_SEED_DECL_RE = re.compile(
-    r'\bLH_POLICY_SEED\s*\(\s*([a-z][a-z0-9_]*)\s*,\s*([a-z][a-z0-9_]*)\s*,\s*("(?:[^"\\]|\\.)*")\s*\)'
+    r"\bLH_POLICY_SEED\s*\(\s*([a-z][a-z0-9_]*)\s*\)"
 )
 
 
@@ -76,9 +76,9 @@ def label_bytes_for(identifier, build_seed):
     return digest[:16]
 
 
-def policy_seed_bytes_for(literal, build_seed):
+def policy_seed_bytes_for(identifier, build_seed):
     seed = build_seed if build_seed is not None else b""
-    digest = hashlib.sha256(POLICY_SEED_NAMESPACE + seed + b"\0" + literal.encode("utf-8")).digest()
+    digest = hashlib.sha256(POLICY_SEED_NAMESPACE + seed + b"\0" + identifier.encode("utf-8")).digest()
     return digest[:16]
 
 
@@ -324,34 +324,18 @@ def discover_policy_seeds(source_paths, build_seed):
         text = path.read_text(encoding="utf-8")
         scan_text = source_for_policy_seed_scan(text)
         for match in POLICY_SEED_DECL_RE.finditer(scan_text):
-            domain, name, literal_token = match.groups()
-            if not LABEL_COMPONENT_RE.match(domain) or not LABEL_COMPONENT_RE.match(name):
+            (identifier,) = match.groups()
+            if not LABEL_COMPONENT_RE.match(identifier):
                 line = scan_text.count("\n", 0, match.start()) + 1
                 raise SystemExit(f"invalid policy seed declaration in {source}:{line}")
-            try:
-                literal = json.loads(literal_token)
-            except json.JSONDecodeError as exc:
-                line = scan_text.count("\n", 0, match.start()) + 1
-                raise SystemExit(f"invalid policy seed literal in {source}:{line}: {exc}") from exc
-            if not isinstance(literal, str) or len(literal) == 0:
-                line = scan_text.count("\n", 0, match.start()) + 1
-                raise SystemExit(f"policy seed literal must be a non-empty string in {source}:{line}")
-
-            identifier = f"{domain}.{name}"
             line = scan_text.count("\n", 0, match.start()) + 1
             if identifier in seen:
-                previous_literal, first_source, first_line = seen[identifier]
-                if previous_literal != literal:
-                    raise SystemExit(
-                        f"policy seed id {identifier} uses different literals: "
-                        f"{first_source}:{first_line} and {source}:{line}"
-                    )
                 continue
-            seen[identifier] = (literal, source, line)
+            seen[identifier] = (source, line)
             seeds.append({
                 "id": identifier,
                 "symbol": policy_seed_symbol_for(identifier),
-                "bytes": policy_seed_bytes_for(literal, build_seed),
+                "bytes": policy_seed_bytes_for(identifier, build_seed),
             })
 
     return seeds

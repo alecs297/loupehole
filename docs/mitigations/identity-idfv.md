@@ -35,7 +35,7 @@ The mitigation hooks `-[UIDevice identifierForVendor]`. The replacement derives 
 Hook code does not embed UUID bytes. Its only policy seed declaration is:
 
 ```c
-LH_POLICY_SEED(identifier_for_vendor, value, "identifier_for_vendor")
+LH_POLICY_SEED(identifier_for_vendor)
 ```
 
 Non-IDFV APIs are untouched. If the target class or selector is unavailable, the mitigation registers as a no-op for this module.
@@ -44,8 +44,8 @@ Non-IDFV APIs are untouched. If the target class or selector is unavailable, the
 
 | Item | Value |
 | --- | --- |
-| Policy seed literal | `"identifier_for_vendor"` |
-| Generated seed symbol | `LHGeneratedPolicySeed_identifier_for_vendor_value` |
+| Policy seed identifier | `identifier_for_vendor` |
+| Generated seed symbol | `LHGeneratedPolicySeed_identifier_for_vendor` |
 | Helper | `LHMitigationDeriveUUIDString` |
 | Value shape | Lowercase RFC 4122 version 4 UUID string accepted by `NSUUID`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
@@ -68,7 +68,7 @@ Manual Loupe validation passed on 2026-06-18. Expected observations:
 - `UIDevice.identifierForVendor` differs from the real device/vendor value after injection.
 - The returned UUID remains stable across relaunches for the same seed and scope.
 - Different app scopes receive different values unless a shared scope is selected.
-- The mitigation-value verifier can derive a UUID without embedding the literal policy seed string in the runtime artifact.
+- The mitigation-value verifier can derive a UUID through generated policy seed bytes.
 
 ## Rollback And Pass-Through
 

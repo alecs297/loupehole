@@ -5,9 +5,9 @@
 #include <string.h>
 #include <time.h>
 
-LH_POLICY_SEED(temporal_lifetime, state, "temporal_lifetime_state")
-LH_POLICY_SEED(temporal_lifetime, boot_time, "boot_time")
-LH_POLICY_SEED(temporal_lifetime, volume_creation_date, "volume_creation_date")
+LH_POLICY_SEED(temporal_lifetime_state)
+LH_POLICY_SEED(boot_time)
+LH_POLICY_SEED(volume_creation_date)
 
 #define LH_SECONDS_PER_HOUR 3600ULL
 #define LH_SECONDS_PER_DAY 86400ULL
@@ -29,7 +29,7 @@ static bool LHTemporalGenerateBootTime(const LHRuntimeConfig *config,
     uint64_t seedValue = 0;
     if (bootTime == 0 ||
         !LHMitigationDeriveU64(&config->buildSeed,
-                          &LHGeneratedPolicySeed_temporal_lifetime_boot_time,
+                          &LHGeneratedPolicySeed_boot_time,
                           &context->scope,
                           0,
                           0,
@@ -53,7 +53,7 @@ static bool LHTemporalGenerateVolumeCreationTime(const LHRuntimeConfig *config,
     if (volumeCreationTime == 0 ||
         !LHTemporalGenerateBootTime(config, context, now, &bootTime) ||
         !LHMitigationDeriveU64(&config->buildSeed,
-                          &LHGeneratedPolicySeed_temporal_lifetime_volume_creation_date,
+                          &LHGeneratedPolicySeed_volume_creation_date,
                           &context->scope,
                           0,
                           0,

@@ -24,13 +24,13 @@ typedef struct LHPolicySeed {
 #ifdef __cplusplus
 #define LH_DERIVATION_LABEL(domain, name) \
     extern "C" { LH_INTERNAL extern const LHDerivationLabel LHGeneratedDerivationLabel_##domain##_##name; }
-#define LH_POLICY_SEED(domain, name, literal) \
-    extern "C" { LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##domain##_##name; }
+#define LH_POLICY_SEED(identifier) \
+    extern "C" { LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##identifier; }
 #else
 #define LH_DERIVATION_LABEL(domain, name) \
     LH_INTERNAL extern const LHDerivationLabel LHGeneratedDerivationLabel_##domain##_##name;
-#define LH_POLICY_SEED(domain, name, literal) \
-    LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##domain##_##name;
+#define LH_POLICY_SEED(identifier) \
+    LH_INTERNAL extern const LHPolicySeed LHGeneratedPolicySeed_##identifier;
 #endif
 
 /** Parses a UUID string into a 16-byte seed. */
