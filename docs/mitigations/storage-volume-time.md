@@ -52,15 +52,15 @@ LH_POLICY_SEED(volume_creation_date)
 | Item | Value |
 | --- | --- |
 | Value owner | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeValues.c` |
-| State key | None. |
-| Volume helper | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_volume_creation_date` |
+| State key | Managed by `LHMitigationCopyStablePastTime` with `LHGeneratedPolicySeed_volume_creation_date`. |
+| Volume helper | `LHMitigationCopyStablePastTime` with `LHGeneratedPolicySeed_volume_creation_date` |
 | Value shape | `double` Unix timestamp returned to Foundation as an `NSDate`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
-| Volume range | Derived inside the documented Unix timestamp range from 2020-01-01 UTC up to 2025-01-01 UTC. |
-| Storage behavior | No mitigation-owned state blob; stability comes from seed, policy seed, scope, and the fixed documented range. |
+| Volume range | Created between 30 days and 2 years before first generation for the active scope. |
+| Storage behavior | The mitigationkit stable-time helper keeps the generated volume time stable across relaunches for the same scope. |
 | Temporal dependency | The boot-time mitigation also declares `volume_creation_date` and derives its boot time after this baseline. |
 
-The volume creation date is owned by this mitigation. Other mitigations that need to agree with it must declare the same `volume_creation_date` policy seed identifier and reproduce the documented computation.
+The volume creation date is owned by this mitigation. Other mitigations that need to agree with it must declare the same `volume_creation_date` policy seed identifier and reproduce the documented relative range.
 
 ## Impact And Tradeoffs
 

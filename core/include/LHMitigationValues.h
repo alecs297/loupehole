@@ -2,6 +2,7 @@
 #define LH_MITIGATION_VALUES_H
 
 #include "LHBuildConfig.h"
+#include "LHPolicyEngine.h"
 #include "LHScope.h"
 #include "LHSeed.h"
 #include "LHStateProvider.h"
@@ -59,6 +60,20 @@ LH_INTERNAL bool LHMitigationDeriveTimeIntervalBetween(const LHSeed *seed,
                                                        double *output);
 /** Converts a policy seed into a state key label for mitigation-owned persisted state. */
 LH_INTERNAL LHStateKey LHMitigationStateKeyFromPolicySeed(const LHPolicySeed *policySeed, uint32_t schemaVersion);
+/** Loads or creates a stable timestamp in `[lowerInclusive, upperExclusive)`. */
+LH_INTERNAL bool LHMitigationCopyStableTimeIntervalBetween(const LHPolicyEngine *engine,
+                                                           const LHPolicySeed *policySeed,
+                                                           uint32_t schemaVersion,
+                                                           double lowerInclusive,
+                                                           double upperExclusive,
+                                                           double *output);
+/** Loads or creates a stable timestamp between `minimumAgeSeconds` and `maximumAgeSeconds` before now. */
+LH_INTERNAL bool LHMitigationCopyStablePastTime(const LHPolicyEngine *engine,
+                                                const LHPolicySeed *policySeed,
+                                                uint32_t schemaVersion,
+                                                uint64_t minimumAgeSeconds,
+                                                uint64_t maximumAgeSeconds,
+                                                double *output);
 
 #ifdef __cplusplus
 }

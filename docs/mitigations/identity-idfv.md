@@ -8,7 +8,7 @@ The IDFV option replaces the app-visible vendor identifier with a scoped UUID de
 | --- | --- |
 | Option ID | `identity.idfv` |
 | Implemented mitigation | `identity.idfv.uidevice.scoped_uuid` |
-| Policy seeds | `identifier_for_vendor.value` |
+| Policy seeds | `identifier_for_vendor` |
 | User-facing name | Vendor identifier |
 | Status | Experimental |
 | Surface | Device identity |

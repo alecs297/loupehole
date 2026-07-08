@@ -8,7 +8,7 @@ The boot-time option normalizes app-visible device lifetime values. It covers pa
 | --- | --- |
 | Option ID | `system.boot_time` |
 | Implemented mitigation | `system.boot_time.composite.synthetic` |
-| Policy seeds | `boot_time_state`, `boot_time`, `volume_creation_date` |
+| Policy seeds | `boot_time`, `volume_creation_date` |
 | User-facing name | Device boot time |
 | Status | Experimental |
 | Surface | System lifetime |
@@ -48,7 +48,6 @@ The hook backend attempts direct function patching and imported-symbol rebinding
 The boot-time mitigation declares:
 
 ```c
-LH_POLICY_SEED(boot_time_state)
 LH_POLICY_SEED(boot_time)
 LH_POLICY_SEED(volume_creation_date)
 ```
@@ -56,13 +55,13 @@ LH_POLICY_SEED(volume_creation_date)
 | Item | Value |
 | --- | --- |
 | Value owner | `src/mitigations/system/boot_time/BootTimeValues.c` |
-| State key | `LHMitigationStateKeyFromPolicySeed(&LHGeneratedPolicySeed_boot_time_state, 1)` |
-| Boot helper | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_boot_time` |
-| Volume baseline | `LHMitigationDeriveTimeIntervalBetween` with `LHGeneratedPolicySeed_volume_creation_date` |
+| State key | Managed by `LHMitigationCopyStableTimeIntervalBetween` with `LHGeneratedPolicySeed_boot_time`. |
+| Boot helper | `LHMitigationCopyStableTimeIntervalBetween` with `LHGeneratedPolicySeed_boot_time` |
+| Volume baseline | `LHMitigationCopyStablePastTime` with `LHGeneratedPolicySeed_volume_creation_date` |
 | Value shape | `struct timeval` with microseconds set to `0`. |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
-| Boot range | Between the documented volume-creation baseline and current wall clock, constrained to at least 6 hours before `now` and normally inside a 14-day lookback window. |
-| Storage behavior | `LHPolicyEngineLoadOrCreateState` keeps the generated boot time stable across relaunches for the same scope. |
+| Boot range | Created after the documented volume-creation baseline, at least 6 hours before first generation, and normally inside a 14-day lookback window at first generation. |
+| Storage behavior | The mitigationkit stable-time helper keeps the generated boot time stable across relaunches for the same scope. |
 | Temporal dependency | `volumeCreationTime < bootTime < now`. |
 
 The boot-time mitigation intentionally declares and uses `volume_creation_date` so it can reproduce the storage mitigation's volume baseline before choosing a later boot time. This is per-mitigation coherence, not a shared state module.

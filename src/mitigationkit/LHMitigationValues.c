@@ -1,8 +1,15 @@
 #include "LHMitigationValues.h"
 
 #include <string.h>
+#include <time.h>
 
 #define LH_UUID_STRING_LENGTH 37
+
+typedef struct LHMitigationStableTimeContext {
+    const LHPolicySeed *policySeed;
+    double lowerInclusive;
+    double upperExclusive;
+} LHMitigationStableTimeContext;
 
 /** Adapts a mitigation policy seed to the derivation-label ABI. */
 static void LHMitigationPolicySeedToLabel(const LHPolicySeed *policySeed, LHDerivationLabel *label) {
@@ -156,4 +163,87 @@ LHStateKey LHMitigationStateKeyFromPolicySeed(const LHPolicySeed *policySeed, ui
     }
     key.schemaVersion = schemaVersion;
     return key;
+}
+
+/** Generates a stable timestamp inside caller-provided bounds. */
+static bool LHMitigationGenerateStableTimeInterval(const LHRuntimeConfig *config,
+                                                   const LHAppContext *context,
+                                                   void *generatorContext,
+                                                   uint8_t *output,
+                                                   size_t outputLength) {
+    LHMitigationStableTimeContext *timeContext = (LHMitigationStableTimeContext *)generatorContext;
+    if (config == 0 ||
+        context == 0 ||
+        timeContext == 0 ||
+        timeContext->policySeed == 0 ||
+        output == 0 ||
+        outputLength != sizeof(double) ||
+        !(timeContext->upperExclusive > timeContext->lowerInclusive)) {
+        return false;
+    }
+
+    double timestamp = 0.0;
+    if (!LHMitigationDeriveTimeIntervalBetween(&config->buildSeed,
+                                               timeContext->policySeed,
+                                               &context->scope,
+                                               timeContext->lowerInclusive,
+                                               timeContext->upperExclusive,
+                                               &timestamp)) {
+        return false;
+    }
+
+    memcpy(output, &timestamp, sizeof(timestamp));
+    return true;
+}
+
+/** Loads or creates a stable timestamp in `[lowerInclusive, upperExclusive)`. */
+bool LHMitigationCopyStableTimeIntervalBetween(const LHPolicyEngine *engine,
+                                               const LHPolicySeed *policySeed,
+                                               uint32_t schemaVersion,
+                                               double lowerInclusive,
+                                               double upperExclusive,
+                                               double *output) {
+    if (engine == 0 || policySeed == 0 || output == 0 || !(upperExclusive > lowerInclusive)) {
+        return false;
+    }
+
+    LHMitigationStableTimeContext context = {
+        .policySeed = policySeed,
+        .lowerInclusive = lowerInclusive,
+        .upperExclusive = upperExclusive,
+    };
+    LHStateKey key = LHMitigationStateKeyFromPolicySeed(policySeed, schemaVersion);
+    return LHPolicyEngineLoadOrCreateState(engine,
+                                           &key,
+                                           (uint8_t *)output,
+                                           sizeof(*output),
+                                           LHMitigationGenerateStableTimeInterval,
+                                           &context,
+                                           0);
+}
+
+/** Loads or creates a stable timestamp between `minimumAgeSeconds` and `maximumAgeSeconds` before now. */
+bool LHMitigationCopyStablePastTime(const LHPolicyEngine *engine,
+                                    const LHPolicySeed *policySeed,
+                                    uint32_t schemaVersion,
+                                    uint64_t minimumAgeSeconds,
+                                    uint64_t maximumAgeSeconds,
+                                    double *output) {
+    if (maximumAgeSeconds <= minimumAgeSeconds) {
+        return false;
+    }
+
+    time_t now = time(0);
+    if (now <= 0) {
+        return false;
+    }
+
+    double upperExclusive = (double)now - (double)minimumAgeSeconds;
+    double lowerInclusive = (double)now - (double)maximumAgeSeconds;
+    return LHMitigationCopyStableTimeIntervalBetween(engine,
+                                                     policySeed,
+                                                     schemaVersion,
+                                                     lowerInclusive,
+                                                     upperExclusive,
+                                                     output);
 }

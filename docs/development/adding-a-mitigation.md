@@ -88,6 +88,8 @@ Prefer helpers in `LHMitigationValues.h` over ad hoc derivation:
 | `LHMitigationDeriveASCIIString` | Stable opaque strings from an alphabet. |
 | `LHMitigationDeriveTimeIntervalBetween` | Timestamp inside an interval. |
 | `LHMitigationStateKeyFromPolicySeed` | State key labels from policy seeds. |
+| `LHMitigationCopyStableTimeIntervalBetween` | Persisted timestamp inside caller-provided bounds. |
+| `LHMitigationCopyStablePastTime` | Persisted timestamp within a relative age window before now. |
 
 Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/mitigationkit/` only when it removes repeated value-shaping code from multiple mitigations or clarifies a tricky invariant.
 
