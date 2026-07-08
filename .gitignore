@@ -1,9 +1,11 @@
 .research/
 .DS_Store
 .theos/
-packages/tweak/.theos/
-packages/tweak/core/
-packages/tweak/packages/
+packaging/theos/.theos/
+packaging/theos/core/
+packaging/theos/src/
+packaging/theos/ui/
+packaging/theos/packages/
 core/generated/
-packages/tweak/generated/
+packaging/theos/generated/
 dist/

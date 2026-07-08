@@ -306,10 +306,10 @@ cc \
   -DLH_PREFERENCES_TESTING=1 \
   -Icore/include \
   -Icore/generated \
-  -Ipackages/tweak/generated \
-  -Ipackages/tweak/prefs \
-  packages/tweak/prefs/LHPreferenceStore.m \
-  packages/tweak/generated/LHGeneratedPreferenceMetadata.c \
+  -Ipackaging/theos/generated \
+  -Iui/preferences \
+  ui/preferences/LHPreferenceStore.m \
+  packaging/theos/generated/LHGeneratedPreferenceMetadata.c \
   core/generated/LHGeneratedConfig.c \
   "$tmpdir/preference_store_check.m" \
   -framework Foundation \

@@ -386,8 +386,10 @@ def selected_source_paths(selected):
 
 def core_derivation_label_source_paths():
     sources = []
-    for pattern in ("core/src/*.c", "core/src/*.m", "core/src/*.mm"):
-        sources.extend(str(path.relative_to(ROOT)) for path in sorted(ROOT.glob(pattern)))
+    for folder in ("src/runtime", "src/tweakkit"):
+        root = ROOT / folder
+        for suffix in ("*.c", "*.m", "*.mm"):
+            sources.extend(str(path.relative_to(ROOT)) for path in sorted(root.rglob(suffix)))
     return sources
 
 
@@ -407,7 +409,7 @@ def emit_make_fragment(selected, loader_basename):
     weak_frameworks = []
     libraries = []
     for item in selected:
-        sources.extend(os.path.relpath(ROOT / source, ROOT / "packages/tweak") for source in item["sources"])
+        sources.extend(os.path.relpath(ROOT / source, ROOT / "packaging/theos") for source in item["sources"])
         frameworks.extend(item["frameworks"])
         weak_frameworks.extend(item["weakFrameworks"])
         libraries.extend(item["libraries"])
@@ -421,7 +423,7 @@ def emit_make_fragment(selected, loader_basename):
         "LH_SELECTED_LIBRARIES := " + make_words(libraries),
         "",
     ]
-    write_file(ROOT / "packages/tweak/generated/mitigation-files.mk", "\n".join(lines))
+    write_file(ROOT / "packaging/theos/generated/mitigation-files.mk", "\n".join(lines))
 
 
 def emit_registry(catalog_items, selected):
@@ -629,12 +631,12 @@ def emit_preference_metadata(selected):
         "",
     ])
 
-    write_file(ROOT / "packages/tweak/generated/LHGeneratedPreferenceMetadata.h", header)
-    write_file(ROOT / "packages/tweak/generated/LHGeneratedPreferenceMetadata.c", source)
+    write_file(ROOT / "packaging/theos/generated/LHGeneratedPreferenceMetadata.h", header)
+    write_file(ROOT / "packaging/theos/generated/LHGeneratedPreferenceMetadata.c", source)
 
 
 def emit_package_layout(package_state_parent, package_seed_root_directory, package_root_seed_file, package_policy_file, package_loader_basename_value, selected):
-    layout_dir = ROOT / "packages/tweak/generated/package-layout"
+    layout_dir = ROOT / "packaging/theos/generated/package-layout"
     if layout_dir.exists():
         shutil.rmtree(layout_dir)
 

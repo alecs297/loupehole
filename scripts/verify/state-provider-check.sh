@@ -217,11 +217,11 @@ HOME="$tmpdir" cc \
   -Icore/generated \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
-  core/src/LHAppContext.m \
-  core/src/LHConfig.c \
-  core/src/LHScope.c \
-  core/src/LHSeed.c \
-  core/src/LHStateProvider.m \
+  src/runtime/context/LHAppContext.m \
+  src/runtime/config/LHConfig.c \
+  src/runtime/scope/LHScope.c \
+  src/runtime/seeds/LHSeed.c \
+  src/runtime/state/LHStateProvider.m \
   "$tmpdir/state_check.m" \
   -framework Foundation \
   -o "$tmpdir/state_check"

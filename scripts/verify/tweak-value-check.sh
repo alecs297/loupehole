@@ -74,20 +74,20 @@ cc \
   -DLH_STATE_TESTING=1 \
   -Icore/include \
   -Icore/generated \
-  -Ipackages/tweak/sources \
+  -Isrc/tweaks \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
   core/generated/LHGeneratedPolicySeeds.c \
-  core/src/LHAppContext.m \
-  core/src/LHConfig.c \
-  core/src/LHConfigProvider.m \
-  core/src/LHPolicyEngine.c \
-  core/src/LHScope.c \
-  core/src/LHSeed.c \
-  core/src/LHSeedProvider.m \
-  core/src/LHStateProvider.m \
-  core/src/LHTweakValues.c \
-  packages/tweak/sources/common/temporal/TemporalLifetimeValues.c \
+  src/runtime/context/LHAppContext.m \
+  src/runtime/config/LHConfig.c \
+  src/runtime/config/LHConfigProvider.m \
+  src/runtime/engine/LHPolicyEngine.c \
+  src/runtime/scope/LHScope.c \
+  src/runtime/seeds/LHSeed.c \
+  src/runtime/seeds/LHSeedProvider.m \
+  src/runtime/state/LHStateProvider.m \
+  src/tweakkit/LHTweakValues.c \
+  src/tweaks/common/temporal/TemporalLifetimeValues.c \
   "$tmpdir/tweak_value_check.m" \
   -framework Foundation \
   -o "$tmpdir/tweak_value_check"
@@ -125,14 +125,14 @@ cc \
   -Icore/generated \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
-  core/src/LHAppContext.m \
-  core/src/LHConfig.c \
-  core/src/LHConfigProvider.m \
-  core/src/LHPolicyEngine.c \
-  core/src/LHScope.c \
-  core/src/LHSeed.c \
-  core/src/LHSeedProvider.m \
-  core/src/LHStateProvider.m \
+  src/runtime/context/LHAppContext.m \
+  src/runtime/config/LHConfig.c \
+  src/runtime/config/LHConfigProvider.m \
+  src/runtime/engine/LHPolicyEngine.c \
+  src/runtime/scope/LHScope.c \
+  src/runtime/seeds/LHSeed.c \
+  src/runtime/seeds/LHSeedProvider.m \
+  src/runtime/state/LHStateProvider.m \
   "$tmpdir/package_enablement_check.m" \
   -framework Foundation \
   -o "$tmpdir/package_enablement_check"

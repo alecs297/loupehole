@@ -13,7 +13,7 @@
     {
       "id": "identity.idfv.uidevice.scoped_uuid",
       "sources": [
-        "packages/tweak/sources/identity/idfv/IDFVMitigation.m"
+        "src/tweaks/identity/idfv/IDFVMitigation.m"
       ],
       "status": "experimental",
       "optionDoc": "docs/mitigations/identity-idfv.md"
@@ -21,10 +21,10 @@
     {
       "id": "system.boot_time.composite.synthetic",
       "sources": [
-        "packages/tweak/sources/system/boot_time/BootTimeMitigation.m",
-        "packages/tweak/sources/system/boot_time/BootTimeSysctlMitigation.c",
-        "packages/tweak/sources/system/boot_time/BootTimeProcessInfoMitigation.m",
-        "packages/tweak/sources/common/temporal/TemporalLifetimeValues.c"
+        "src/tweaks/system/boot_time/BootTimeMitigation.m",
+        "src/tweaks/system/boot_time/BootTimeSysctlMitigation.c",
+        "src/tweaks/system/boot_time/BootTimeProcessInfoMitigation.m",
+        "src/tweaks/common/temporal/TemporalLifetimeValues.c"
       ],
       "conflicts": [],
       "frameworks": [
@@ -36,8 +36,8 @@
     {
       "id": "storage.volume_creation_time.foundation.synthetic",
       "sources": [
-        "packages/tweak/sources/storage/volume_creation_time/VolumeCreationTimeMitigation.m",
-        "packages/tweak/sources/common/temporal/TemporalLifetimeValues.c"
+        "src/tweaks/storage/volume_creation_time/VolumeCreationTimeMitigation.m",
+        "src/tweaks/common/temporal/TemporalLifetimeValues.c"
       ],
       "frameworks": [
         "Foundation"

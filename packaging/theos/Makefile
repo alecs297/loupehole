@@ -15,32 +15,32 @@ TWEAK_NAME := $(LH_LOADER_BASENAME)
 BUNDLE_NAME := LoupeholePreferences
 
 $(LH_LOADER_BASENAME)_FILES := \
-	sources/Runtime.mm \
+	../../src/runtime/entry/Runtime.mm \
 	$(LH_SELECTED_MITIGATION_SOURCES) \
 	../../core/generated/LHGeneratedConfig.c \
 	../../core/generated/LHGeneratedDerivationLabels.c \
 	../../core/generated/LHGeneratedMitigationRegistry.c \
 	../../core/generated/LHGeneratedPolicySeeds.c \
-	../../core/src/LHAppContext.m \
-	../../core/src/LHConfig.c \
-	../../core/src/LHConfigProvider.m \
-	../../core/src/LHCompatibility.c \
-	../../core/src/LHHookBackend.c \
-	../../core/src/LHHookBackendTheos.c \
-	../../core/src/LHModuleRegistry.c \
-	../../core/src/LHPolicyEngine.c \
-	../../core/src/LHRuntime.m \
-	../../core/src/LHScope.c \
-	../../core/src/LHSeed.c \
-	../../core/src/LHSeedProvider.m \
-	../../core/src/LHStateProvider.m \
-	../../core/src/LHTweakValues.c \
-	../../core/src/LHValueQuantizer.c
+	../../src/runtime/context/LHAppContext.m \
+	../../src/runtime/config/LHConfig.c \
+	../../src/runtime/config/LHConfigProvider.m \
+	../../src/runtime/engine/LHCompatibility.c \
+	../../src/runtime/hooks/LHHookBackend.c \
+	../../src/runtime/hooks/LHHookBackendTheos.c \
+	../../src/runtime/engine/LHModuleRegistry.c \
+	../../src/runtime/engine/LHPolicyEngine.c \
+	../../src/runtime/engine/LHRuntime.m \
+	../../src/runtime/scope/LHScope.c \
+	../../src/runtime/seeds/LHSeed.c \
+	../../src/runtime/seeds/LHSeedProvider.m \
+	../../src/runtime/state/LHStateProvider.m \
+	../../src/tweakkit/LHTweakValues.c \
+	../../src/tweakkit/LHValueQuantizer.c
 
 $(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \
 	-I../../core/generated \
-	-Isources \
+	-I../../src/tweaks \
 	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
 	-fvisibility=hidden \
 	-fdata-sections \
@@ -61,8 +61,8 @@ $(LH_LOADER_BASENAME)_WEAK_FRAMEWORKS := $(LH_SELECTED_WEAK_FRAMEWORKS)
 $(LH_LOADER_BASENAME)_LIBRARIES := $(LH_SELECTED_LIBRARIES)
 
 LoupeholePreferences_FILES := \
-	prefs/LHPreferenceStore.m \
-	prefs/LHPreferenceControllers.m \
+	../../ui/preferences/LHPreferenceStore.m \
+	../../ui/preferences/LHPreferenceControllers.m \
 	generated/LHGeneratedPreferenceMetadata.c \
 	../../core/generated/LHGeneratedConfig.c
 
@@ -80,14 +80,14 @@ LoupeholePreferences_CFLAGS += \
 	-Werror \
 	-DLH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
 LoupeholePreferences_LDFLAGS += -undefined dynamic_lookup
-LoupeholePreferences_RESOURCE_DIRS := prefs/Resources
+LoupeholePreferences_RESOURCE_DIRS := ../../ui/preferences/Resources
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 include $(THEOS_MAKE_PATH)/bundle.mk
 
 internal-stage::
 	$(ECHO_NOTHING)mkdir -p $(THEOS_STAGING_DIR)/Library/PreferenceLoader/Preferences$(ECHO_END)
-	$(ECHO_NOTHING)cp prefs/entry.plist $(THEOS_STAGING_DIR)/Library/PreferenceLoader/Preferences/Loupehole.plist$(ECHO_END)
+	$(ECHO_NOTHING)cp ../../ui/preferences/entry.plist $(THEOS_STAGING_DIR)/Library/PreferenceLoader/Preferences/Loupehole.plist$(ECHO_END)
 
 # dpkg-deb --root-owner-group makes fakeroot unnecessary for this deb, and
 # avoids host SYSV IPC failures from faked during local package builds.

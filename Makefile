@@ -15,13 +15,13 @@ THEOS_OBJ_CONFIG := release
 endif
 
 LOADER_BASENAME = $(shell awk -F'"' '/LHGeneratedConfigPackageLoaderBaseName/ { print $$2; found = 1 } END { if (!found) print "runtime" }' core/generated/LHGeneratedConfig.c 2>/dev/null || printf runtime)
-TARGET_DYLIB ?= packages/tweak/.theos/obj/$(LOADER_BASENAME).dylib
+TARGET_DYLIB ?= packaging/theos/.theos/obj/$(LOADER_BASENAME).dylib
 ARTIFACT_DIR ?= dist
 FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 PACKAGE_NAME ?= com.loupehole.runtime
 PACKAGE_VERSION ?= 0.1.0
 PACKAGE_ARCH ?= iphoneos-arm64
-TARGET_DEB ?= packages/tweak/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
+TARGET_DEB ?= packaging/theos/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 
 export LH_ENABLE_VARIABILITY ?= 1
@@ -33,12 +33,12 @@ export LH_EMBED_BUILD_SEED ?= 1
 all: copy-artifact
 
 build: generate
-	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED)
 
 package: package-verify
 
 package-build: generate
-	$(MAKE) -C packages/tweak THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 package
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 package
 
 copy-package: package-build
 	mkdir -p "$(ARTIFACT_DIR)"
@@ -51,8 +51,8 @@ generate:
 	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --selection "$(BUILD_SELECTION)"
 
 clean:
-	$(MAKE) -C packages/tweak THEOS="$(THEOS)" clean
-	rm -rf packages/tweak/packages
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" clean
+	rm -rf packaging/theos/packages
 	rm -rf "$(ARTIFACT_DIR)"
 
 sign: build

@@ -290,10 +290,10 @@ HOME="$tmpdir" cc \
   -Icore/generated \
   core/generated/LHGeneratedConfig.c \
   core/generated/LHGeneratedDerivationLabels.c \
-  core/src/LHConfig.c \
-  core/src/LHScope.c \
-  core/src/LHSeed.c \
-  core/src/LHSeedProvider.m \
+  src/runtime/config/LHConfig.c \
+  src/runtime/scope/LHScope.c \
+  src/runtime/seeds/LHSeed.c \
+  src/runtime/seeds/LHSeedProvider.m \
   "$tmpdir/seed_provider_check.m" \
   -framework Foundation \
   -o "$tmpdir/seed_provider_check"

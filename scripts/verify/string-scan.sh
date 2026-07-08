@@ -13,9 +13,9 @@ trap 'rm -f "$tmp"' EXIT
 
 strings -a "$artifact" >"$tmp"
 
-if grep -E 'Loupehole|loupehole|docs/|README|implementation-checklist|spoofing-option-policy|core/|packages/tweak' "$tmp" >/dev/null; then
+if grep -E 'Loupehole|loupehole|docs/|README|implementation-checklist|spoofing-option-policy|core/|packaging/theos' "$tmp" >/dev/null; then
   printf '%s\n' "string scan failed"
-  grep -E 'Loupehole|loupehole|docs/|README|implementation-checklist|spoofing-option-policy|core/|packages/tweak' "$tmp"
+  grep -E 'Loupehole|loupehole|docs/|README|implementation-checklist|spoofing-option-policy|core/|packaging/theos' "$tmp"
   exit 1
 fi
 
