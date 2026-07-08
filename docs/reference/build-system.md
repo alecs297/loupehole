@@ -1,6 +1,6 @@
-# Build system reference
+# Build System Reference
 
-## Root Makefile contract
+## Root Makefile Contract
 
 The root Makefile centralizes generation, Theos invocation, signing, artifact copying, package verification, and static checks.
 
@@ -10,11 +10,11 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `CONFIG` | `release` | Theos configuration; `debug` switches debug-oriented settings. |
 | `PYTHON` | `python3` | Generator interpreter. |
 | `MITIGATION_CATALOG` | `config/mitigations.json` | Mitigation catalog input. |
-| `POLICY_VALUE_CATALOG` | `config/policy-values.json` | Typed policy-value catalog input. |
 | `BUILD_SELECTION` | `config/build.default.json` | Build profile input. |
 | `ARTIFACT_DIR` | `dist` | Final copied artifact directory. |
 | `LH_ENABLE_VARIABILITY` | `1` | Build variability feature flag. |
 | `LH_ENABLE_DIAGNOSTICS` | `0` | Diagnostics feature flag. |
+| `LH_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed for standalone dylib builds; package builds force `0`. |
 
 ## Targets
 
@@ -26,28 +26,38 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `make copy-artifact` | Copies signed runtime to `dist/runtime.dylib`. |
 | `make audit` | Builds/copies the dylib and runs all static verification gates. |
 | `make package` | Runs package verification, builds rootless package, copies final `.deb`. |
-| `make package-build` | Generates inputs and invokes Theos package build with package state provider. |
+| `make package-build` | Generates inputs and invokes Theos package build with package state provider and no embedded build seed. |
 | `make package-verify` | Validates copied `.deb` package layout. |
 | `make generate` | Runs `scripts/build/generate-mitigation-build.py`. |
 | `make clean` | Removes build/package artifacts and `dist`. |
 
-## Generation inputs and outputs
+## Generation Inputs And Outputs
 
 | Input | Generated output | Purpose |
 | --- | --- | --- |
-| `config/mitigations.json` | `packages/tweak/generated/mitigation-files.mk` | Selected source and link metadata for Theos. |
-| catalogs + selection | `core/generated/LHGeneratedMitigationRegistry.[hc]` | Numeric module IDs and installers. |
-| policy-value catalog + selection | `core/generated/LHGeneratedPolicyValueRegistry.[hc]` | Typed resolver descriptors. |
-| selection / variability inputs | `core/generated/LHGeneratedConfig.c` | Compiled build configuration, seed availability, and generated names. |
-| derivation declarations | `core/generated/LHGeneratedDerivationLabels.c` | Stable generated labels for internal derivation domains. |
-| catalog / selection | package generated metadata | Preference and package build support. |
+| `config/mitigations.json` | `packaging/theos/generated/mitigation-files.mk` | Selected source and link metadata for Theos. |
+| catalog + selection | `core/generated/LHGeneratedMitigationRegistry.[hc]` | Numeric module IDs and installers. |
+| selected `LH_POLICY_SEED` declarations | `core/generated/LHGeneratedPolicySeeds.[hc]` | Compile-time policy seed bytes for selected tweaks. |
+| selection / variability inputs | `core/generated/LHGeneratedConfig.[hc]` | Compiled seed availability and generated package names. |
+| `LH_DERIVATION_LABEL` declarations | `core/generated/LHGeneratedDerivationLabels.[hc]` | Stable generated labels for internal derivation domains. |
+| catalog / selection | `packaging/theos/generated/LHGeneratedPreferenceMetadata.[hc]` | Settings UI module metadata. |
+| selection / generated names | `packaging/theos/generated/package-layout/` | Package maintainer scripts and rootless state scaffolding. |
 
-Exact generated file set may grow. The invariant is unchanged: catalog and selection remain source of truth; generated files remain disposable outputs.
+Generated files are disposable outputs. Do not hand-edit them.
 
-## Package build differences
+## Package Build Differences
 
-The standalone dylib build uses the local state provider by default. `make package-build` sets `LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage`, which enables package path/policy behavior and makes package runtime default policy conservative. The shared source set remains the same selected runtime graph.
+The standalone dylib build uses the local state provider by default and embeds the configured build seed when `LH_EMBED_BUILD_SEED=1`.
 
-## Release artifact checks
+`make package-build` sets:
 
-The root `verify` target combines seed, seed-provider, state-provider, and policy-query checks with binary inspection. `package-verify` runs a layout check against the final copied package. A clean build should always regenerate inputs before testing artifact contents.
+```sh
+LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage
+LH_EMBED_BUILD_SEED=0
+```
+
+That means the deb-mode dylib does not carry the raw selection build seed. At runtime the package creates or reads its package root seed and then resolves the active scoped seed. The runtime field remains named `buildSeed` because it is the seed value that the injected dylib uses after config and seed-provider resolution.
+
+## Release Artifact Checks
+
+The root `verify` target combines seed, seed-provider, state-provider, tweak-value, and binary-inspection checks. `package-verify` runs a layout check against the final copied package. A clean build should always regenerate inputs before testing artifact contents.

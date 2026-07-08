@@ -28,6 +28,8 @@ export LH_ENABLE_VARIABILITY ?= 1
 export LH_ENABLE_DIAGNOSTICS ?= 0
 export LH_EMBED_BUILD_SEED ?= 1
 
+# Root targets intentionally funnel through generation before build/test work so
+# ignored generated files are disposable outputs of catalog + selection.
 .PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check tweak-value-check
 
 all: copy-artifact

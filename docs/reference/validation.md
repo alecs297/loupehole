@@ -6,7 +6,7 @@ A mitigation requires evidence at four layers. Passing one layer does not substi
 
 | Layer | Evidence | Purpose |
 | --- | --- | --- |
-| Declarative | Catalog/selection generation succeeds. | Ensures source, resolver, dependency, and metadata graph is coherent. |
+| Declarative | Catalog/selection generation succeeds. | Ensures source, policy-seed, dependency, and metadata graph is coherent. |
 | Build and binary | `make audit` passes. | Guards signing, generated linkage, symbols, strings, debug behavior, and core providers. |
 | Package | `make package` and package layout checks pass. | Verifies rootless packaging, generated layout, filter/prefs placement, and dependency assumptions. |
 | Runtime | Owned-device / owned-app observation plus regressions. | Verifies actual hook reachability, fallback, coherence, and compatibility. |
@@ -18,7 +18,7 @@ A mitigation requires evidence at four layers. Passing one layer does not substi
 - derivation behavior;
 - seed-provider behavior;
 - state-provider behavior;
-- typed policy-value lookup;
+- tweak-value derivation;
 - Mach-O summary;
 - string scanning;
 - exported-symbol scanning;
@@ -59,7 +59,7 @@ A mitigation page should record enough to reproduce the claim:
 A mitigation should not enter the default build selection until it has:
 
 1. a reviewed surface page and mitigation page;
-2. explicit policy/state/scope ownership;
+2. explicit policy-seed/state/scope ownership;
 3. documented fallback and disabled behavior;
 4. catalog metadata and generator coverage;
 5. static audit and package validation;

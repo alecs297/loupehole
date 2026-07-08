@@ -18,11 +18,11 @@ Loupehole documentation is organized by the question being answered rather than 
 
 ## Core concepts
 
-- [Seeds](concepts/seeds.md) — root, instance, practical, active, and state-derived inputs.
+- [Seeds](concepts/seeds.md) — build, package root, practical, active, policy, and state-derived inputs.
 - [Build profiles](concepts/build-profiles.md) — static mitigation selection and build variability.
 - [Scopes](concepts/scopes.md) — per-install, per-app, vendor-group, and manually linked behavior.
 - [Randomization](concepts/randomization.md) — where randomness belongs and where it does not.
-- [Derivation](concepts/derivation.md) — labels, state domains, opaque names, and coherence relationships.
+- [Derivation](concepts/derivation.md) — derivation labels, policy seeds, state keys, opaque names, and coherence relationships.
 
 ## Reference
 

@@ -1,114 +1,133 @@
-# Adding and documenting a mitigation
+# Adding And Documenting A Mitigation
 
-A mitigation is a bounded change to a specific app-visible surface. It comprises research, a catalog entry, policy value(s), a thin hook adapter, a resolver/state model, generated registry participation, tests, and a detailed mitigation page. A hook alone is not a complete mitigation.
+A mitigation is a bounded change to a specific app-visible surface. It comprises research, a catalog entry, a thin hook adapter, tweak-owned value/state logic, generated registry participation, tests, and a detailed mitigation page. A hook alone is not a complete mitigation.
 
 ## Lifecycle
 
 ```mermaid
 flowchart TD
-    Research[Identify a concrete app-visible surface] --> Classify[Classify collection, permission, and risk]
-    Classify --> Model[Choose profile, scope, seed, and state model]
-    Model --> Catalog[Add catalog + policy-value entries]
-    Catalog --> Resolver[Implement typed policy resolver/state domain]
-    Resolver --> Hook[Implement minimal hook adapter]
-    Hook --> Generate[Regenerate build graph]
-    Generate --> Verify[Run static and package verification]
-    Verify --> Device[Validate on owned devices/apps]
-    Device --> Docs[Write/update surface + mitigation pages]
-    Docs --> Review[Review coherence, fallback, and claims]
+    Research["Identify one app-visible surface"] --> Classify["Classify collection, permission, and risk"]
+    Classify --> Model["Choose scope, seed, state, and coherence model"]
+    Model --> Catalog["Add mitigation catalog entry"]
+    Catalog --> Seeds["Declare tweak policy seeds in source"]
+    Seeds --> Hook["Implement hook adapter and value logic"]
+    Hook --> Generate["Regenerate build graph"]
+    Generate --> Verify["Run static and package verification"]
+    Verify --> Device["Validate on owned devices/apps"]
+    Device --> Docs["Write/update surface and mitigation pages"]
+    Docs --> Review["Review coherence, fallback, and claims"]
 ```
 
-## 1. Define the surface precisely
+## 1. Define The Surface Precisely
 
-Start with the observed API family, not a broad label such as “device identity.” Record:
+Start with the observed API family, not a broad label such as "device identity." Record:
 
 - exact classes, selectors, C symbols, resource keys, properties, or JavaScript interfaces;
-- which values are passive, active, permissioned, hardware/cohort-bound, or unavailable by platform version;
+- which values are passive, active, permissioned, hardware-bound, or unavailable by platform version;
 - the original return shape, error behavior, and size-query behavior;
 - adjacent APIs that can cross-check the same claim;
 - permission, entitlement, and user-visible behavior;
 - compatibility and detection risks.
 
-A detailed page belongs in `docs/surfaces/` after the planned rename. The surface page records research; it does not imply implementation.
+A surface page records research. It does not imply implementation.
 
-## 2. Choose the smallest safe policy model
+## 2. Choose The Smallest Safe Model
 
 Answer before writing the hook:
 
-- Is the safest behavior normalization, a shared cohort value, scoped derivation, quantization, a deliberate no-op, or pass-through?
-- Which scope mode is appropriate: per app install, per app, vendor group, or manual linked group?
+- Is the safest behavior normalization, scoped derivation, persisted state, quantization, deliberate no-op, or pass-through?
+- Which scope mode is appropriate: install, app, vendor, or manual linked group?
 - Does the value need persisted state, or can it be derived deterministically?
-- Which existing state domain or policy value must agree with it?
-- What must happen when storage, policy lookup, the original symbol, or the target selector is unavailable?
+- Which existing tweak state/value helper must agree with it?
+- What must happen when storage, seed derivation, the original symbol, or the target selector is unavailable?
 
-Use an existing state domain when it owns the required invariant. The temporal state domain, for example, owns ordering between volume creation and boot time. Do not create a second timestamp generator for an adjacent API.
+Coherence is a tweak-development responsibility, not a central profile feature. If two values must agree, make the involved tweaks share the same helper or reproduce the same computation from the same policy seed. Do not introduce a global coherence profile or cohort profile.
 
-## 3. Add declarative metadata
+## 3. Add Declarative Metadata
 
-Add a mitigation entry in `config/mitigations.json` with, as applicable:
+Add a mitigation entry in `config/mitigations.json` with:
 
 - stable string `id`;
 - source list;
-- policy-value IDs;
-- language;
 - status;
-- required frameworks, weak frameworks, libraries;
+- required frameworks, weak frameworks, and libraries;
 - conflicts and platform requirements;
 - `optionDoc` path under `docs/mitigations/`.
 
-Add each policy value to `config/policy-values.json` with:
+Do not add centralized value fields or source-language metadata. Do not create or restore a centralized value catalog.
 
-- a stable value `id`;
-- typed `kind`;
-- resolver symbol;
-- resolver source list.
+Add the mitigation ID to `config/build.default.json` only when it should be compiled in the default profile. The default selection is not a dumping ground for unvalidated modules.
 
-Add the mitigation ID to the default selection file only when it should be compiled in that profile. The default selection is not a dumping ground for unvalidated modules.
+## 4. Declare Policy Seeds In The Tweak
 
-## 4. Implement the resolver and state domain
+Use `LH_POLICY_SEED(domain, name, "literal")` in selected source:
 
-A policy resolver has ownership of value construction. It receives a typed request and returns a typed response through the policy engine. It may derive bytes from the active seed, load or create a versioned state blob, quantize a profile value, or combine those mechanisms.
+```c
+LH_POLICY_SEED(storage_volume, creation_date, "volume_creation_date")
+```
 
-Resolver rules:
+The generator hashes the build seed and literal at compile time and emits generated policy seed bytes. The literal should not appear in the built artifact.
 
-- validate output shape before returning it;
-- document state schema and lifetime;
-- avoid returning a second unrelated fallback value when primary state fails.
+Rules:
 
-## 5. Implement a thin hook adapter
+- pass both the active/practical seed and policy seed to tweakkit helpers;
+- use a distinct policy seed for each semantic identifier or random stream;
+- reuse the same literal only when two tweaks intentionally need the same policy seed;
+- list every policy seed literal and meaning in the mitigation page;
+- treat a policy seed literal change as a compatibility change because derived values rotate.
+
+## 5. Use The Tweakkit Helpers
+
+Prefer helpers in `LHTweakValues.h` over ad hoc derivation:
+
+| Helper | Use |
+| --- | --- |
+| `LHTweakDeriveBytes` | Raw deterministic bytes with optional context. |
+| `LHTweakDeriveU64` | Numeric stream input. |
+| `LHTweakDeriveBoundedU64` | Bounded numeric choice. |
+| `LHTweakDeriveUUIDString` | Stable UUID strings. |
+| `LHTweakDeriveASCIIString` | Stable opaque strings from an alphabet. |
+| `LHTweakDeriveTimeIntervalBetween` | Timestamp inside an interval. |
+| `LHTweakStateKeyFromPolicySeed` | State key labels from policy seeds. |
+
+Every helper takes the active/practical seed and policy seed as minimum derivation inputs. Add a new helper to `src/tweakkit/` only when it removes repeated value-shaping code from multiple tweaks or clarifies a tricky invariant.
+
+## 6. Implement A Thin Hook Adapter
 
 The hook should:
 
 1. identify only the supported query shape;
-2. call the policy engine for the expected typed value;
-3. adapt the value to the original API’s shape;
+2. derive or load the documented value through tweakkit/runtime helpers;
+3. adapt the value to the original API shape;
 4. preserve normal errors, output sizing, and unrelated request behavior;
-5. pass through on lookup, parsing, coherence, installation, or availability failure.
+5. pass through on derivation, parsing, coherence, installation, or availability failure.
 
-Pick the hook mechanism through `LHHookBackend`: Objective-C message replacement for a selector, function patching for a direct function, and imported-symbol rebinding where callers can bypass a public wrapper. Keep original implementation pointers and never assume an original is always available.
+Use `LHHookBackend` for the hook mechanism: Objective-C message replacement for a selector, function patching for a direct function, and imported-symbol rebinding where callers can bypass a public wrapper. Keep original implementation pointers and never assume an original is always available.
 
-## 6. Generate, build, and validate
+## 7. Generate, Build, And Validate
 
 ```sh
 make audit
 make package
 ```
 
-## 7. Document the implemented behavior
+Add or update focused verifier coverage when the change touches seed derivation, package policy, state lifetime, or generated output.
 
-Create a page in `docs/mitigations/` after the directory rename. Use the shared layout:
+## 8. Document The Implemented Behavior
 
-1. metadata — option ID, mitigation ID, status, surface, affected APIs, default behavior, permissions;
+Create or update a page in `docs/mitigations/`. Use this layout:
+
+1. metadata: option ID, mitigation ID, status, surface, affected APIs, default behavior, permissions;
 2. original API behavior and fingerprinting relevance;
 3. exact hook coverage and untouched adjacent APIs;
-4. policy value, derivation labels, state owner, scope, lifetime, and dependencies;
+4. policy seeds, derivation helpers, state owner, scope, lifetime, and dependencies;
 5. impact, compatibility risk, and detection risk;
 6. validation evidence and expected observations;
 7. rollback and pass-through behavior.
 
-Update the related surface page, the root mitigation table when the selected set changes, the status page, catalog reference, validation reference, and `AGENTS.md` source map.
+Update the related surface page, root mitigation table when the selected set changes, status page, catalog reference, validation reference, and `AGENTS.md` source map.
 
-## Review stop conditions
+## Review Stop Conditions
 
 The mitigation is not ready to merge when any of these remain unclear:
 
@@ -116,6 +135,7 @@ The mitigation is not ready to merge when any of these remain unclear:
 - the hook creates a value on error rather than passing through;
 - state or scope lifetime is not specified;
 - the catalog and detailed page disagree;
+- a policy seed is undocumented or reused accidentally;
 - a user-facing toggle changes more than its documented surface;
 - validation claims are broader than the observed evidence;
 - a literal project marker is added to target-process behavior.

@@ -23,12 +23,11 @@ flowchart TD
 
 | Area | Purpose |
 | --- | --- |
-| `packages/tweak/Makefile` | Defines the arm64 rootless Theos build, dylib sources, generated inputs, Foundation linkage, and preference bundle. |
-| `packages/tweak/control` | Debian package metadata and runtime dependencies. |
-| `packages/tweak/Filter.plist` | Source template for the injection filter. The installed filter uses the generated loader basename. |
-| `packages/tweak/filters/` | Documents the filter policy and package injection model. |
-| `packages/tweak/prefs/` | Preference store, controllers, Settings resources, and PreferenceLoader entry plist. |
-| `packages/tweak/generated/` | Generated package-specific build and preference metadata. |
+| `packaging/theos/Makefile` | Defines the arm64 rootless Theos build, dylib sources, generated inputs, Foundation linkage, and preference bundle. |
+| `packaging/theos/control` | Debian package metadata and runtime dependencies. |
+| `packaging/theos/Filter.plist` | Source template for the injection filter. The installed filter uses the generated loader basename. |
+| `ui/preferences/` | Preference store, controllers, Settings resources, and PreferenceLoader entry plist. |
+| `packaging/theos/generated/` | Generated package-specific build and preference metadata. |
 | `scripts/verify/package-layout-check.sh` | Verifies expected package layout after package build. |
 
 ## Injection and runtime guards
@@ -62,4 +61,4 @@ A feature that changes state-file formats, generated loader names, filter format
 
 ## Standalone dylib versus package mode
 
-The standalone dylib uses the same selected sources and policy engine, but builds with the local state provider by default. Package builds set `LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage`. The distinction matters for policy defaults, root seed storage, package paths, Settings integration, and test assumptions; it must remain visible in documentation and validation.
+The standalone dylib uses the same selected sources and policy engine, but builds with the local state provider by default and may embed the configured build seed. Package builds set `LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage` and `LH_EMBED_BUILD_SEED=0`; the raw selection build seed is not present in the deb-mode dylib. The distinction matters for policy defaults, root seed storage, package paths, Settings integration, and test assumptions; it must remain visible in documentation and validation.

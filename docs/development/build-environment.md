@@ -21,9 +21,9 @@ The root Makefile resolves `THEOS` from `THEOS_HOME` when present, otherwise fro
 ```mermaid
 flowchart LR
     Catalog[config/mitigations.json] --> Gen[generate-mitigation-build.py]
-    Values[config/policy-values.json] --> Gen
     Selection[config/build.default.json] --> Gen
-    Gen --> Generated[core/generated + packages/tweak/generated]
+    Sources[Selected source policy-seed declarations] --> Gen
+    Gen --> Generated[core/generated + packaging/theos/generated]
     Generated --> Theos[Theos build]
     Theos --> Dylib[Theos runtime dylib]
     Dylib --> Sign[ldid signing]
@@ -61,8 +61,8 @@ make clean
 | --- | --- | --- |
 | Standalone dylib | `dist/runtime.dylib` | Signed result of the selected build. |
 | Debian package | `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb` | Rootless package generated from the same runtime selection. |
-| Intermediate dylib | `packages/tweak/.theos/obj/<generated-loader-basename>.dylib` | Loader basename is generated; it is not a fixed runtime identity. |
-| Theos package | `packages/tweak/packages/<package>_<version>_<arch>.deb` | Copied after package verification. |
+| Intermediate dylib | `packaging/theos/.theos/obj/<generated-loader-basename>.dylib` | Loader basename is generated; it is not a fixed runtime identity. |
+| Theos package | `packaging/theos/packages/<package>_<version>_<arch>.deb` | Copied after package verification. |
 
 ## Verification gates
 
@@ -71,7 +71,7 @@ make clean
 - seed derivation checks;
 - seed-provider checks;
 - state-provider checks;
-- policy query checks;
+- tweak-value checks;
 - Mach-O summary;
 - string scan;
 - exported-symbol scan;

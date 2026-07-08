@@ -34,7 +34,7 @@ flowchart TD
     App --> Active
     Vendor --> Active
     Manual --> Active
-    Active --> Values[Scoped policy values]
+    Active --> Values[Scoped tweak values]
 ```
 
 ## Scope selection rules

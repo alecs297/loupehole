@@ -7,7 +7,7 @@ Loupehole currently has a complete **build-to-package skeleton**, not complete a
 Present components include:
 
 - a generated, statically compiled mitigation registry;
-- a typed policy-value registry;
+- generated compile-time policy seeds declared by selected tweaks;
 - a central policy engine;
 - seed, scope, and state-provider machinery;
 - a MobileSubstrate-compatible hook backend abstraction;
@@ -20,11 +20,11 @@ Present components include:
 
 | Group | Present behavior | Important boundary |
 | --- | --- | --- |
-| IDFV | Hooks `UIDevice.identifierForVendor` and returns a policy-resolved scoped UUID. | It does not normalize every identity API or prove vendor-group behavior for every app topology. |
+| IDFV | Hooks `UIDevice.identifierForVendor` and returns a scoped UUID derived with a tweak policy seed. | It does not normalize every identity API or prove vendor-group behavior for every app topology. |
 | Device lifetime | Hooks supported boot-time sysctl forms and `NSProcessInfo.systemUptime` from one temporal state. | It does not normalize all clocks, process lifetime values, logs, or mach-time APIs. |
 | Storage lifetime | Hooks Foundation URL volume-creation-date resource values. | It does not normalize lower-level filesystem metadata such as `stat`, `fstat`, `lstat`, `getattrlist`, or direct filesystem queries. |
 
-The temporal modules are linked intentionally. They should not be evaluated as independent fake timestamps: their state establishes `profile epoch ≤ volume creation time < boot time < now`.
+The temporal modules are linked intentionally. They should not be evaluated as independent fake timestamps: their shared helper establishes `volume creation time < boot time < now`.
 
 ## Why the status remains experimental
 

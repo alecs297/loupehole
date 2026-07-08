@@ -2,64 +2,75 @@
 
 ## Definition
 
-A **seed** is a 16-byte secret input used to deterministically derive values, opaque storage identities, and state keys within a chosen scope. It is not itself a spoofed value and should not be exposed to target apps.
+A seed is a 16-byte secret input used to deterministically derive values, opaque storage identities, and state keys within a chosen scope. It is not itself a spoofed value and should not be exposed to target apps.
 
-The seed model exists to make stability and rotation explicit. The same active seed, derivation label, and scope produce the same derived bytes; changing one of those inputs produces a separate result. Persisted state can preserve values that need a lifecycle beyond direct derivation.
+The seed model exists to make stability and rotation explicit. The same active seed, policy seed, and scope produce the same derived bytes; changing one input produces a separate result. Persisted state can preserve values that need a lifecycle beyond direct derivation.
 
-## Seed layers
+## Seed Layers
 
 | Layer | Meaning | Typical origin | Purpose |
 | --- | --- | --- | --- |
-| Build build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Reproducible build input for local/dylib mode. |
-| Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding a personal seed in source. |
-| Practical seed | Effective parent seed before scoping. | Custom manual-group seed, build seed, or package root seed. | Unifies package and standalone modes. |
-| Active seed | Seed used by policy resolvers. | Deterministic scoped derivation or app-install derivation. | Produces policy values and opaque names for the current context. |
+| Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib starting seed when embedded. |
+| Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding the selection build seed in the deb-mode dylib. |
+| Practical seed | Effective parent seed before scoping. | Custom manual-group seed, embedded build seed, or package root seed. | Unifies package and standalone modes. |
+| Active seed | Seed used by tweaks after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces tweak values and opaque names for the current context. |
+| Policy seed | Compile-time generated domain separator declared by a tweak. | `LH_POLICY_SEED(domain, name, "literal")`. | Separates semantic value streams. |
 | State-derived value | Persisted or generated value associated with active seed and scope. | `LHStateProviderLoadOrCreate`. | Preserves a value that needs stateful lifetime. |
 
-## Why seeds rather than literal values
+## Build Seed Behavior
+
+The runtime field is named `buildSeed` in both modes:
+
+- In standalone dylib mode, it starts as the configured build seed when embedded.
+- In deb/package mode, the raw selection build seed is not embedded in the package dylib; after seed-provider resolution the same field holds the package-derived active seed.
+
+This single name avoids a split build/instance vocabulary in the injected dylib. The important boundary is that package mode should not carry the raw selection build seed bytes.
+
+## Why Seeds Rather Than Literal Values
 
 Literal replacement values are difficult to rotate, easy to share accidentally, and can reveal a custom build. Seeds allow the project to derive outputs without storing every output in the binary. They also let a reset or scope change rotate a family of dependent values together.
 
-A seed does not automatically make an output privacy-preserving. A resolver still needs a plausible value shape, a cohort/profile decision, and cross-surface coherence. Seeded uniqueness used without a shared-surface policy can still be fingerprintable.
+A seed does not automatically make an output privacy-preserving. A tweak still needs a plausible value shape and cross-surface coherence. Seeded uniqueness used without a shared-surface policy can still be fingerprintable.
 
-## Derivation inputs
+## Derivation Inputs
 
-The core derivation function uses:
+Tweak derivation should use:
 
 ```text
-active seed + generated derivation label + scope mode + scope identifier [+ optional context]
+active/practical seed + generated policy seed + scope mode + scope identifier [+ optional context]
 ```
 
-The current implementation uses HMAC-SHA256/HKDF-style expansion in `LHSeed.c`. The generator emits derivation labels into generated C data so labels are stable, distinct, and not scattered as ad hoc runtime strings.
+The current implementation uses HMAC-SHA256/HKDF-style expansion in `LHSeed.c`. The generator emits policy seeds and internal labels into generated C data so literals are not scattered through runtime code.
 
 ```mermaid
 flowchart LR
-    Root[Instance or package root seed] --> Practical[Practical seed]
-    Practical --> Scope[Scope inputs]
-    Scope --> Active[Active seed]
-    Active --> Labels[Generated labels]
-    Labels --> Values[Policy values]
-    Labels --> Names[Opaque paths / names]
-    Labels --> State[State keys and state blobs]
+    Root["Build or package root seed"] --> Practical["Practical seed"]
+    Practical --> Scope["Scope inputs"]
+    Scope --> Active["Active seed"]
+    Policy["Generated policy seed"] --> Value["Tweak value"]
+    Active --> Value
+    Active --> Names["Opaque paths / names"]
+    Policy --> State["State keys and state blobs"]
 ```
 
-## Rotation events
+## Rotation Events
 
 A derived value may rotate when:
 
-- the configured build/build seed changes;
+- the configured build seed changes;
 - package root state is reset;
 - a per-app-install marker changes because an app is reinstalled or reset;
 - scope mode or scope identifier changes;
 - a manual linked-group custom seed changes;
+- a policy seed literal changes;
 - a state schema change deliberately invalidates old state.
 
-The expected rotation behavior belongs in each mitigation’s documentation. Rotation that is invisible in source but surprising to a user or app is a defect in the model.
+The expected rotation behavior belongs in each mitigation's documentation. Rotation that is invisible in source but surprising to a user or app is a defect in the model.
 
-## Seed handling constraints
+## Seed Handling Constraints
 
 - Seeds are configuration/state material, not telemetry.
 - A UUID in `build.default.json` is a development selection input, not a production secret distribution mechanism.
-- Hook modules do not parse, persist, or generate seed material directly.
-- Generated labels and opaque names are domain-separated; a label must not be reused for unrelated values.
+- Hook modules do not parse, persist, or generate root seed material directly.
+- Policy seeds are domain separators and must be combined with active/practical seed material.
 - Persisted seed material and derived state are privacy-sensitive and need package lifecycle review.

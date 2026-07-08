@@ -7,6 +7,8 @@ THEOS_PLATFORM_DEB_COMPRESSION_TYPE ?= xz
 LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 LH_EMBED_BUILD_SEED ?= 1
 
+# This Makefile is package/build glue only. Runtime code lives under ../../src,
+# preference UI under ../../ui, and generated package inputs under ./generated.
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
 
