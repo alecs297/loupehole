@@ -2,7 +2,7 @@
 
 ## Present limitation: coverage is selective
 
-Loupehole currently compiles 38 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
+Loupehole currently compiles 37 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
 
 ## Cross-check limitation
 

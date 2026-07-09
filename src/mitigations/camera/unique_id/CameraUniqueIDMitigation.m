@@ -18,6 +18,46 @@ static LHCameraUniqueIDOriginal LHCameraUniqueIDOriginalImplementation;
 static LHCameraDeviceWithUniqueIDOriginal LHCameraDeviceWithUniqueIDOriginalImplementation;
 static LHPolicyEngine *LHCameraUniqueIDPolicy;
 
+static BOOL LHCameraStringEqualsAny(NSString *value, NSArray<NSString *> *candidates) {
+    if (![value isKindOfClass:[NSString class]]) {
+        return NO;
+    }
+
+    for (NSString *candidate in candidates) {
+        if ([value isEqualToString:candidate]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+static BOOL LHCameraDeviceIsContinuityCamera(id device) {
+    SEL selector = sel_registerName("isContinuityCamera");
+    if (device == nil || selector == 0 || ![device respondsToSelector:selector]) {
+        return NO;
+    }
+    return ((BOOL (*)(id, SEL))objc_msgSend)(device, selector);
+}
+
+static BOOL LHCameraDeviceHasExternalType(id device) {
+    SEL selector = sel_registerName("deviceType");
+    if (device == nil || selector == 0 || ![device respondsToSelector:selector]) {
+        return NO;
+    }
+
+    NSString *deviceType = ((id (*)(id, SEL))objc_msgSend)(device, selector);
+    return LHCameraStringEqualsAny(deviceType,
+                                   @[
+                                       @"AVCaptureDeviceTypeExternal",
+                                       @"AVCaptureDeviceTypeExternalUnknown",
+                                       @"AVCaptureDeviceTypeContinuityCamera"
+                                   ]);
+}
+
+static BOOL LHCameraShouldRewriteUniqueIDForDevice(id device) {
+    return LHCameraDeviceIsContinuityCamera(device) || LHCameraDeviceHasExternalType(device);
+}
+
 static bool LHCameraCopySyntheticID(NSString *realID, char *output, size_t outputLength) {
     if (LHCameraUniqueIDPolicy == 0 ||
         ![realID isKindOfClass:[NSString class]] ||
@@ -83,6 +123,9 @@ static NSString *LHCameraRealIDForSyntheticID(Class targetClass, NSString *synth
     }
 
     for (id device in devices) {
+        if (!LHCameraShouldRewriteUniqueIDForDevice(device)) {
+            continue;
+        }
         NSString *realID = LHCameraRealUniqueIDForDevice(device);
         NSString *candidate = LHCameraSyntheticIDForRealID(realID);
         if (candidate != nil && [candidate isEqualToString:syntheticID]) {
@@ -95,6 +138,9 @@ static NSString *LHCameraRealIDForSyntheticID(Class targetClass, NSString *synth
 static NSString *LHCameraUniqueIDReplacement(id self, SEL selector) {
     if (LHCameraUniqueIDOriginalImplementation != 0) {
         NSString *realID = LHCameraUniqueIDOriginalImplementation(self, selector);
+        if (!LHCameraShouldRewriteUniqueIDForDevice(self)) {
+            return realID;
+        }
         NSString *syntheticID = LHCameraSyntheticIDForRealID(realID);
         if (syntheticID != nil) {
             return syntheticID;
