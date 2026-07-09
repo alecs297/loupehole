@@ -14,7 +14,8 @@ static LHVoiceWithLanguageOriginal LHVoiceWithLanguageOriginalImplementation;
 static LHVoiceWithIdentifierOriginal LHVoiceWithIdentifierOriginalImplementation;
 
 static BOOL LHVoiceIsVisible(AVSpeechSynthesisVoice *voice) {
-    if (![voice isKindOfClass:[AVSpeechSynthesisVoice class]]) {
+    Class voiceClass = NSClassFromString(@"AVSpeechSynthesisVoice");
+    if (voiceClass == Nil || ![voice isKindOfClass:voiceClass]) {
         return NO;
     }
     return (NSInteger)[voice quality] <= 1;
