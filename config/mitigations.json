@@ -280,7 +280,7 @@
       "optionDoc": "docs/mitigations/personal-data-eventkit-empty.md"
     },
     {
-      "id": "apps.url_scheme_probes.uiapplication.known_list",
+      "id": "apps.url_scheme_probes.uiapplication.default_false",
       "sources": [
         "src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m"
       ],

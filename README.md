@@ -57,7 +57,7 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [bluetooth.corebluetooth](docs/mitigations/bluetooth-corebluetooth-scan-empty.md) | [bluetooth/corebluetooth](src/mitigations/bluetooth/corebluetooth/) | `bluetooth.corebluetooth.scan.empty` |
 | [telephony.radio_access](docs/mitigations/telephony-radio-access-single-lte.md) | [telephony/radio_access](src/mitigations/telephony/radio_access/) | `telephony.radio_access.coretelephony.single_lte` |
 | [personal_data.eventkit](docs/mitigations/personal-data-eventkit-empty.md) | [personal_data/eventkit_empty](src/mitigations/personal_data/eventkit_empty/) | `personal_data.eventkit.inventory.empty` |
-| [apps.url_scheme_probes](docs/mitigations/apps-url-scheme-probes.md) | [apps/url_scheme_probes](src/mitigations/apps/url_scheme_probes/) | `apps.url_scheme_probes.uiapplication.known_list` |
+| [apps.url_scheme_probes](docs/mitigations/apps-url-scheme-probes.md) | [apps/url_scheme_probes](src/mitigations/apps/url_scheme_probes/) | `apps.url_scheme_probes.uiapplication.default_false` |
 | [network.hostname](docs/mitigations/network-hostname.md) | [network/hostname](src/mitigations/network/hostname/) | `network.hostname.composite.generic_device_name` |
 | [network.vpn_proxy](docs/mitigations/network-vpn-proxy.md) | [network/vpn_proxy](src/mitigations/network/vpn_proxy/) | `network.vpn_proxy.cfnetwork.scoped_filter` |
 | [network.local_bonjour](docs/mitigations/network-local-bonjour.md) | [network/local_bonjour](src/mitigations/network/local_bonjour/) | `network.local_bonjour.nwbrowser.empty_results` |

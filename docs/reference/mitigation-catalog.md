@@ -86,7 +86,7 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `bluetooth.corebluetooth.scan.empty` | [bluetooth.corebluetooth](../mitigations/bluetooth-corebluetooth-scan-empty.md) | `src/mitigations/bluetooth/corebluetooth/BluetoothScanEmptyMitigation.m` |
 | `telephony.radio_access.coretelephony.single_lte` | [telephony.radio_access](../mitigations/telephony-radio-access-single-lte.md) | `src/mitigations/telephony/radio_access/TelephonyRadioProfileMitigation.m` |
 | `personal_data.eventkit.inventory.empty` | [personal_data.eventkit](../mitigations/personal-data-eventkit-empty.md) | `src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m` |
-| `apps.url_scheme_probes.uiapplication.known_list` | [apps.url_scheme_probes](../mitigations/apps-url-scheme-probes.md) | `src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m` |
+| `apps.url_scheme_probes.uiapplication.default_false` | [apps.url_scheme_probes](../mitigations/apps-url-scheme-probes.md) | `src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m` |
 | `network.hostname.composite.generic_device_name` | [network.hostname](../mitigations/network-hostname.md) | `src/mitigations/network/hostname/HostnameMitigation.m` |
 | `network.vpn_proxy.cfnetwork.scoped_filter` | [network.vpn_proxy](../mitigations/network-vpn-proxy.md) | `src/mitigations/network/vpn_proxy/VPNProxyMitigation.m` |
 | `network.local_bonjour.nwbrowser.empty_results` | [network.local_bonjour](../mitigations/network-local-bonjour.md) | `src/mitigations/network/local_bonjour/LocalBonjourMitigation.c` |

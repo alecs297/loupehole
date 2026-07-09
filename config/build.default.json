@@ -29,7 +29,7 @@
     "bluetooth.corebluetooth.scan.empty",
     "telephony.radio_access.coretelephony.single_lte",
     "personal_data.eventkit.inventory.empty",
-    "apps.url_scheme_probes.uiapplication.known_list",
+    "apps.url_scheme_probes.uiapplication.default_false",
     "network.hostname.composite.generic_device_name",
     "network.vpn_proxy.cfnetwork.scoped_filter",
     "network.local_bonjour.nwbrowser.empty_results",

@@ -145,18 +145,23 @@ Hook URL-scheme capability checks as a family:
 - `NSWorkspace.urlsForApplications(toOpen:)`
 - app wrappers that cache `canOpenURL` results
 
-Blanket `NO` for every scheme is too disruptive and can be fingerprintable.
-Known tracking probes are safer to suppress than app-owned, OAuth, payment,
-maps, mail, phone, and companion-app schemes that legitimate flows depend on.
+The current default should avoid a blacklist of known probe schemes. A blacklist
+lets unknown or newly added app-specific schemes leak the same installed-app
+vector. A stricter low-entropy profile denies unknown/custom schemes by default
+and allows only a tiny set of common system schemes such as web, mail, phone,
+SMS, and FaceTime to pass through to the platform.
 
-Compatibility default should pass through for schemes the app needs for real
-features such as authentication handoff, payments, sharing, navigation,
-messaging, password-manager integration, or enterprise workflows.
+This allowlist shape is more private and less compatible than a curated
+probe-list block. It can break custom-scheme handoffs for authentication,
+payments, sharing, navigation, messaging, password-manager integration, or
+enterprise workflows. That tradeoff is acceptable for the default installed-app
+fingerprinting mitigation because positive custom-scheme answers are the
+high-entropy value.
 
-Strict mode can deny third-party scheme probes by returning `false` for selected
-schemes or categories. A more compatible strict profile can allow common,
-low-sensitivity handlers and hide sensitive apps such as dating, finance,
-crypto, password managers, VPN, and niche work tools.
+A future compatibility mode can broaden the allowlist per app or per feature,
+but it should still avoid returning `true` for arbitrary third-party schemes.
+If a scheme is reported present, related open/deep-link behavior should not
+immediately contradict that result.
 
 Do not return a random per-read vector. The same app should see stable results
 for the same profile until an app-install/profile event changes the state. If a
@@ -188,19 +193,21 @@ open/deep-link behavior does not contradict visible true entries
 region, storefront, language, and app popularity remain plausible
 ```
 
-Prefer population-shaped app sets over hash-sorted random picks. A rare
-combination of apps can be more identifying than the real set. Low-entropy
-strict profiles can return no third-party apps or only a small set of common
-apps, depending on compatibility needs.
+Prefer low-entropy absence over population-shaped app sets for the default
+profile. A rare synthetic combination of apps can be more identifying than the
+real set, while returning `false` for unknown/custom schemes avoids claiming
+apps that may not actually be installed.
 
 Regional coherence matters. Venmo, Cash App, Deliveroo, Waze, ProtonVPN, Teams,
 or local transport/payment apps can imply market, work, or lifestyle context.
 The installed-app set should not be generated independently from storefront,
 locale, time zone, SIM country, and account-region values.
 
-Sensitive categories should be policy-addressable. A user may want to hide
-dating apps, password managers, VPN, crypto, health-adjacent, work, or finance
-apps while allowing maps or browsers for functionality.
+Sensitive categories may become policy-addressable in a future compatibility
+mode. A user may want to hide dating apps, password managers, VPN, crypto,
+health-adjacent, work, or finance apps while allowing maps or browsers for
+functionality, but the default profile should not leak a broad app-specific
+scheme vector.
 
 Purpose labels and synthetic app-set identifiers should remain internal and
 seed-bound. Do not expose readable policy names through URL schemes, bundle
