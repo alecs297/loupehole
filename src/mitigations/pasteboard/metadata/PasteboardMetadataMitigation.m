@@ -4,6 +4,7 @@
 #include "LHMitigationValues.h"
 
 #import <Foundation/Foundation.h>
+#import <objc/message.h>
 #import <objc/runtime.h>
 
 typedef NSInteger (*LHPasteboardIntegerOriginal)(id self, SEL selector);
@@ -77,15 +78,7 @@ static bool LHPasteboardHookBool(LHHookBackend *backend,
     return LHHookBackendHookMessage(backend, targetClass, selector, replacement, (void **)original);
 }
 
-/** Installs strict general-pasteboard metadata reduction for UIKit metadata properties. */
-bool LHMitigation_pasteboard_metadata_uikit_empty_shape_install(LHHookBackend *backend, LHPolicyEngine *policy) {
-    LHPasteboardMetadataPolicy = policy;
-
-    Class targetClass = NSClassFromString(@"UIPasteboard");
-    if (targetClass == Nil) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_empty_shape);
-    }
-
+static bool LHPasteboardInstallForClass(LHHookBackend *backend, Class targetClass) {
     bool installed = false;
     installed = LHPasteboardHookInteger(backend,
                                         targetClass,
@@ -117,6 +110,30 @@ bool LHMitigation_pasteboard_metadata_uikit_empty_shape_install(LHHookBackend *b
                                      "hasColors",
                                      (void *)LHPasteboardHasItemReplacement,
                                      &LHPasteboardHasColorsOriginalImplementation) || installed;
+    return installed;
+}
+
+/** Installs strict general-pasteboard metadata reduction for UIKit metadata properties. */
+bool LHMitigation_pasteboard_metadata_uikit_empty_shape_install(LHHookBackend *backend, LHPolicyEngine *policy) {
+    LHPasteboardMetadataPolicy = policy;
+
+    Class targetClass = NSClassFromString(@"UIPasteboard");
+    if (targetClass == Nil) {
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_empty_shape);
+    }
+
+    bool installed = false;
+    installed = LHPasteboardInstallForClass(backend, targetClass) || installed;
+
+    SEL generalSelector = sel_registerName("generalPasteboard");
+    if (generalSelector != 0 && [targetClass respondsToSelector:generalSelector]) {
+        id (*messageSend)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+        id generalPasteboard = messageSend((id)targetClass, generalSelector);
+        Class concreteClass = object_getClass(generalPasteboard);
+        if (concreteClass != Nil && concreteClass != targetClass) {
+            installed = LHPasteboardInstallForClass(backend, concreteClass) || installed;
+        }
+    }
 
     if (!installed) {
         return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_empty_shape);

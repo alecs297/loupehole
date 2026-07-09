@@ -41,7 +41,7 @@ static PHFetchOptions *LHPhotosEmptyFetchOptions(PHFetchOptions *options) {
 static PHAuthorizationStatus LHPhotosAuthorizationStatusReplacement(id self, SEL selector) {
     (void)self;
     (void)selector;
-    return PHAuthorizationStatusDenied;
+    return PHAuthorizationStatusAuthorized;
 }
 
 /** Replacement for `+[PHPhotoLibrary authorizationStatusForAccessLevel:]`. */
@@ -49,7 +49,7 @@ static PHAuthorizationStatus LHPhotosAuthorizationStatusForAccessLevelReplacemen
     (void)self;
     (void)selector;
     (void)accessLevel;
-    return PHAuthorizationStatusDenied;
+    return PHAuthorizationStatusAuthorized;
 }
 
 /** Replacement for `+[PHPhotoLibrary requestAuthorization:]`. */
@@ -57,7 +57,7 @@ static void LHPhotosRequestAuthorizationReplacement(id self, SEL selector, void 
     (void)self;
     (void)selector;
     if (handler != nil) {
-        handler(PHAuthorizationStatusDenied);
+        handler(PHAuthorizationStatusAuthorized);
     }
 }
 
@@ -67,7 +67,7 @@ static void LHPhotosRequestAuthorizationForAccessLevelReplacement(id self, SEL s
     (void)selector;
     (void)accessLevel;
     if (handler != nil) {
-        handler(PHAuthorizationStatusDenied);
+        handler(PHAuthorizationStatusAuthorized);
     }
 }
 

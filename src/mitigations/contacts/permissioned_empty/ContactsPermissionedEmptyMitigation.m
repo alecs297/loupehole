@@ -11,6 +11,8 @@ typedef NSArray<CNContainer *> *(*LHContactsContainersOriginal)(CNContactStore *
 typedef BOOL (*LHContactsEnumerateOriginal)(CNContactStore *self, SEL selector, CNContactFetchRequest *fetchRequest, NSError **error, void (^block)(CNContact *contact, BOOL *stop));
 typedef NSArray<CNContact *> *(*LHContactsUnifiedContactsOriginal)(CNContactStore *self, SEL selector, NSPredicate *predicate, NSArray<id<CNKeyDescriptor>> *keys, NSError **error);
 typedef CNContact *(*LHContactsUnifiedContactOriginal)(CNContactStore *self, SEL selector, NSString *identifier, NSArray<id<CNKeyDescriptor>> *keys, NSError **error);
+typedef NSString *(*LHContactsContainerStringOriginal)(CNContainer *self, SEL selector);
+typedef CNContainerType (*LHContactsContainerTypeOriginal)(CNContainer *self, SEL selector);
 
 static LHContactsAuthorizationStatusOriginal LHContactsAuthorizationStatusOriginalImplementation;
 static LHContactsRequestAccessOriginal LHContactsRequestAccessOriginalImplementation;
@@ -18,11 +20,14 @@ static LHContactsContainersOriginal LHContactsContainersOriginalImplementation;
 static LHContactsEnumerateOriginal LHContactsEnumerateOriginalImplementation;
 static LHContactsUnifiedContactsOriginal LHContactsUnifiedContactsOriginalImplementation;
 static LHContactsUnifiedContactOriginal LHContactsUnifiedContactOriginalImplementation;
+static LHContactsContainerStringOriginal LHContactsContainerIdentifierOriginalImplementation;
+static LHContactsContainerStringOriginal LHContactsContainerNameOriginalImplementation;
+static LHContactsContainerTypeOriginal LHContactsContainerTypeOriginalImplementation;
 
 /** Replacement for `+[CNContactStore authorizationStatusForEntityType:]`. */
 static CNAuthorizationStatus LHContactsAuthorizationStatusReplacement(id self, SEL selector, CNEntityType entityType) {
     if (entityType == CNEntityTypeContacts) {
-        return CNAuthorizationStatusDenied;
+        return CNAuthorizationStatusAuthorized;
     }
 
     if (LHContactsAuthorizationStatusOriginalImplementation != 0) {
@@ -35,7 +40,7 @@ static CNAuthorizationStatus LHContactsAuthorizationStatusReplacement(id self, S
 static void LHContactsRequestAccessReplacement(CNContactStore *self, SEL selector, CNEntityType entityType, void (^completion)(BOOL granted, NSError *error)) {
     if (entityType == CNEntityTypeContacts) {
         if (completion != nil) {
-            completion(NO, nil);
+            completion(YES, nil);
         }
         return;
     }
@@ -49,11 +54,46 @@ static void LHContactsRequestAccessReplacement(CNContactStore *self, SEL selecto
 
 /** Replacement for `-[CNContactStore containersMatchingPredicate:error:]`. */
 static NSArray<CNContainer *> *LHContactsContainersReplacement(CNContactStore *self, SEL selector, NSPredicate *predicate, NSError **error) {
+    (void)error;
+    if (LHContactsContainersOriginalImplementation != 0) {
+        NSArray<CNContainer *> *containers = LHContactsContainersOriginalImplementation(self, selector, predicate, error);
+        if ([containers count] > 0) {
+            return @[[containers objectAtIndex:0]];
+        }
+    }
+
+    Class containerClass = NSClassFromString(@"CNContainer");
+    if (containerClass != Nil) {
+        @try {
+            CNContainer *container = [[containerClass alloc] init];
+            if (container != nil) {
+                return @[container];
+            }
+        } @catch (__unused NSException *exception) {
+        }
+    }
+    return @[];
+}
+
+/** Replacement for stable container identifiers. */
+static NSString *LHContactsContainerIdentifierReplacement(CNContainer *self, SEL selector) {
     (void)self;
     (void)selector;
-    (void)predicate;
-    (void)error;
-    return @[];
+    return @"default";
+}
+
+/** Replacement for user-visible container names. */
+static NSString *LHContactsContainerNameReplacement(CNContainer *self, SEL selector) {
+    (void)self;
+    (void)selector;
+    return @"Contacts";
+}
+
+/** Replacement for container type. */
+static CNContainerType LHContactsContainerTypeReplacement(CNContainer *self, SEL selector) {
+    (void)self;
+    (void)selector;
+    return CNContainerTypeLocal;
 }
 
 /** Replacement for `-[CNContactStore enumerateContactsWithFetchRequest:error:usingBlock:]`. */
@@ -136,6 +176,25 @@ bool LHMitigation_contacts_permissioned_inventory_empty_install(LHHookBackend *b
                                       "unifiedContactWithIdentifier:keysToFetch:error:",
                                       (void *)LHContactsUnifiedContactReplacement,
                                       (void **)&LHContactsUnifiedContactOriginalImplementation) || installed;
+
+    Class containerClass = NSClassFromString(@"CNContainer");
+    if (containerClass != Nil) {
+        installed = LHContactsHookMessage(backend,
+                                          containerClass,
+                                          "identifier",
+                                          (void *)LHContactsContainerIdentifierReplacement,
+                                          (void **)&LHContactsContainerIdentifierOriginalImplementation) || installed;
+        installed = LHContactsHookMessage(backend,
+                                          containerClass,
+                                          "name",
+                                          (void *)LHContactsContainerNameReplacement,
+                                          (void **)&LHContactsContainerNameOriginalImplementation) || installed;
+        installed = LHContactsHookMessage(backend,
+                                          containerClass,
+                                          "type",
+                                          (void *)LHContactsContainerTypeReplacement,
+                                          (void **)&LHContactsContainerTypeOriginalImplementation) || installed;
+    }
 
     if (!installed) {
         return LHHookBackendRegisterNoOp(backend, LHModuleID_contacts_permissioned_inventory_empty);

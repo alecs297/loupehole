@@ -54,10 +54,10 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [power.low_power_mode](docs/mitigations/power-low-power-mode.md) | [power/low_power_mode](src/mitigations/power/low_power_mode/) | `power.low_power_mode.processinfo.normalized_false` |
 | [power.thermal_state](docs/mitigations/power-thermal-state.md) | [power/thermal_state](src/mitigations/power/thermal_state/) | `power.thermal_state.processinfo.nominalized` |
 | [sensors.device_motion](docs/mitigations/sensors-device-motion-seeded-jitter.md) | [sensors/device_motion](src/mitigations/sensors/device_motion/) | `sensors.device_motion.coremotion.seeded_jitter` |
-| [sensors.activity](docs/mitigations/sensors-activity-low-entropy.md) | [sensors/activity](src/mitigations/sensors/activity/) | `sensors.activity.coremotion.low_entropy` |
-| [sensors.pedometer](docs/mitigations/sensors-pedometer-quantized.md) | [sensors/pedometer](src/mitigations/sensors/pedometer/) | `sensors.pedometer.coremotion.quantized` |
-| [sensors.altimeter](docs/mitigations/sensors-altimeter-quantized.md) | [sensors/altimeter](src/mitigations/sensors/altimeter/) | `sensors.altimeter.coremotion.quantized` |
-| [location.core_location](docs/mitigations/location-core-location-coarse.md) | [location/core_location](src/mitigations/location/core_location/) | `location.core_location.foundation.coarse` |
+| [sensors.activity](docs/mitigations/sensors-activity-confidence-shaped.md) | [sensors/activity](src/mitigations/sensors/activity/) | `sensors.activity.coremotion.confidence_shaped` |
+| [sensors.pedometer](docs/mitigations/sensors-pedometer-seeded-jitter.md) | [sensors/pedometer](src/mitigations/sensors/pedometer/) | `sensors.pedometer.coremotion.seeded_jitter` |
+| [sensors.altimeter](docs/mitigations/sensors-altimeter-seeded-jitter.md) | [sensors/altimeter](src/mitigations/sensors/altimeter/) | `sensors.altimeter.coremotion.seeded_jitter` |
+| [location.core_location](docs/mitigations/location-core-location-seeded-jitter.md) | [location/core_location](src/mitigations/location/core_location/) | `location.core_location.foundation.seeded_jitter` |
 | [bluetooth.corebluetooth](docs/mitigations/bluetooth-corebluetooth-scan-empty.md) | [bluetooth/corebluetooth](src/mitigations/bluetooth/corebluetooth/) | `bluetooth.corebluetooth.scan.empty` |
 | [telephony.radio_access](docs/mitigations/telephony-radio-access-single-lte.md) | [telephony/radio_access](src/mitigations/telephony/radio_access/) | `telephony.radio_access.coretelephony.single_lte` |
 | [contacts.permissioned_inventory](docs/mitigations/contacts-permissioned-inventory-empty.md) | [contacts/permissioned_empty](src/mitigations/contacts/permissioned_empty/) | `contacts.permissioned.inventory.empty` |
@@ -67,7 +67,7 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [apps.url_scheme_probes](docs/mitigations/apps-url-scheme-probes.md) | [apps/url_scheme_probes](src/mitigations/apps/url_scheme_probes/) | `apps.url_scheme_probes.uiapplication.known_list` |
 | [network.hostname](docs/mitigations/network-hostname.md) | [network/hostname](src/mitigations/network/hostname/) | `network.hostname.composite.generic_device_name` |
 | [network.vpn_proxy](docs/mitigations/network-vpn-proxy.md) | [network/vpn_proxy](src/mitigations/network/vpn_proxy/) | `network.vpn_proxy.cfnetwork.scoped_filter` |
-| [network.local_bonjour](docs/mitigations/network-local-bonjour.md) | [network/local_bonjour](src/mitigations/network/local_bonjour/) | `network.local_bonjour.nwbrowser.suppress_start` |
+| [network.local_bonjour](docs/mitigations/network-local-bonjour.md) | [network/local_bonjour](src/mitigations/network/local_bonjour/) | `network.local_bonjour.nwbrowser.empty_results` |
 | [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.empty_shape` |
 | [webview.script_fingerprint](docs/mitigations/webview-script-fingerprint.md) | [webview/script_fingerprint](src/mitigations/webview/script_fingerprint/) | `webview.script_fingerprint.wkwebview.exact_probe_guard` |
 

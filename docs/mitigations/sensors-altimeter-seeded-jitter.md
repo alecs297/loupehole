@@ -1,13 +1,13 @@
 # `sensors.altimeter`
 
-This option rounds Core Motion altimeter pressure and altitude values to reduce environmental precision.
+This option applies continuous seed-derived perturbations to Core Motion altimeter pressure and altitude values.
 
 ## Metadata
 
 | Field | Value |
 | --- | --- |
 | Option ID | `sensors.altimeter` |
-| Implemented mitigation | `sensors.altimeter.coremotion.quantized` |
+| Implemented mitigation | `sensors.altimeter.coremotion.seeded_jitter` |
 | Policy seeds | `motion_altimeter_pressure`, `motion_altimeter_altitude` |
 | Status | Experimental |
 | Surface | Motion & Sensors |
@@ -21,18 +21,15 @@ Pressure, relative altitude, absolute altitude, accuracy, and precision expose l
 
 ## Mitigation Strategy
 
-The module hooks Core Motion altimeter data getters and rounds original values:
+The module hooks Core Motion altimeter data getters and maps original values through seed-derived sine perturbations:
 
-- pressure is rounded to broad pressure buckets;
-- relative altitude is rounded to coarse meter buckets;
-- absolute altitude is rounded to broader altitude buckets;
-- accuracy and precision are coarsened and clamped to non-precise minimums when originally valid.
-
-It preserves nil and negative unavailable semantics.
+- pressure, relative altitude, and absolute altitude remain continuous;
+- accuracy and precision are perturbed and then clamped to non-precise minimums when originally valid;
+- nil and negative unavailable semantics are preserved.
 
 ## Derivation And Lifetime
 
-`motion_altimeter_pressure` and `motion_altimeter_altitude` select scoped bucket phases. No state blob is used; returned values remain derived from live framework data.
+`motion_altimeter_pressure` and `motion_altimeter_altitude` select scoped perturbation profiles through `LHValueApplySeededSinePerturbation`. No state blob is used; returned values remain derived from live framework data.
 
 ## Impact And Gaps
 
@@ -42,7 +39,7 @@ Altitude and pressure precision may matter to hiking, weather, indoor positionin
 
 Expected observations after integration:
 
-- covered getters return rounded pressure/altitude values;
+- covered getters return seed-shaped pressure/altitude values instead of fixed buckets;
 - unavailable values retain their native nil or negative shape;
 - update callbacks still arrive through Core Motion.
 

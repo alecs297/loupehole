@@ -28,7 +28,7 @@ Pasteboard metadata leaks cross-app workflow state without reading content. The 
 
 ## Mitigation Strategy
 
-The mitigation hooks the UIKit metadata properties. It returns:
+The mitigation hooks the UIKit metadata properties on `UIPasteboard` and also attempts to hook the concrete runtime class returned by `UIPasteboard.generalPasteboard`. It returns:
 
 - a scoped synthetic `changeCount` in `[0, 1024)`;
 - `NO` for `hasStrings`, `hasURLs`, `hasImages`, and `hasColors`;
@@ -63,7 +63,7 @@ The module does not hook content reads, pattern detection, named pasteboards, Ap
 
 Expected observations:
 
-- `UIPasteboard.general.changeCount` returns a stable scoped synthetic integer.
+- `UIPasteboard.general.changeCount` returns a stable scoped synthetic integer, including when the general pasteboard is a private concrete subclass.
 - Shape booleans are false and `numberOfItems` is `0`.
 - Content getters are untouched by this mitigation.
 

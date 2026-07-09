@@ -32,6 +32,8 @@ The mitigation hooks `-[UIApplication canOpenURL:]`. For the reviewed 50 third-p
 
 The mitigation does not synthesize positive answers. Returning `YES` for apps that are not installed would create contradictions when the caller later attempts to open the URL. It also does not hide the protected app's own `LSApplicationQueriesSchemes` list, because that list is the querying app's declared metadata rather than an installed-app result.
 
+Blanket `NO` for every scheme is intentionally avoided. Apps use `canOpenURL:` for their own OAuth/SSO callbacks, payment handoffs, maps, mail, phone, app-to-app workflows, and companion-app detection. Returning `NO` for all schemes can break legitimate flows and can itself look abnormal because common first-party or app-owned schemes would appear unavailable.
+
 ## Derivation And Lifetime
 
 No policy seed is declared because this module does not create a value stream. It returns one low-entropy strict result for the documented probe list: absent.

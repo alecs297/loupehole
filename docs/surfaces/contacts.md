@@ -103,15 +103,18 @@ Treat Contacts authorization and store access as one surface:
 - Contacts UI and picker flows if future coverage includes them
 - all Contacts store fetch/enumeration APIs used after authorization
 
-Do not synthesize granted Contacts access for an app that the system has denied.
-Strict privacy behavior can prefer denial for apps that only ask for Contacts
-as a fingerprinting probe. Compatibility behavior should pass through for
-messaging, calling, email, contacts, CRM, invite, sync, accessibility, and
-enterprise apps that genuinely operate on contacts.
+Compatibility behavior should pass through for messaging, calling, email,
+contacts, CRM, invite, sync, accessibility, and enterprise apps that genuinely
+operate on contacts. Strict privacy behavior can prefer denial or an
+authorized-empty profile for apps that only ask for Contacts as a fingerprinting
+probe. If authorized-empty is selected, store reads must look like an empty
+native store rather than a failing store.
 
 If the policy reports denied or restricted, store reads must match that state.
-Returning authorized status while enumeration fails, or denying status while
-still returning contact metadata, is easy to detect.
+If the policy reports authorized-empty, enumeration should succeed with zero
+contacts and a coherent low-information container profile. Returning authorized
+status while enumeration fails, or denying status while still returning contact
+metadata, is easy to detect.
 
 ### `contacts.inventory_counts`
 

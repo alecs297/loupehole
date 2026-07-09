@@ -1,6 +1,6 @@
 # `personal_data.eventkit`
 
-The EventKit personal-data option normalizes Calendar and Reminders reads to denied, empty stores. It covers the assigned Calendar and Reminders surface pages with one shared EventKit adapter so authorization, inventory, and fetch behavior stay coherent.
+The EventKit personal-data option normalizes Calendar and Reminders reads to authorized, empty stores. It covers the assigned Calendar and Reminders surface pages with one shared EventKit adapter so authorization, inventory, and fetch behavior stay coherent.
 
 ## Metadata
 
@@ -23,21 +23,21 @@ Calendar access exposes account/source topology, calendar types, and event densi
 
 ## Mitigation Strategy
 
-The mitigation hooks `EKEventStore` class and instance methods for `EKEntityTypeEvent` and `EKEntityTypeReminder`. It reports denied authorization, completes access requests with `NO`, returns no event or reminder calendars, returns empty event arrays, suppresses event enumeration callbacks, and completes reminder fetches with an empty array.
+The mitigation hooks `EKEventStore` class and instance methods for `EKEntityTypeEvent` and `EKEntityTypeReminder`. It reports authorized access, completes access requests with `YES`, returns no event or reminder calendars, returns empty event arrays, suppresses event enumeration callbacks, and completes reminder fetches with an empty array.
 
 It uses one module for both Calendar and Reminders because both APIs share `EKEventStore.authorizationStatusForEntityType:` and `calendarsForEntityType:`. Splitting them into independent modules would make double-hook ordering a source of incoherence.
 
 ## Derivation And Lifetime
 
-No policy seeds are declared because the mitigation returns a denied or empty EventKit profile and does not synthesize calendar sources, list names, events, or reminders.
+No policy seeds are declared because the mitigation returns an empty EventKit profile and does not synthesize calendar sources, list names, events, or reminders.
 
 | Item | Value |
 | --- | --- |
-| Value shape | Denied EventKit authorization, empty event/reminder calendars, empty event and reminder fetches |
+| Value shape | Authorized EventKit access, empty event/reminder calendars, empty event and reminder fetches |
 | Derivation input | None |
 | Storage behavior | None |
 | Scope behavior | Runtime policy controls activation; no per-scope EventKit profile is generated |
-| Calendar/Reminders coherence | Both entity types are denied and empty through the same adapter |
+| Calendar/Reminders coherence | Both entity types are authorized and empty through the same adapter |
 
 ## Impact And Tradeoffs
 
@@ -49,7 +49,7 @@ The mitigation does not fabricate source names, calendar titles, reminder-list t
 
 Expected observations after catalog selection and generation:
 
-- Calendar and Reminders authorization probes report denied.
+- Calendar and Reminders authorization probes report authorized.
 - Calendar `calendars(for: .event)` and Reminder `calendars(for: .reminder)` return empty arrays.
 - Loupe-style `events(matching:)` and `fetchReminders(matching:)` produce zero results.
 - Calendar source/type lists and Reminders list-title summaries are empty.

@@ -130,9 +130,11 @@ Compatibility default should pass through. Music players, DJ apps, library
 managers, CarPlay/media apps, playlist tools, and import/export utilities need
 real authorization and real library behavior.
 
-Strict mode can prefer denied or restricted for apps that should not inspect
-music taste. If status is rewritten to denied, media queries should return no
-library data and Apple Music capability requests should not imply usable access.
+Strict mode can prefer denied, restricted, or authorized-empty for apps that
+should not inspect music taste. If status is rewritten to denied, media queries
+should return no library data and Apple Music capability requests should not
+imply usable access. If authorized-empty is selected, query arrays should be
+empty and account capability flags should remain low-information.
 
 ### `music.library-counts`
 

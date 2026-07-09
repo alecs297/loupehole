@@ -2,12 +2,12 @@
 #include "LHGeneratedMitigationRegistry.h"
 
 #include "LHMitigationValues.h"
+#include "LHValueQuantizer.h"
 
 #import <CoreMotion/CoreMotion.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 
-#include <math.h>
 #include <string.h>
 
 typedef NSNumber *(*LHAltitudeNumberOriginal)(id self, SEL selector);
@@ -23,28 +23,26 @@ static LHAbsoluteAltitudeDoubleOriginal LHAbsoluteAccuracyOriginal;
 static LHAbsoluteAltitudeDoubleOriginal LHAbsolutePrecisionOriginal;
 static LHPolicyEngine *LHAltimeterPolicy;
 
-static double LHAltimeterPhase(const LHPolicySeed *policySeed, const char *context, double step) {
-    uint64_t bucket = 0;
-    if (LHAltimeterPolicy == 0 ||
-        context == 0 ||
-        !LHMitigationDeriveBoundedU64(&LHAltimeterPolicy->config.buildSeed,
-                                      policySeed,
-                                      &LHAltimeterPolicy->appContext.scope,
-                                      (const uint8_t *)context,
-                                      strlen(context),
-                                      4,
-                                      &bucket)) {
-        return 0.0;
+static double LHAltimeterShape(double value,
+                               const LHPolicySeed *policySeed,
+                               const char *context,
+                               double amplitudeMax,
+                               double wavelength) {
+    double shaped = value;
+    if (LHAltimeterPolicy != 0 &&
+        context != 0 &&
+        LHValueApplySeededSinePerturbation(&LHAltimeterPolicy->config.buildSeed,
+                                           policySeed,
+                                           &LHAltimeterPolicy->appContext.scope,
+                                           (const uint8_t *)context,
+                                           strlen(context),
+                                           value,
+                                           amplitudeMax,
+                                           wavelength,
+                                           &shaped)) {
+        return shaped;
     }
-    return ((double)bucket * step) / 4.0;
-}
-
-static double LHAltimeterRound(double value, const LHPolicySeed *policySeed, const char *context, double step) {
-    if (!(step > 0.0)) {
-        return value;
-    }
-    double phase = LHAltimeterPhase(policySeed, context, step);
-    return nearbyint((value - phase) / step) * step + phase;
+    return value;
 }
 
 static NSNumber *LHRelativeAltitudeReplacement(id self, SEL selector) {
@@ -55,7 +53,7 @@ static NSNumber *LHRelativeAltitudeReplacement(id self, SEL selector) {
     if (original == nil) {
         return nil;
     }
-    return @(LHAltimeterRound([original doubleValue], &LHGeneratedPolicySeed_motion_altimeter_altitude, "relative", 5.0));
+    return @(LHAltimeterShape([original doubleValue], &LHGeneratedPolicySeed_motion_altimeter_altitude, "relative", 1.5, 20.0));
 }
 
 static NSNumber *LHPressureReplacement(id self, SEL selector) {
@@ -66,14 +64,14 @@ static NSNumber *LHPressureReplacement(id self, SEL selector) {
     if (original == nil) {
         return nil;
     }
-    return @(LHAltimeterRound([original doubleValue], &LHGeneratedPolicySeed_motion_altimeter_pressure, "pressure", 0.5));
+    return @(LHAltimeterShape([original doubleValue], &LHGeneratedPolicySeed_motion_altimeter_pressure, "pressure", 0.15, 2.0));
 }
 
 static double LHAbsoluteAltitudeReplacement(id self, SEL selector) {
     if (LHAbsoluteAltitudeOriginal == 0) {
         return 0.0;
     }
-    return LHAltimeterRound(LHAbsoluteAltitudeOriginal(self, selector), &LHGeneratedPolicySeed_motion_altimeter_altitude, "absolute", 25.0);
+    return LHAltimeterShape(LHAbsoluteAltitudeOriginal(self, selector), &LHGeneratedPolicySeed_motion_altimeter_altitude, "absolute", 8.0, 120.0);
 }
 
 static double LHAbsoluteAccuracyReplacement(id self, SEL selector) {
@@ -84,8 +82,8 @@ static double LHAbsoluteAccuracyReplacement(id self, SEL selector) {
     if (!(original >= 0.0)) {
         return original;
     }
-    double rounded = LHAltimeterRound(original, &LHGeneratedPolicySeed_motion_altimeter_altitude, "accuracy", 25.0);
-    return rounded < 50.0 ? 50.0 : rounded;
+    double shaped = LHAltimeterShape(original, &LHGeneratedPolicySeed_motion_altimeter_altitude, "accuracy", 8.0, 80.0);
+    return shaped < 50.0 ? 50.0 : shaped;
 }
 
 static double LHAbsolutePrecisionReplacement(id self, SEL selector) {
@@ -96,8 +94,8 @@ static double LHAbsolutePrecisionReplacement(id self, SEL selector) {
     if (!(original >= 0.0)) {
         return original;
     }
-    double rounded = LHAltimeterRound(original, &LHGeneratedPolicySeed_motion_altimeter_altitude, "precision", 10.0);
-    return rounded < 10.0 ? 10.0 : rounded;
+    double shaped = LHAltimeterShape(original, &LHGeneratedPolicySeed_motion_altimeter_altitude, "precision", 3.0, 40.0);
+    return shaped < 10.0 ? 10.0 : shaped;
 }
 
 static bool LHAltimeterHookMessage(LHHookBackend *backend,
@@ -113,7 +111,7 @@ static bool LHAltimeterHookMessage(LHHookBackend *backend,
     return LHHookBackendHookMessage(backend, targetClass, selector, replacement, original);
 }
 
-bool LHMitigation_sensors_altimeter_coremotion_quantized_install(LHHookBackend *backend, LHPolicyEngine *policy) {
+bool LHMitigation_sensors_altimeter_coremotion_seeded_jitter_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHAltimeterPolicy = policy;
     bool installed = false;
 
@@ -124,7 +122,7 @@ bool LHMitigation_sensors_altimeter_coremotion_quantized_install(LHHookBackend *
     installed = LHAltimeterHookMessage(backend, @"CMAbsoluteAltitudeData", "precision", (void *)LHAbsolutePrecisionReplacement, (void **)&LHAbsolutePrecisionOriginal) || installed;
 
     if (!installed) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_sensors_altimeter_coremotion_quantized);
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_sensors_altimeter_coremotion_seeded_jitter);
     }
     return true;
 }

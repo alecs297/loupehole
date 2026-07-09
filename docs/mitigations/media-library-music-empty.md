@@ -1,6 +1,6 @@
 # `media_library.music`
 
-The Music Library option normalizes MediaPlayer library access and Apple Music capability checks to denied, empty results. It covers Loupe's iOS music-library inventory and account-capability paths without generating synthetic taste data.
+The Music Library option normalizes MediaPlayer library access and Apple Music capability checks to authorized, empty results. It covers Loupe's iOS music-library inventory and account-capability paths without generating synthetic taste data.
 
 ## Metadata
 
@@ -23,7 +23,7 @@ Music Library access exposes song, album, playlist, and artist counts, top genre
 
 ## Mitigation Strategy
 
-The mitigation reports Media Library and StoreKit cloud-service authorization as denied, completes Media Library authorization requests with denied status, returns empty arrays from `MPMediaQuery.items` and `MPMediaQuery.collections`, returns `nil` for direct genre/artist/date-added item fields, and completes Apple Music capability requests with no capability flags.
+The mitigation reports Media Library and StoreKit cloud-service authorization as authorized, completes Media Library authorization requests with authorized status, returns empty arrays from `MPMediaQuery.items` and `MPMediaQuery.collections`, returns `nil` for direct genre/artist/date-added item fields, and completes Apple Music capability requests with no capability flags.
 
 It does not synthesize artists, genres, playlists, song dates, persistent IDs, subscription state, or cloud-library capabilities. Empty/no-capability behavior is more coherent than a seed-derived fake taste profile.
 
@@ -33,7 +33,7 @@ No policy seeds are declared because the mitigation owns no synthetic music libr
 
 | Item | Value |
 | --- | --- |
-| Value shape | Denied media authorization, empty query arrays, nil taste/date fields, zero Apple Music capabilities |
+| Value shape | Authorized media access, empty query arrays, nil taste/date fields, zero Apple Music capabilities |
 | Derivation input | None |
 | Storage behavior | None |
 | Scope behavior | Runtime policy controls activation; no per-scope music profile is generated |
@@ -49,7 +49,7 @@ The mitigation does not cover MusicKit-only APIs, playback attempts, storefront 
 
 Expected observations after catalog selection and generation:
 
-- Media Library authorization probes report denied.
+- Media Library authorization probes report authorized.
 - Loupe-style song, album, playlist, and artist counts are zero.
 - Top genre and artist summaries are empty because query items are empty and direct item fields return nil.
 - Recently added count is zero.

@@ -35,7 +35,7 @@ static bool LHEventKitOwnsEntityType(EKEntityType entityType) {
 /** Replacement for `+[EKEventStore authorizationStatusForEntityType:]`. */
 static EKAuthorizationStatus LHEventKitAuthorizationStatusReplacement(id self, SEL selector, EKEntityType entityType) {
     if (LHEventKitOwnsEntityType(entityType)) {
-        return EKAuthorizationStatusDenied;
+        return EKAuthorizationStatusAuthorized;
     }
 
     if (LHEventKitAuthorizationStatusOriginalImplementation != 0) {
@@ -48,7 +48,7 @@ static EKAuthorizationStatus LHEventKitAuthorizationStatusReplacement(id self, S
 static void LHEventKitRequestAccessReplacement(EKEventStore *self, SEL selector, EKEntityType entityType, void (^completion)(BOOL granted, NSError *error)) {
     if (LHEventKitOwnsEntityType(entityType)) {
         if (completion != nil) {
-            completion(NO, nil);
+            completion(YES, nil);
         }
         return;
     }
@@ -60,12 +60,12 @@ static void LHEventKitRequestAccessReplacement(EKEventStore *self, SEL selector,
     }
 }
 
-/** Completion-only denial for newer full/write-only EventKit access APIs. */
+/** Completion-only success for newer full/write-only EventKit access APIs. */
 static void LHEventKitRequestFullAccessReplacement(EKEventStore *self, SEL selector, void (^completion)(BOOL granted, NSError *error)) {
     (void)self;
     (void)selector;
     if (completion != nil) {
-        completion(NO, nil);
+        completion(YES, nil);
     }
 }
 

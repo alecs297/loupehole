@@ -145,6 +145,10 @@ Hook URL-scheme capability checks as a family:
 - `NSWorkspace.urlsForApplications(toOpen:)`
 - app wrappers that cache `canOpenURL` results
 
+Blanket `NO` for every scheme is too disruptive and can be fingerprintable.
+Known tracking probes are safer to suppress than app-owned, OAuth, payment,
+maps, mail, phone, and companion-app schemes that legitimate flows depend on.
+
 Compatibility default should pass through for schemes the app needs for real
 features such as authentication handoff, payments, sharing, navigation,
 messaging, password-manager integration, or enterprise workflows.

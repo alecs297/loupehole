@@ -247,7 +247,7 @@
       "optionDoc": "docs/mitigations/sensors-device-motion-seeded-jitter.md"
     },
     {
-      "id": "sensors.activity.coremotion.low_entropy",
+      "id": "sensors.activity.coremotion.confidence_shaped",
       "sources": [
         "src/mitigations/sensors/activity/ActivityLowEntropyMitigation.m"
       ],
@@ -255,10 +255,10 @@
         "CoreMotion",
         "Foundation"
       ],
-      "optionDoc": "docs/mitigations/sensors-activity-low-entropy.md"
+      "optionDoc": "docs/mitigations/sensors-activity-confidence-shaped.md"
     },
     {
-      "id": "sensors.pedometer.coremotion.quantized",
+      "id": "sensors.pedometer.coremotion.seeded_jitter",
       "sources": [
         "src/mitigations/sensors/pedometer/PedometerQuantizationMitigation.m"
       ],
@@ -266,10 +266,10 @@
         "CoreMotion",
         "Foundation"
       ],
-      "optionDoc": "docs/mitigations/sensors-pedometer-quantized.md"
+      "optionDoc": "docs/mitigations/sensors-pedometer-seeded-jitter.md"
     },
     {
-      "id": "sensors.altimeter.coremotion.quantized",
+      "id": "sensors.altimeter.coremotion.seeded_jitter",
       "sources": [
         "src/mitigations/sensors/altimeter/AltimeterQuantizationMitigation.m"
       ],
@@ -277,10 +277,10 @@
         "CoreMotion",
         "Foundation"
       ],
-      "optionDoc": "docs/mitigations/sensors-altimeter-quantized.md"
+      "optionDoc": "docs/mitigations/sensors-altimeter-seeded-jitter.md"
     },
     {
-      "id": "location.core_location.foundation.coarse",
+      "id": "location.core_location.foundation.seeded_jitter",
       "sources": [
         "src/mitigations/location/core_location/LocationCoarseMitigation.m"
       ],
@@ -288,7 +288,7 @@
         "CoreLocation",
         "Foundation"
       ],
-      "optionDoc": "docs/mitigations/location-core-location-coarse.md"
+      "optionDoc": "docs/mitigations/location-core-location-seeded-jitter.md"
     },
     {
       "id": "bluetooth.corebluetooth.scan.empty",
@@ -391,7 +391,7 @@
       "optionDoc": "docs/mitigations/network-vpn-proxy.md"
     },
     {
-      "id": "network.local_bonjour.nwbrowser.suppress_start",
+      "id": "network.local_bonjour.nwbrowser.empty_results",
       "sources": [
         "src/mitigations/network/local_bonjour/LocalBonjourMitigation.c"
       ],

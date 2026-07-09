@@ -120,6 +120,10 @@ clipboard, but it should be opt-in because it changes visible paste affordances.
 If strict mode reports no items, all type booleans should be false and item
 count should be `0`.
 
+UIKit may expose metadata through a private concrete pasteboard subclass, so an
+iOS mitigation should cover both `UIPasteboard` and the runtime class returned
+by the general pasteboard.
+
 ### `pasteboard.change_count`
 
 If handled separately, `changeCount` should be timeline-shaped. A constant `0`

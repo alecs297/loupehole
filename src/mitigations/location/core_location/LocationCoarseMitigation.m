@@ -2,6 +2,7 @@
 #include "LHGeneratedMitigationRegistry.h"
 
 #include "LHMitigationValues.h"
+#include "LHValueQuantizer.h"
 
 #import <CoreLocation/CoreLocation.h>
 #import <Foundation/Foundation.h>
@@ -30,28 +31,26 @@ static LHLocationDirectionOriginal LHLocationCourseOriginalImplementation;
 static LHAccuracyAuthorizationOriginal LHAccuracyAuthorizationOriginalImplementation;
 static LHPolicyEngine *LHLocationPolicy;
 
-static double LHLocationPhase(const LHPolicySeed *policySeed, const char *context, double step) {
-    uint64_t bucket = 0;
-    if (LHLocationPolicy == 0 ||
-        context == 0 ||
-        !LHMitigationDeriveBoundedU64(&LHLocationPolicy->config.buildSeed,
-                                      policySeed,
-                                      &LHLocationPolicy->appContext.scope,
-                                      (const uint8_t *)context,
-                                      strlen(context),
-                                      4,
-                                      &bucket)) {
-        return 0.0;
+static double LHLocationShape(double value,
+                              const LHPolicySeed *policySeed,
+                              const char *context,
+                              double amplitudeMax,
+                              double wavelength) {
+    double shaped = value;
+    if (LHLocationPolicy != 0 &&
+        context != 0 &&
+        LHValueApplySeededSinePerturbation(&LHLocationPolicy->config.buildSeed,
+                                           policySeed,
+                                           &LHLocationPolicy->appContext.scope,
+                                           (const uint8_t *)context,
+                                           strlen(context),
+                                           value,
+                                           amplitudeMax,
+                                           wavelength,
+                                           &shaped)) {
+        return shaped;
     }
-    return ((double)bucket * step) / 4.0;
-}
-
-static double LHLocationRound(double value, const LHPolicySeed *policySeed, const char *context, double step) {
-    if (!(step > 0.0)) {
-        return value;
-    }
-    double phase = LHLocationPhase(policySeed, context, step);
-    return nearbyint((value - phase) / step) * step + phase;
+    return value;
 }
 
 static CLLocationCoordinate2D LHLocationCoordinateReplacement(id self, SEL selector) {
@@ -65,8 +64,8 @@ static CLLocationCoordinate2D LHLocationCoordinateReplacement(id self, SEL selec
         return coordinate;
     }
 
-    coordinate.latitude = LHLocationRound(coordinate.latitude, &LHGeneratedPolicySeed_location_coordinate_grid, "lat", 0.05);
-    coordinate.longitude = LHLocationRound(coordinate.longitude, &LHGeneratedPolicySeed_location_coordinate_grid, "lon", 0.05);
+    coordinate.latitude = LHLocationShape(coordinate.latitude, &LHGeneratedPolicySeed_location_coordinate_grid, "lat", 0.02, 0.2);
+    coordinate.longitude = LHLocationShape(coordinate.longitude, &LHGeneratedPolicySeed_location_coordinate_grid, "lon", 0.02, 0.2);
     if (coordinate.latitude > 90.0) {
         coordinate.latitude = 90.0;
     } else if (coordinate.latitude < -90.0) {
@@ -85,7 +84,7 @@ static CLLocationDistance LHLocationAltitudeReplacement(id self, SEL selector) {
     if (LHLocationAltitudeOriginal == 0) {
         return 0.0;
     }
-    return LHLocationRound(LHLocationAltitudeOriginal(self, selector), &LHGeneratedPolicySeed_location_coordinate_grid, "alt", 50.0);
+    return LHLocationShape(LHLocationAltitudeOriginal(self, selector), &LHGeneratedPolicySeed_location_coordinate_grid, "alt", 15.0, 200.0);
 }
 
 static CLLocationDistance LHLocationHorizontalAccuracyReplacement(id self, SEL selector) {
@@ -96,8 +95,8 @@ static CLLocationDistance LHLocationHorizontalAccuracyReplacement(id self, SEL s
     if (!(original >= 0.0)) {
         return original;
     }
-    CLLocationDistance rounded = LHLocationRound(original, &LHGeneratedPolicySeed_location_coordinate_grid, "hacc", 1000.0);
-    return rounded < 5000.0 ? 5000.0 : rounded;
+    CLLocationDistance shaped = LHLocationShape(original, &LHGeneratedPolicySeed_location_coordinate_grid, "hacc", 300.0, 2000.0);
+    return shaped < 5000.0 ? 5000.0 : shaped;
 }
 
 static CLLocationDistance LHLocationVerticalAccuracyReplacement(id self, SEL selector) {
@@ -108,8 +107,8 @@ static CLLocationDistance LHLocationVerticalAccuracyReplacement(id self, SEL sel
     if (!(original >= 0.0)) {
         return original;
     }
-    CLLocationDistance rounded = LHLocationRound(original, &LHGeneratedPolicySeed_location_coordinate_grid, "vacc", 50.0);
-    return rounded < 100.0 ? 100.0 : rounded;
+    CLLocationDistance shaped = LHLocationShape(original, &LHGeneratedPolicySeed_location_coordinate_grid, "vacc", 20.0, 200.0);
+    return shaped < 100.0 ? 100.0 : shaped;
 }
 
 static CLFloor *LHLocationFloorReplacement(id self, SEL selector) {
@@ -129,7 +128,7 @@ static CLLocationSpeed LHLocationSpeedReplacement(id self, SEL selector) {
     if (original < 1.0) {
         return 0.0;
     }
-    return LHLocationRound(original, &LHGeneratedPolicySeed_location_motion_context, "speed", 5.0);
+    return LHLocationShape(original, &LHGeneratedPolicySeed_location_motion_context, "speed", 1.0, 10.0);
 }
 
 static CLLocationDirection LHLocationCourseReplacement(id self, SEL selector) {
@@ -140,14 +139,14 @@ static CLLocationDirection LHLocationCourseReplacement(id self, SEL selector) {
     if (!(original >= 0.0)) {
         return original;
     }
-    CLLocationDirection rounded = LHLocationRound(original, &LHGeneratedPolicySeed_location_motion_context, "course", 45.0);
-    while (rounded >= 360.0) {
-        rounded -= 360.0;
+    CLLocationDirection shaped = LHLocationShape(original, &LHGeneratedPolicySeed_location_motion_context, "course", 10.0, 90.0);
+    while (shaped >= 360.0) {
+        shaped -= 360.0;
     }
-    while (rounded < 0.0) {
-        rounded += 360.0;
+    while (shaped < 0.0) {
+        shaped += 360.0;
     }
-    return rounded;
+    return shaped;
 }
 
 static CLAccuracyAuthorization LHAccuracyAuthorizationReplacement(id self, SEL selector) {
@@ -169,7 +168,7 @@ static bool LHLocationHookMessage(LHHookBackend *backend,
     return LHHookBackendHookMessage(backend, targetClass, selector, replacement, original);
 }
 
-bool LHMitigation_location_core_location_foundation_coarse_install(LHHookBackend *backend, LHPolicyEngine *policy) {
+bool LHMitigation_location_core_location_foundation_seeded_jitter_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHLocationPolicy = policy;
     bool installed = false;
 
@@ -183,7 +182,7 @@ bool LHMitigation_location_core_location_foundation_coarse_install(LHHookBackend
     installed = LHLocationHookMessage(backend, @"CLLocationManager", "accuracyAuthorization", (void *)LHAccuracyAuthorizationReplacement, (void **)&LHAccuracyAuthorizationOriginalImplementation) || installed;
 
     if (!installed) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_location_core_location_foundation_coarse);
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_location_core_location_foundation_seeded_jitter);
     }
     return true;
 }

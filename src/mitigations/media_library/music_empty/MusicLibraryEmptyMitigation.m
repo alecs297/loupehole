@@ -29,7 +29,7 @@ static LHMusicCloudCapabilitiesOriginal LHMusicCloudCapabilitiesOriginalImplemen
 static MPMediaLibraryAuthorizationStatus LHMusicAuthorizationStatusReplacement(id self, SEL selector) {
     (void)self;
     (void)selector;
-    return MPMediaLibraryAuthorizationStatusDenied;
+    return MPMediaLibraryAuthorizationStatusAuthorized;
 }
 
 /** Replacement for `+[MPMediaLibrary requestAuthorization:]`. */
@@ -37,7 +37,7 @@ static void LHMusicRequestAuthorizationReplacement(id self, SEL selector, void (
     (void)self;
     (void)selector;
     if (handler != nil) {
-        handler(MPMediaLibraryAuthorizationStatusDenied);
+        handler(MPMediaLibraryAuthorizationStatusAuthorized);
     }
 }
 
@@ -73,7 +73,7 @@ static NSDate *LHMusicItemDateAddedReplacement(MPMediaItem *self, SEL selector) 
 static SKCloudServiceAuthorizationStatus LHMusicCloudAuthorizationStatusReplacement(id self, SEL selector) {
     (void)self;
     (void)selector;
-    return SKCloudServiceAuthorizationStatusDenied;
+    return SKCloudServiceAuthorizationStatusAuthorized;
 }
 
 /** Replacement for `-[SKCloudServiceController requestCapabilitiesWithCompletionHandler:]`. */

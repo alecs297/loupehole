@@ -1,6 +1,6 @@
 # `photos.library`
 
-The Photos library option normalizes Photos access to denied, empty fetch results and hides asset locations. It covers Loupe's asset-count, album-count, and geotag-summary paths without inventing a synthetic media library.
+The Photos library option normalizes Photos access to authorized, empty fetch results and hides asset locations. It covers Loupe's asset-count, album-count, and geotag-summary paths without inventing a synthetic media library.
 
 ## Metadata
 
@@ -23,9 +23,11 @@ Photos metadata exposes image, video, audio, album, and shared-album counts plus
 
 ## Mitigation Strategy
 
-The mitigation reports Photos authorization as denied and completes authorization requests with denied status. Asset and collection fetch class methods are rerouted through original Photos fetch implementations with a false predicate, preserving `PHFetchResult` shape where possible while returning no rows. `PHFetchResult.count` returns zero, and `PHAsset.location` returns `nil`.
+The mitigation reports Photos authorization as authorized and completes authorization requests with authorized status. Asset and collection fetch class methods are rerouted through original Photos fetch implementations with a false predicate, preserving `PHFetchResult` shape where possible while returning no rows. `PHFetchResult.count` returns zero, and `PHAsset.location` returns `nil`.
 
 It does not generate fake assets, albums, coordinates, place names, creation dates, local identifiers, or shared-album state. Empty fetches are preferred over seed-derived exact counts because synthetic Photos libraries are easy to contradict through collection membership, change notifications, asset metadata, and user-visible picker behavior.
+
+This is the cleanest practical implementation for this project scope. A reliable fake Photos library would need coherent `PHAsset`, `PHAssetCollection`, resource, image-manager, picker, change-notification, and mutation behavior; otherwise apps can quickly distinguish it from a real library. Authorized-empty native fetch results are less ambitious but much harder to contradict.
 
 ## Derivation And Lifetime
 
@@ -33,7 +35,7 @@ No policy seeds are declared because the mitigation owns no generated media-libr
 
 | Item | Value |
 | --- | --- |
-| Value shape | Denied Photos authorization, empty fetch results, zero fetch counts, nil asset locations |
+| Value shape | Authorized Photos access, empty fetch results, zero fetch counts, nil asset locations |
 | Derivation input | None |
 | Storage behavior | None |
 | Scope behavior | Runtime policy controls activation; no per-scope Photos profile is generated |
@@ -49,7 +51,7 @@ The mitigation does not cover the limited-library picker, Photos change notifica
 
 Expected observations after catalog selection and generation:
 
-- Photos authorization probes report denied.
+- Photos authorization probes report authorized.
 - Loupe-style image, video, audio, user-album, smart-album, and shared-album counts are zero.
 - Geotagged asset count is zero because returned assets are empty and `PHAsset.location` is nil.
 - No place-name lookup should be possible through the covered Photos paths.
