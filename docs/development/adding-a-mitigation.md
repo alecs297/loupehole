@@ -29,7 +29,7 @@ Start with the observed API family, not a broad label such as "device identity."
 - permission, entitlement, and user-visible behavior;
 - compatibility and detection risks.
 
-A surface page records research. It does not imply implementation.
+A surface page records research. It does not imply implementation. Use the page structure in [`docs/surfaces/README.md`](../surfaces/README.md) when adding or updating surface inventory.
 
 ## 2. Choose The Smallest Safe Model
 
@@ -56,6 +56,8 @@ Add a mitigation entry in `config/mitigations.json` with:
 Do not add centralized value fields or source-language metadata. Do not create or restore a centralized value catalog.
 
 Add the mitigation ID to `config/build.default.json` only when it should be compiled in the default profile. The default selection is not a dumping ground for unvalidated modules.
+
+Catalog schema, installer naming, and generator output rules live in [Build system reference](../reference/build-system.md). Do not duplicate the full current mitigation list there; the root [`README.md`](../../README.md) owns the centralized user-facing list.
 
 ## 4. Declare Policy Seeds In The Mitigation
 
@@ -116,7 +118,7 @@ Add or update focused verifier coverage when the change touches seed derivation,
 
 ## 8. Document The Implemented Behavior
 
-Create or update a page in `docs/mitigations/`. Use this layout:
+Create or update a page in `docs/mitigations/`. Use the required page template in [`docs/mitigations/README.md`](../mitigations/README.md). At minimum, the page must include:
 
 1. metadata: option ID, mitigation ID, status, surface, affected APIs, default behavior, permissions;
 2. original API behavior and fingerprinting relevance;
@@ -126,7 +128,7 @@ Create or update a page in `docs/mitigations/`. Use this layout:
 6. validation evidence and expected observations;
 7. rollback and pass-through behavior.
 
-Update the related surface page, root mitigation table when the selected set changes, status page, catalog reference, validation reference, and `AGENTS.md` source map.
+Update the related surface page, root README mitigation table when the selected set changes, status page, build-system reference when schema or generator behavior changes, validation reference, and `AGENTS.md` source map.
 
 ## Review Stop Conditions
 

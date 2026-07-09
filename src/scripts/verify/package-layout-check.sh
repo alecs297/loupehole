@@ -341,13 +341,13 @@ SOURCE
 cc \
   -DLH_PREFERENCES_TESTING=1 \
   -DLH_EMBED_BUILD_SEED=1 \
-  -Icore/include \
-  -Icore/generated \
-  -Ipackaging/theos/generated \
-  -Iui/preferences \
-  ui/preferences/LHPreferenceStore.m \
-  packaging/theos/generated/LHGeneratedPreferenceMetadata.c \
-  core/generated/LHGeneratedConfig.c \
+  -Isrc/core/include \
+  -Isrc/core/generated \
+  -Isrc/packaging/theos/generated \
+  -Isrc/ui/preferences \
+  src/ui/preferences/LHPreferenceStore.m \
+  src/packaging/theos/generated/LHGeneratedPreferenceMetadata.c \
+  src/core/generated/LHGeneratedConfig.c \
   "$tmpdir/preference_store_check.m" \
   -framework Foundation \
   -o "$tmpdir/preference_store_check"

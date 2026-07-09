@@ -9,7 +9,7 @@ LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 LH_EMBED_BUILD_SEED ?= 1
 LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
 
-# This Makefile is package/build glue only. Runtime code lives under ../../src,
+# This Makefile is package/build glue only. Runtime code lives under ../../runtime,
 # preference UI under ../../ui, and generated package inputs under ./generated.
 include $(THEOS)/makefiles/common.mk
 -include generated/mitigation-files.mk
@@ -19,32 +19,32 @@ TWEAK_NAME := $(LH_LOADER_BASENAME)
 BUNDLE_NAME := LoupeholePreferences
 
 $(LH_LOADER_BASENAME)_FILES := \
-	../../src/runtime/entry/Runtime.mm \
+	../../runtime/entry/Runtime.mm \
 	$(LH_SELECTED_MITIGATION_SOURCES) \
 	../../core/generated/LHGeneratedConfig.c \
 	../../core/generated/LHGeneratedDerivationLabels.c \
 	../../core/generated/LHGeneratedMitigationRegistry.c \
 	../../core/generated/LHGeneratedPolicySeeds.c \
-	../../src/runtime/context/LHAppContext.m \
-	../../src/runtime/config/LHConfig.c \
-	../../src/runtime/config/LHConfigProvider.m \
-	../../src/runtime/engine/LHCompatibility.c \
-	../../src/runtime/hooks/LHHookBackend.c \
-	../../src/runtime/hooks/LHHookBackendTheos.c \
-	../../src/runtime/engine/LHModuleRegistry.c \
-	../../src/runtime/engine/LHPolicyEngine.c \
-	../../src/runtime/engine/LHRuntime.m \
-	../../src/runtime/scope/LHScope.c \
-	../../src/runtime/seeds/LHSeed.c \
-	../../src/runtime/seeds/LHSeedProvider.m \
-	../../src/runtime/state/LHStateProvider.m \
-	../../src/mitigationkit/LHMitigationValues.c \
-	../../src/mitigationkit/LHValueQuantizer.c
+	../../runtime/context/LHAppContext.m \
+	../../runtime/config/LHConfig.c \
+	../../runtime/config/LHConfigProvider.m \
+	../../runtime/engine/LHCompatibility.c \
+	../../runtime/hooks/LHHookBackend.c \
+	../../runtime/hooks/LHHookBackendTheos.c \
+	../../runtime/engine/LHModuleRegistry.c \
+	../../runtime/engine/LHPolicyEngine.c \
+	../../runtime/engine/LHRuntime.m \
+	../../runtime/scope/LHScope.c \
+	../../runtime/seeds/LHSeed.c \
+	../../runtime/seeds/LHSeedProvider.m \
+	../../runtime/state/LHStateProvider.m \
+	../../mitigationkit/LHMitigationValues.c \
+	../../mitigationkit/LHValueQuantizer.c
 
 $(LH_LOADER_BASENAME)_CFLAGS += \
 	-I../../core/include \
 	-I../../core/generated \
-	-I../../src/mitigations \
+	-I../../mitigations \
 	-fmodules-cache-path=$(CURDIR)/.theos/module-cache \
 	-fvisibility=hidden \
 	-fdata-sections \

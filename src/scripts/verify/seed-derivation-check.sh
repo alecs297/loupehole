@@ -187,6 +187,6 @@ int main(void) {
 }
 SOURCE
 
-cc -Icore/include src/runtime/scope/LHScope.c src/runtime/seeds/LHSeed.c "$tmpdir/seed_check.c" -o "$tmpdir/seed_check"
+cc -Isrc/core/include src/runtime/scope/LHScope.c src/runtime/seeds/LHSeed.c "$tmpdir/seed_check.c" -o "$tmpdir/seed_check"
 "$tmpdir/seed_check" >/dev/null
 printf '%s\n' "seed derivation check passed"

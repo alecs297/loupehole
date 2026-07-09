@@ -22,7 +22,7 @@ The pasteboard metadata option presents an empty general-pasteboard shape and a 
 - Apple UIKit: `UIPasteboard`.
 - Apple UIKit: `UIPasteboard.changeCount`, `hasStrings`, `hasURLs`, `hasImages`, `hasColors`, and `numberOfItems`.
 
-## Surface And Relevance
+## Surface and Relevance
 
 Pasteboard metadata leaks cross-app workflow state without reading content. The global change counter can correlate nearby app launches, while shape booleans and item count reveal whether the clipboard looks like text, URLs, images, colors, or multiple items.
 
@@ -36,7 +36,7 @@ The mitigation hooks the UIKit metadata properties on `UIPasteboard` and also at
 
 This creates one coherent strict tuple: no items implies no exposed type booleans. The module does not read or modify pasteboard payloads.
 
-## Derivation And Lifetime
+## Derivation and Lifetime
 
 The mitigation declares:
 
@@ -53,7 +53,7 @@ LH_POLICY_SEED(pasteboard_change_count_base)
 | Storage behavior | No mitigation-owned state blob |
 | Lifetime | Base is stable until the active seed, policy seed, or scope changes; delta follows same-session real pasteboard counter changes |
 
-## Impact And Tradeoffs
+## Impact and Tradeoffs
 
 This strict empty shape can hide legitimate paste affordances. Apps may disable paste buttons, edit-menu entries, onboarding shortcuts, share flows, password-manager paste flows, or rich imports even when the real pasteboard contains usable content.
 
@@ -69,6 +69,6 @@ Expected observations:
 
 Repo-level validation is pending until the catalog entry is merged and the generated registry includes this module.
 
-## Rollback And Pass-Through
+## Rollback and Pass-Through
 
 Disabling the module restores original metadata. If `UIPasteboard` or all selectors are unavailable, the module registers as a no-op. The replacement never fabricates positive content-shape claims.

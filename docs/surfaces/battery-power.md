@@ -43,7 +43,7 @@ Loupe emits `batteryLevel` as a compound signal with two entries: `Level` and
 `State`. If `batteryLevel` is negative, Loupe displays `unknown`; otherwise it
 formats the level as a fractional value with two decimal places.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No signal in this category needs Contacts, Location, Bluetooth, Local Network,
 Motion, Photos, or another user-granted runtime permission. A normal app can

@@ -14,14 +14,14 @@ THEOS_FINALPACKAGE := 1
 THEOS_OBJ_CONFIG := release
 endif
 
-LOADER_BASENAME = $(shell awk -F'"' '/LHGeneratedConfigPackageLoaderBaseName/ { print $$2; found = 1 } END { if (!found) print "runtime" }' core/generated/LHGeneratedConfig.c 2>/dev/null || printf runtime)
-TARGET_DYLIB ?= packaging/theos/.theos/obj/$(LOADER_BASENAME).dylib
+LOADER_BASENAME = $(shell awk -F'"' '/LHGeneratedConfigPackageLoaderBaseName/ { print $$2; found = 1 } END { if (!found) print "runtime" }' src/core/generated/LHGeneratedConfig.c 2>/dev/null || printf runtime)
+TARGET_DYLIB ?= src/packaging/theos/.theos/obj/$(LOADER_BASENAME).dylib
 ARTIFACT_DIR ?= dist
 FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 PACKAGE_NAME ?= com.loupehole.runtime
-PACKAGE_VERSION ?= $(shell awk -F': ' '/^Version:/ { print $$2; found = 1 } END { if (!found) print "0" }' packaging/theos/control)
+PACKAGE_VERSION ?= $(shell awk -F': ' '/^Version:/ { print $$2; found = 1 } END { if (!found) print "0" }' src/packaging/theos/control)
 PACKAGE_ARCH ?= iphoneos-arm64
-TARGET_DEB ?= packaging/theos/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
+TARGET_DEB ?= src/packaging/theos/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 
 export LH_ENABLE_VARIABILITY ?= 1
@@ -36,31 +36,31 @@ export LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
 all: copy-artifact
 
 build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) LH_PREFERENCES_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
+	$(MAKE) -C src/packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) LH_PREFERENCES_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
 
 package: package-verify
 
 package-build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 LH_PREFERENCES_EMBED_BUILD_SEED=1 package
+	$(MAKE) -C src/packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 LH_PREFERENCES_EMBED_BUILD_SEED=1 package
 
 copy-package: package-build
 	mkdir -p "$(ARTIFACT_DIR)"
 	cp -f "$(TARGET_DEB)" "$(FINAL_DEB)"
 
 package-verify: copy-package
-	scripts/verify/package-layout-check.sh "$(FINAL_DEB)"
+	src/scripts/verify/package-layout-check.sh "$(FINAL_DEB)"
 
 generate:
-	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --selection "$(BUILD_SELECTION)"
-	PYTHON="$(PYTHON)" scripts/build/prepare-preference-assets.sh
+	$(PYTHON) src/scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --selection "$(BUILD_SELECTION)"
+	PYTHON="$(PYTHON)" src/scripts/build/prepare-preference-assets.sh
 
 clean:
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" clean
-	rm -rf packaging/theos/packages
+	$(MAKE) -C src/packaging/theos THEOS="$(THEOS)" clean
+	rm -rf src/packaging/theos/packages
 	rm -rf "$(ARTIFACT_DIR)"
 
 sign: build
-	scripts/build/sign-dylib.sh "$(TARGET_DYLIB)"
+	src/scripts/build/sign-dylib.sh "$(TARGET_DYLIB)"
 
 copy-artifact: sign
 	mkdir -p "$(ARTIFACT_DIR)"
@@ -71,28 +71,28 @@ audit: copy-artifact verify
 verify: seed-check seed-provider-check state-check mitigation-value-check summary strings symbols swift-absence debug-log-absence
 
 summary:
-	scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
+	src/scripts/verify/macho-summary.sh "$(FINAL_DYLIB)"
 
 strings:
-	scripts/verify/string-scan.sh "$(FINAL_DYLIB)"
+	src/scripts/verify/string-scan.sh "$(FINAL_DYLIB)"
 
 symbols:
-	scripts/verify/exported-symbol-scan.sh "$(FINAL_DYLIB)"
+	src/scripts/verify/exported-symbol-scan.sh "$(FINAL_DYLIB)"
 
 swift-absence:
-	scripts/verify/swift-runtime-absence.sh "$(FINAL_DYLIB)"
+	src/scripts/verify/swift-runtime-absence.sh "$(FINAL_DYLIB)"
 
 debug-log-absence:
-	scripts/verify/debug-log-absence.sh "$(FINAL_DYLIB)"
+	src/scripts/verify/debug-log-absence.sh "$(FINAL_DYLIB)"
 
 seed-check:
-	scripts/verify/seed-derivation-check.sh
+	src/scripts/verify/seed-derivation-check.sh
 
 seed-provider-check: generate
-	scripts/verify/seed-provider-check.sh
+	src/scripts/verify/seed-provider-check.sh
 
 state-check: generate
-	scripts/verify/state-provider-check.sh
+	src/scripts/verify/state-provider-check.sh
 
 mitigation-value-check: generate
-	scripts/verify/mitigation-value-check.sh
+	src/scripts/verify/mitigation-value-check.sh

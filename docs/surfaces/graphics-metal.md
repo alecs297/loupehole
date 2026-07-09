@@ -1,4 +1,4 @@
-# Graphics & Metal Fingerprint Category
+# Graphics & Metal
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/MetalProvider.swift`
 
@@ -16,21 +16,21 @@ one-off spoofing targets.
 
 ## Official Links
 
-- Apple Metal `MTLCreateSystemDefaultDevice()`: <https://developer.apple.com/documentation/metal/mtlcreatesystemdefaultdevice%28%29>
-- Apple Metal `MTLDevice`: <https://developer.apple.com/documentation/metal/mtldevice>
-- Apple Metal `MTLDevice.name`: <https://developer.apple.com/documentation/Metal/MTLDevice/name>
-- Apple Metal `MTLDevice.recommendedMaxWorkingSetSize`: <https://developer.apple.com/documentation/metal/mtldevice/recommendedmaxworkingsetsize>
-- Apple Metal `MTLDevice.supportsRaytracing`: <https://developer.apple.com/documentation/metal/mtldevice/supportsraytracing>
-- Apple Metal `MTLDevice.supportsFamily(_:)`: <https://developer.apple.com/documentation/metal/mtldevice/supportsfamily%28_%3A%29>
-- Apple Metal `MTLGPUFamily`: <https://developer.apple.com/documentation/metal/MTLGPUFamily>
-- Apple Metal device inspection: <https://developer.apple.com/documentation/metal/device-inspection>
-- Apple Metal Feature Set Tables: <https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf>
+- [`MTLCreateSystemDefaultDevice()`](https://developer.apple.com/documentation/metal/mtlcreatesystemdefaultdevice%28%29)
+- [`MTLDevice`](https://developer.apple.com/documentation/metal/mtldevice)
+- [`MTLDevice.name`](https://developer.apple.com/documentation/Metal/MTLDevice/name)
+- [`MTLDevice.recommendedMaxWorkingSetSize`](https://developer.apple.com/documentation/metal/mtldevice/recommendedmaxworkingsetsize)
+- [`MTLDevice.supportsRaytracing`](https://developer.apple.com/documentation/metal/mtldevice/supportsraytracing)
+- [`MTLDevice.supportsFamily(_:)`](https://developer.apple.com/documentation/metal/mtldevice/supportsfamily%28_%3A%29)
+- [`MTLGPUFamily`](https://developer.apple.com/documentation/metal/MTLGPUFamily)
+- [Metal device inspection](https://developer.apple.com/documentation/metal/device-inspection)
+- [Metal Feature Set Tables](https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf)
 
 Apple documents the Metal device and GPU-family inspection APIs directly. The
 feature-set tables are the practical equivalent reference for mapping Metal
 families and capabilities to supported Apple GPU generations.
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ provider currently checks a fixed family list through `apple9`, `common3`, and
 `metal3`; newer Apple SDKs may add future families that Loupe does not yet
 query.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No Graphics & Metal signal requires Contacts, Location, Bluetooth, Motion,
 Photos, Local Network, Camera, Microphone, or another user-granted runtime
@@ -146,7 +146,7 @@ Do not return a high working-set budget on a low-memory device. Apps may use the
 value to size caches, textures, heaps, or compute buffers, and unrealistic values
 can cause memory pressure or crashes.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Graphics values should be cohort static. They are not good candidates for
 per-user random derivation because valid combinations are tightly constrained by

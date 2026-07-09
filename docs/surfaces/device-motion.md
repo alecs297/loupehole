@@ -18,20 +18,20 @@ every 0.2 seconds.
 
 ## Official Links
 
-- Apple Core Motion `CMMotionManager`: <https://developer.apple.com/documentation/coremotion/cmmotionmanager>
-- Apple Core Motion `CMDeviceMotion`: <https://developer.apple.com/documentation/coremotion/cmdevicemotion>
-- Apple Core Motion `CMAccelerometerData`: <https://developer.apple.com/documentation/coremotion/cmaccelerometerdata>
-- Apple Core Motion `CMGyroData`: <https://developer.apple.com/documentation/coremotion/cmgyrodata>
-- Apple Core Motion `CMMagnetometerData`: <https://developer.apple.com/documentation/coremotion/cmmagnetometerdata>
-- Apple Core Motion `CMAttitude`: <https://developer.apple.com/documentation/coremotion/cmattitude>
-- Apple Core Motion `CMAcceleration`: <https://developer.apple.com/documentation/coremotion/cmacceleration>
-- Apple Core Motion `CMRotationRate`: <https://developer.apple.com/documentation/coremotion/cmrotationrate>
-- Apple Core Motion `CMMagneticField`: <https://developer.apple.com/documentation/coremotion/cmmagneticfield>
-- Apple Core Motion `CMCalibratedMagneticField`: <https://developer.apple.com/documentation/coremotion/cmcalibratedmagneticfield>
-- Apple Core Motion `CMAttitudeReferenceFrame`: <https://developer.apple.com/documentation/coremotion/cmattitudereferenceframe>
-- Apple bundle resource `NSMotionUsageDescription`: <https://developer.apple.com/documentation/bundleresources/information-property-list/nsmotionusagedescription>
+- [`CMMotionManager`](https://developer.apple.com/documentation/coremotion/cmmotionmanager)
+- [`CMDeviceMotion`](https://developer.apple.com/documentation/coremotion/cmdevicemotion)
+- [`CMAccelerometerData`](https://developer.apple.com/documentation/coremotion/cmaccelerometerdata)
+- [`CMGyroData`](https://developer.apple.com/documentation/coremotion/cmgyrodata)
+- [`CMMagnetometerData`](https://developer.apple.com/documentation/coremotion/cmmagnetometerdata)
+- [`CMAttitude`](https://developer.apple.com/documentation/coremotion/cmattitude)
+- [`CMAcceleration`](https://developer.apple.com/documentation/coremotion/cmacceleration)
+- [`CMRotationRate`](https://developer.apple.com/documentation/coremotion/cmrotationrate)
+- [`CMMagneticField`](https://developer.apple.com/documentation/coremotion/cmmagneticfield)
+- [`CMCalibratedMagneticField`](https://developer.apple.com/documentation/coremotion/cmcalibratedmagneticfield)
+- [`CMAttitudeReferenceFrame`](https://developer.apple.com/documentation/coremotion/cmattitudereferenceframe)
+- [`NSMotionUsageDescription`](https://developer.apple.com/documentation/bundleresources/information-property-list/nsmotionusagedescription)
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -51,7 +51,7 @@ Loupe chooses the best available attitude reference frame in this order:
 `xArbitraryZVertical`. It only emits calibrated magnetic field and heading when
 the selected frame is north-aligned.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 Loupe's Device Motion provider is not passive in the strict sensor-lifecycle
 sense: it starts local Core Motion updates, waits briefly, reads the latest
@@ -140,7 +140,7 @@ impossible heading/magnetic-field pair.
 Avoid returning a seed-derived magnetic environment that is stable across many
 apps. A unique synthetic magnetic tuple can become a new fingerprint.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Device-motion values are live sensor values, not durable identity fields. They
 should not be derived as high-cardinality per-user constants. When strict

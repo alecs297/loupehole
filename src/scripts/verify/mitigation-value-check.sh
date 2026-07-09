@@ -73,12 +73,12 @@ SOURCE
 
 cc \
   -DLH_STATE_TESTING=1 \
-  -Icore/include \
-  -Icore/generated \
+  -Isrc/core/include \
+  -Isrc/core/generated \
   -Isrc/mitigations \
-  core/generated/LHGeneratedConfig.c \
-  core/generated/LHGeneratedDerivationLabels.c \
-  core/generated/LHGeneratedPolicySeeds.c \
+  src/core/generated/LHGeneratedConfig.c \
+  src/core/generated/LHGeneratedDerivationLabels.c \
+  src/core/generated/LHGeneratedPolicySeeds.c \
   src/runtime/context/LHAppContext.m \
   src/runtime/config/LHConfig.c \
   src/runtime/config/LHConfigProvider.m \
@@ -123,10 +123,10 @@ cc \
   -DLH_STATE_TESTING=1 \
   -DLH_DEFAULT_STATE_PROVIDER_KIND=LHStateProviderKindPackage \
   -DLH_EMBED_BUILD_SEED=0 \
-  -Icore/include \
-  -Icore/generated \
-  core/generated/LHGeneratedConfig.c \
-  core/generated/LHGeneratedDerivationLabels.c \
+  -Isrc/core/include \
+  -Isrc/core/generated \
+  src/core/generated/LHGeneratedConfig.c \
+  src/core/generated/LHGeneratedDerivationLabels.c \
   src/runtime/context/LHAppContext.m \
   src/runtime/config/LHConfig.c \
   src/runtime/config/LHConfigProvider.m \
@@ -143,7 +143,7 @@ state_parent_and_policy=$(python3 - <<'PY'
 import re
 from pathlib import Path
 
-text = Path("core/generated/LHGeneratedConfig.c").read_text(encoding="utf-8")
+text = Path("src/core/generated/LHGeneratedConfig.c").read_text(encoding="utf-8")
 values = dict(re.findall(r'LHGeneratedConfig(PackageStateParentDirectoryName|PackagePolicyFileName)\[\] = "([0-9a-f]{32})"', text))
 print(values["PackageStateParentDirectoryName"], values["PackagePolicyFileName"])
 PY

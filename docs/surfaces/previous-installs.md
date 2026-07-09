@@ -15,7 +15,7 @@ state that survives app deletion. Loupe stores an array of install timestamps in
 the Keychain and uses a UserDefaults flag to decide whether the current app
 installation has already been recorded.
 
-## Official and Equivalent Links
+## Official Links
 
 - [Keychain Services](https://developer.apple.com/documentation/security/keychain-services)
 - [`SecItemAdd(_:_:)`](https://developer.apple.com/documentation/security/secitemadd%28_%3A_%3A%29)

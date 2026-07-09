@@ -17,6 +17,11 @@ The battery option maps the real charge level through a scoped smooth curve, red
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: [`UIDevice.batteryLevel`](https://developer.apple.com/documentation/uikit/uidevice/batterylevel).
+- Apple Developer: [`UIDevice.batteryState`](https://developer.apple.com/documentation/uikit/uidevice/batterystate).
+
 ## Surface And Relevance
 
 Battery level changes slowly enough to link nearby launches. A direct rounded bucket reduces precision but can produce obvious stair-step behavior. Battery state provides context for whether the level should rise, fall, stay full, or be unknown.

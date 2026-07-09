@@ -1,6 +1,6 @@
-# Installed Voices Fingerprint Category
+# Installed Voices
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/VoicesProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/VoicesProvider.swift`
 
 Loupe category: Installed Voices
 Loupe tier: passive local speech-voice inventory
@@ -14,7 +14,7 @@ downloaded Enhanced or Premium voices, and the full per-voice list with
 language, gender, and quality. Downloaded voices are especially identifying
 because most devices do not have many of them.
 
-## Official and Equivalent Links
+## Official Links
 
 - Apple AVFAudio [`AVSpeechSynthesisVoice`](https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice)
 - Apple AVFAudio [`AVSpeechSynthesisVoice.speechVoices()`](https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice/speechvoices%28%29)

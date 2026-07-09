@@ -17,7 +17,7 @@ calls `UIApplication.canOpenURL(_:)` through its platform shim. On macOS, the
 same shim uses `NSWorkspace.urlForApplication(toOpen:)` to ask Launch Services
 whether an app can open the URL.
 
-## Official and Equivalent Links
+## Official Links
 
 - [`UIApplication.canOpenURL(_:)`](https://developer.apple.com/documentation/uikit/uiapplication/canopenurl%28_%3A%29)
 - [Launch Services `LSApplicationQueriesSchemes`](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/LaunchServicesKeys.html)

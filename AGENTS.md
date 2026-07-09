@@ -2,9 +2,9 @@
 
 ## Project Context
 
-Loupehole is an early-stage iOS injected runtime/library for reducing abusive fingerprinting from native apps and embedded web views. The repo is documentation-heavy on purpose: code changes should update the visible docs that future agents and contributors will read.
+Loupehole is an early-stage iOS privacy tweak and injected runtime/library for reducing abusive fingerprinting from native apps and embedded web views. The repo is documentation-heavy on purpose: code changes should update the visible docs that future agents, contributors, and semi-technical reviewers will read.
 
-Treat `README.md`, `docs/README.md`, and the files under `docs/development/` and `docs/concepts/` as the handoff surface. The surface inventory under `docs/surfaces/` is research coverage, not implementation coverage.
+Treat `README.md`, `docs/README.md`, `docs/status.md`, and the files under `docs/development/` and `docs/concepts/` as the handoff surface. The surface inventory under `docs/surfaces/` is research coverage, not implementation coverage. Mitigation pages under `docs/mitigations/` describe implemented behavior and must avoid universal coverage claims.
 
 ## Current Architecture
 
@@ -12,15 +12,15 @@ Treat `README.md`, `docs/README.md`, and the files under `docs/development/` and
 | --- | --- |
 | `config/build.default.json` | Default static build selection and build seed. |
 | `config/mitigations.json` | Mitigation catalog. It contains build metadata only. |
-| `core/include/` | Internal runtime/mitigationkit headers. |
-| `core/generated/` | Ignored generator output. Never hand-edit. |
+| `src/core/include/` | Internal runtime/mitigationkit headers. |
+| `src/core/generated/` | Ignored generator output. Never hand-edit. |
 | `src/runtime/` | Injected runtime, app context, config, scope, seed, state, module registry, and hook backend. |
 | `src/mitigationkit/` | Helpers intended for mitigations to import. |
 | `src/mitigations/` | Mitigation installers, hook adapters, and mitigation-owned value/state helpers. |
-| `packaging/theos/` | Theos/deb package scaffold. |
-| `ui/preferences/` | PreferenceLoader Settings UI. |
-| `scripts/build/` | Generator and build helper scripts. |
-| `scripts/verify/` | Static and package verification scripts. |
+| `src/packaging/theos/` | Theos build adapter for both the standalone dylib and rootless deb package. It is not deb-only. |
+| `src/ui/preferences/` | PreferenceLoader Settings UI. |
+| `src/scripts/build/` | Generator and build helper scripts. |
+| `src/scripts/verify/` | Static and package verification scripts. |
 | `docs/mitigations/` | Implemented mitigation behavior pages. |
 | `docs/surfaces/` | Research inventory for possible/future surfaces. |
 
@@ -37,6 +37,9 @@ Treat `README.md`, `docs/README.md`, and the files under `docs/development/` and
 - Generated files are disposable. Patch the generator or source declarations, then regenerate.
 - If a helper or shipped package artifact is generated, patch the generator first.
 - Preserve pass-through behavior when a hook cannot safely provide its documented value.
+- Do not rename `src/packaging/theos/` to a deb-only path unless the standalone dylib build no longer depends on the Theos project.
+- Keep the centralized user-facing mitigation list in `README.md`; avoid duplicating the full current catalog elsewhere.
+- Loupe is a research inspiration and surface source, but Loupehole is not affiliated with Loupe or Mysk.
 
 ## Mitigation Development Pattern
 
@@ -52,7 +55,7 @@ bool LHMitigation_<id_with_dots_as_underscores>_install(LHHookBackend *backend,
 ```
 
 6. Register no-op when a selected mitigation cannot install any hook.
-7. Document every policy seed identifier in the associated mitigation page.
+7. Document every policy seed identifier in the associated mitigation page and update the root README mitigation table when the default selected set changes.
 
 ## Verification Routine
 
@@ -79,8 +82,9 @@ make package
 ## Documentation Rules
 
 - Update docs in the same commit or immediately after the code concept changes.
-- `docs/reference/mitigation-catalog.md` owns catalog schema and naming conventions.
+- `docs/reference/build-system.md` owns catalog schema and build-generation contracts.
 - `docs/development/adding-a-mitigation.md` owns the contributor workflow.
+- `docs/mitigations/README.md` and `docs/surfaces/README.md` own the page templates for those directories.
 - Each mitigation page must list policy seeds, helper/state ownership, lifetime, dependencies, validation, and rollback behavior.
 - Avoid broad claims. A compiled mitigation is not universal coverage.
 

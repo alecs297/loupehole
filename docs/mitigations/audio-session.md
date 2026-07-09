@@ -17,6 +17,12 @@ The audio-session option reduces precision and personalized labels from iOS audi
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None for these metadata reads |
 
+## References
+
+- Apple Developer: `AVAudioSession`.
+- Apple Developer: `AVAudioSessionPortDescription`.
+- Apple Developer: `AVAudioSession.outputVolume`.
+
 ## Surface And Relevance
 
 Audio route metadata can expose named accessories, current output volume, active sample rate, latency, and whether another app is playing audio. Accessory names are the highest-risk value because they can contain owner, room, car, headset, AirPlay, or external-device context.
@@ -36,6 +42,16 @@ It does not alter route arrays, route-change notifications, audio-session activa
 ## Derivation And Lifetime
 
 `audio_output_volume_curve` selects the unit-interval transfer curve for `outputVolume`. `audio_latency_jitter` selects the continuous perturbation profile for `outputLatency` and `inputLatency`. The module does not store state; repeated reads follow the underlying system state through the same scoped function. Port names remain generic labels derived from real route type, sample rate remains a common cohort value, and `isOtherAudioPlaying` remains a shared policy constant.
+
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | `audio_output_volume_curve`, `audio_latency_jitter` |
+| Generated seed symbols | `LHGeneratedPolicySeed_audio_output_volume_curve`, `LHGeneratedPolicySeed_audio_latency_jitter` |
+| Helpers/state owner | Mitigation-owned shaping helpers; no persisted state |
+| Value shape | Generic port labels, curved volume, common sample-rate cohorts, jittered latency, `NO` for other-audio state |
+| Derivation input | active/practical seed + generated policy seed + active `LHScope` |
+| Lifetime | Stable scoped transform applied to changing underlying audio-session values |
+| Temporal dependencies | None |
 
 ## Impact And Tradeoffs
 

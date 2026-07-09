@@ -39,7 +39,7 @@ Apple's newer EventKit model separates write-only calendar access from full
 event access. Loupe's provider reads calendars and counts existing events, so
 write-only access is not enough for this category.
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -49,7 +49,7 @@ write-only access is not enough for this category.
 | `types` | Unique mapped `EKCalendar.type` values: `local`, `calDAV`, `exchange`, `subscription`, `birthday`, or `unknown` | Calendar full access | Active local calendar metadata read after permission gate | Include | Medium. Types are coarse, but they strongly constrain the source list and reveal subscription, birthday, Exchange, or local-only use. |
 | `events60d` | `predicateForEvents` from 30 days before now to 30 days after now, then `events(matching:)` count | Calendar full access | Active local event query after permission gate | Include | High. Routine density in a rolling 60-day window is user-shaped and can reveal work cadence, travel, school, health, caregiving, or meeting-heavy life patterns. |
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 Loupe's permission path checks `EKEventStore.authorizationStatus(for: .event)`
 and, when status is `notDetermined`, calls `requestFullAccessToEvents()`. The
@@ -155,7 +155,7 @@ Do not only rewrite Loupe's final count. If a target app can inspect returned
 `EKEvent` objects, the number of objects, calendars, recurrence behavior, and
 event metadata must match the aggregate result.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Calendar values are an EventKit tuple:
 

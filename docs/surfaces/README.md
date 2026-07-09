@@ -1,20 +1,14 @@
 # Fingerprinting Surface Inventory
 
-This directory maps Loupe's fingerprinting providers to Loupehole mitigation
-planning pages. Each page is written around one global Loupe category and should
-answer the same practical questions:
+This directory maps Loupe's fingerprinting providers to Loupehole surface
+inventory pages. Each page is research coverage first: it records what Loupe
+reads, why that read matters, and what a future mitigation would need to keep
+coherent. A page in this directory does not mean the surface is implemented.
 
-- what Loupe reads
-- whether the read is passive, active, permissioned, or a hardware/cohort probe
-- which permission, entitlement, or user prompt is required
-- which APIs or platform contracts document the surface
-- why the value is useful for fingerprinting
-- how a Loupehole mitigation should derive, scope, and rotate replacement values
-- what compatibility or detection risks the mitigation creates
-
-The goal is not to claim every page is implemented. The goal is to preserve a
-complete, useful inventory of granular fingerprinting methods that can become
-mitigations without re-reading Loupe every time.
+Treat these pages as the reference template for adding or maintaining surface
+inventory. Preserve reviewed facts, call out uncertainty, and avoid upgrading a
+research note into a mitigation claim unless the code and mitigation docs also
+support that claim.
 
 ## Inclusion Rule
 
@@ -68,7 +62,39 @@ model, display, CPU, GPU, camera, and WebKit hardware claims agree.
 | Reminders | [`reminders.md`](reminders.md) | Active permissioned reminders inventory | Reminders authorization |
 | Music | [`music-library.md`](music-library.md) | Active permissioned media-library inventory | Media Library / Apple Music authorization depending on API |
 
-## Page Rules
+## Page Template
+
+Use this section order for new pages and normalize existing pages toward it when
+the content maps cleanly:
+
+1. `# <Loupe category>`
+2. Source reviewed line, pointing at the reviewed Loupe provider under
+   `.research/upstream/loupe/code/Loupe/Providers/`.
+3. Short metadata block:
+   - `Loupe category:`
+   - `Loupe tier:`
+   - `Permission required:`
+   - `Primary relevance:`
+4. Introductory scope paragraph that says what the page includes, what it does
+   not include, and whether any values are being treated as coherence
+   constraints rather than standalone mitigation targets.
+5. `## Official Links`
+6. `## Loupe Signals`
+7. `## Permission and Collection Class`
+8. `## Fingerprinting Value`
+9. `## Mitigation Strategy Ideas`
+10. `## Derivation Considerations`
+11. `## Impact and Tradeoffs`
+12. Optional `## Exclusion Note` when Loupe reports values that this page
+    deliberately excludes from first-class mitigation ownership.
+13. `## Relevance`
+
+Use tables for Loupe signals when there is more than one signal. Include these
+columns when they are useful: `Loupe signal`, `Provider source`, `Permission`,
+`Classification`, `Decision`, and `Fingerprinting value`. Pages may add
+platform or source columns when that makes the inventory clearer.
+
+## Maintenance Rules
 
 - Use official Apple Developer links where available. Use Apple archived manual
   pages, Apple open-source headers, standards documents, or platform-owner
@@ -76,6 +102,9 @@ model, display, CPU, GPU, camera, and WebKit hardware claims agree.
 - Say `None` when the API has no TCC prompt. Do not invent permission prompts.
 - Distinguish collection from mitigation: a passive fingerprinting surface can
   still require an active hook mitigation.
+- Use `Include`, `Exclude`, or an explicit scoped decision in the signal table.
+  Exclusions should explain where the value belongs instead, such as a coherent
+  hardware, graphics, display, account, or timeline profile.
 - Prefer coherent reduction over randomization. Values that can be compared
   should derive from the same state domain or profile choice.
 - Explain impact honestly. Some mitigations can break analytics, licensing,
@@ -83,3 +112,7 @@ model, display, CPU, GPU, camera, and WebKit hardware claims agree.
   management flows.
 - Keep omitted hardware constants visible in exclusion notes so they do not
   quietly re-enter the roadmap as one-off spoofing tasks.
+- Keep repo references current with the source-tree layout. Mitigation source
+  belongs under `src/mitigations/`, reusable mitigation helpers under
+  `src/mitigationkit/`, internal headers under `src/core/include/`, and
+  generator/build/verification helpers under `src/scripts/`.

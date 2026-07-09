@@ -27,16 +27,15 @@ Loupehole documentation is organized by the question being answered rather than 
 ## Reference
 
 - [Build system](reference/build-system.md) — inputs, generated outputs, targets, and artifact flow.
-- [Mitigation catalog contract](reference/mitigation-catalog.md) — catalog and selection schema, current entries, and naming conventions.
 - [Validation](reference/validation.md) — static gates, device evidence, regression checks, and release criteria.
 - [Glossary](reference/glossary.md) — shared vocabulary.
 - [Known limitations](reference/known-limitations.md) — boundaries of the current implementation and threat model.
 
-## Detailed libraries retained during the directory rename
+## Detailed Libraries
 
-Two detailed reference libraries are maintained separately from this restructuring:
+Two detailed reference libraries are maintained separately from the system overview:
 
-- `docs/surfaces/` — the renamed fingerprinting-surface inventory, formerly `docs/fingerprints/`.
-- `docs/mitigations/` — the renamed mitigation-option library, formerly `docs/options/`.
+- `docs/surfaces/` — fingerprinting-surface research inventory.
+- `docs/mitigations/` — implemented mitigation behavior library.
 
 They contain the API-specific research and behavior pages. This documentation layer provides the navigation, system model, and contributor standards that keep those pages consistent.

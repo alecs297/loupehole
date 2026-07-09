@@ -1,6 +1,6 @@
-# Pasteboard Fingerprint Category
+# Pasteboard
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/PasteboardProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/PasteboardProvider.swift`
 
 Loupe category: Pasteboard
 Loupe tier: passive local pasteboard metadata

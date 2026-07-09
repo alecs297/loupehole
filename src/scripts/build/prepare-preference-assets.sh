@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
 source_icon="$repo_root/docs/assets/loupehole-logo.png"
-output_dir="$repo_root/packaging/theos/generated/preference-resources"
+output_dir="$repo_root/src/packaging/theos/generated/preference-resources"
 python_bin="${PYTHON:-python3}"
 
 if [ ! -f "$source_icon" ]; then
@@ -14,8 +14,8 @@ fi
 mkdir -p "$output_dir"
 rm -f "$output_dir"/LoupeholeIcon.png "$output_dir"/LoupeholeIcon@2x.png "$output_dir"/LoupeholeIcon@3x.png
 rm -f \
-    "$repo_root/packaging/theos/.theos/obj/LoupeholePreferences.bundle/LoupeholeIcon.png" \
-    "$repo_root/packaging/theos/.theos/_/var/jb/Library/PreferenceBundles/LoupeholePreferences.bundle/LoupeholeIcon.png"
+    "$repo_root/src/packaging/theos/.theos/obj/LoupeholePreferences.bundle/LoupeholeIcon.png" \
+    "$repo_root/src/packaging/theos/.theos/_/var/jb/Library/PreferenceBundles/LoupeholePreferences.bundle/LoupeholeIcon.png"
 
 "$python_bin" - "$source_icon" "$output_dir" <<'PY'
 import math

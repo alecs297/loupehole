@@ -14,7 +14,7 @@ creation date of its Documents directory. For a protected target process, the
 same pattern exposes that target app's build metadata and per-install container
 timeline.
 
-## Official and Equivalent Links
+## Official Links
 
 - [`Bundle`](https://developer.apple.com/documentation/foundation/bundle)
 - [`Bundle.main`](https://developer.apple.com/documentation/foundation/bundle/main)
@@ -53,7 +53,7 @@ If a bundle key is absent, Loupe uses `?` for that field. Loupe emits
 `installDate` only when it can locate the Documents directory and read a
 creation date.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No App & Bundle signal requires Contacts, Location, Bluetooth, Local Network,
 Motion, Photos, Calendar, Reminders, Music, or another user-granted runtime
@@ -142,7 +142,7 @@ larger app-identity model.
 it must still match actual framework behavior, linked SDK assumptions, and API
 availability checks that the app can perform.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Install date belongs to the temporal state domain. A useful state record should
 include:

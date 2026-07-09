@@ -34,7 +34,7 @@ Apple treats Contacts as a protected resource. Loupe's category is therefore a
 permissioned demonstration surface, not a silent passive fingerprint available
 before user consent.
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ before user consent.
 | `postalCount` | Sum of `contact.postalAddresses.count` over enumerated contacts | Contacts | Active local contact field enumeration after permission gate | Include | Medium. Postal-address counts are lower frequency and can expose older, professional, family, or location-heavy address books. |
 | `phoneLabels` | Top six localized phone labels from each `CNLabeledValue.label`, with unlabeled values grouped | Contacts | Active local contact label enumeration after permission gate | Include | High. Standard label mix is useful, and custom labels can directly encode relationships, roles, or personal vocabulary. |
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 Loupe's permission path checks `CNContactStore.authorizationStatus(for:
 .contacts)` and, when status is `notDetermined`, calls
@@ -148,7 +148,7 @@ Do not generate seed-derived custom labels. Unique labels or uncommon
 relationship strings can identify the protected profile and may leak more than
 the original top-six summary.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Contacts values are a coherent address-book tuple:
 

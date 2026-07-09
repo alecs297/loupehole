@@ -17,6 +17,11 @@ The accessibility common-preferences option normalizes many high-entropy UIKit a
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: `UIAccessibility`.
+- Apple Developer: `UITraitCollection.accessibilityContrast`.
+
 ## Surface And Relevance
 
 Rare accessibility settings can strongly identify a user or preference bundle. However, apps may also read these settings to provide necessary accessibility behavior, so normalization has real usability risk.
@@ -29,7 +34,17 @@ It also hooks `UIAccessibilityDarkerSystemColorsEnabled`, the iOS 26.1 `AXShowBo
 
 ## Derivation And Lifetime
 
-No state or seed-derived values are used. The tuple is constant by design because seeded rare accessibility bundles would be more identifying and less plausible.
+No policy seeds are declared. No state or seed-derived values are used. The tuple is constant by design because seeded rare accessibility bundles would be more identifying and less plausible.
+
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Generated seed symbols | None |
+| Helpers/state owner | None |
+| Value shape | Fixed common accessibility tuple |
+| Derivation input | None |
+| Lifetime | Stable while the module is enabled |
+| Temporal dependencies | None |
 
 ## Impact And Tradeoffs
 
@@ -47,4 +62,4 @@ Expected observations after catalog selection and generation:
 
 ## Rollback And Pass-Through
 
-If no UIKit selector hook installs, the module registers as a no-op. Disabling this module restores real accessibility values.
+If no UIKit selector or C-function hook installs, the module registers as a no-op. Disabling this module restores real accessibility values.

@@ -9,11 +9,20 @@ This option normalizes visible CoreTelephony radio access technology to one acti
 | Option ID | `telephony.radio_access` |
 | Implemented mitigation | `telephony.radio_access.coretelephony.single_lte` |
 | Policy seeds | None |
+| User-facing name | Radio access technology |
 | Status | Experimental |
 | Surface | Telephony |
+| Classification | Passive cellular radio-state surface; active Objective-C hook mitigation |
 | Affected APIs | `CTTelephonyNetworkInfo.serviceCurrentRadioAccessTechnology`, `CTTelephonyNetworkInfo.currentRadioAccessTechnology` |
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | None for Loupe's covered CoreTelephony radio state reads |
+
+## References
+
+- Apple Developer: [`CTTelephonyNetworkInfo`](https://developer.apple.com/documentation/coretelephony/cttelephonynetworkinfo).
+- Apple Developer: [`serviceCurrentRadioAccessTechnology`](https://developer.apple.com/documentation/coretelephony/cttelephonynetworkinfo/servicecurrentradioaccesstechnology).
+- Apple Developer: [`currentRadioAccessTechnology`](https://developer.apple.com/documentation/coretelephony/cttelephonynetworkinfo/currentradioaccesstechnology).
+- Apple Developer: [`CTRadioAccessTechnologyLTE`](https://developer.apple.com/documentation/coretelephony/ctradioaccesstechnologylte).
 
 ## Surface And Relevance
 
@@ -31,9 +40,18 @@ Carrier metadata and provider dictionaries are untouched.
 
 ## Derivation And Lifetime
 
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Value shape | Single LTE radio-access string or one-entry service dictionary |
+| Derivation input | Original CoreTelephony radio-access result |
+| Storage behavior | No mitigation-owned state |
+| Lifetime | Tracks whether the original API reports active service |
+| Dependencies | Carrier metadata, interface state, and server-observed network context remain outside coverage |
+
 No state or seed-derived value is used. Active service dictionaries collapse to a single common zero-shaped service identifier; nil and empty original dictionaries remain nil or empty.
 
-## Impact And Gaps
+## Impact And Tradeoffs
 
 This can affect diagnostics, network-quality decisions, carrier support, analytics, and risk scoring. It intentionally avoids changing nil or empty original service state, but it can still conflict with Network.framework, visible cellular settings, hardware profile, IP routing, or server-side carrier observations.
 
@@ -49,4 +67,4 @@ Expected observations after integration:
 
 ## Rollback And Pass-Through
 
-If `CTTelephonyNetworkInfo` or both selectors are unavailable, the module registers as no-op.
+If `CTTelephonyNetworkInfo` or both selectors are unavailable, the module registers as no-op. Disabling the mitigation restores original CoreTelephony radio-access reads.

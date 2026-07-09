@@ -17,6 +17,13 @@ The app install-date option normalizes Foundation creation-date reads for the pr
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: `FileManager.urls(for:in:)`.
+- Apple Developer: `NSURLCreationDateKey`.
+- Apple Developer: `NSURL getResourceValue:forKey:error:`.
+- Apple Developer: `NSURL resourceValuesForKeys:error:`.
+
 ## Surface And Relevance
 
 Apps can read the Documents directory creation date as an app-install timeline anchor. That timestamp can link launches in the same install and can be compared with previous-install logs, volume creation time, boot time, cache files, and server first-seen records.
@@ -44,6 +51,7 @@ LH_POLICY_SEED(volume_creation_date)
 | Install range | Stable timestamp after the synthetic volume baseline, within a 90-day lookback, and at least one hour before first generation |
 | State behavior | Persisted through mitigationkit stable-time state with schema version `1` |
 | Coherence dependency | Reuses `volume_creation_date` |
+| Temporal dependencies | Synthetic volume creation time must precede the synthetic app install date |
 
 ## Impact And Tradeoffs
 

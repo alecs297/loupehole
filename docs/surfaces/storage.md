@@ -145,8 +145,6 @@ quota, or server-observed upload/download behavior.
 
 ### `storage.volume_creation_time`
 
-Existing option: `storage.volume_creation_time`
-
 Keep this as a temporal lifetime value, not an isolated date replacement. The
 current option hooks Foundation URL resource-value methods for
 `NSURLVolumeCreationDateKey` and asks the policy engine for a typed synthetic

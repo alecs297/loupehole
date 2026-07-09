@@ -40,6 +40,16 @@ No policy seed is declared because this module does not create a value stream. I
 
 The result is stable for every read while the module is enabled. Rotation is controlled only by runtime policy or by changing the allowlist in source.
 
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Generated seed symbols | None |
+| Helpers/state owner | None |
+| Value shape | Original result for allowlisted common schemes; `NO` for other schemes |
+| Derivation input | None |
+| Lifetime | Stable while the module is enabled |
+| Temporal dependencies | None |
+
 ## Impact And Tradeoffs
 
 Apps that use custom schemes for real handoff features may hide buttons or disable integrations. Direct `openURL` behavior is not changed by this mitigation, so user-initiated deep links can still work when an app calls them without first requiring `canOpenURL`.

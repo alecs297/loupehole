@@ -22,7 +22,7 @@ The hostname option normalizes common local host-name reads to a generic device-
 - Apple archived iOS manual pages for `gethostname(3)` and `sysctl(3)`.
 - Apple Foundation: `ProcessInfo.hostName`.
 
-## Surface And Relevance
+## Surface and Relevance
 
 Local host names can encode a user name, owner label, device nickname, enterprise asset naming pattern, or other local-network identity. The value should agree across BSD, sysctl, Foundation, and future device-name surfaces.
 
@@ -32,11 +32,11 @@ The mitigation hooks the main observed native paths and returns `iPhone` or `iPa
 
 The module intentionally avoids seed-derived names. A stable unique fake hostname can become a stronger identifier than a common generic value.
 
-## Derivation And Lifetime
+## Derivation and Lifetime
 
 No policy seed is declared because the module returns a cohort constant rather than a scoped unique value. The value is stable while enabled and rotates only if the source policy changes.
 
-## Impact And Tradeoffs
+## Impact and Tradeoffs
 
 Host-name normalization can confuse diagnostics, enterprise tools, device-management flows, local sharing, support screens, and apps that need to show or match the real host name. Interface addresses, Bonjour names, `UIDevice.name`, and other device-name surfaces are not covered by this page and may still contradict this generic value until those modules exist.
 
@@ -50,6 +50,6 @@ Expected observations:
 
 Repo-level validation is pending until the catalog entry is merged and the generated registry includes this module.
 
-## Rollback And Pass-Through
+## Rollback and Pass-Through
 
 Disabling the module restores original host-name behavior. If no hook installs, the module registers as a no-op. Sysctl write attempts and unrelated sysctl names pass through to the original implementation.

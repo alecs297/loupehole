@@ -1,4 +1,4 @@
-# WebView Fingerprint Category
+# WebView Fingerprint
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/WebViewFingerprintProvider.swift`
 
@@ -16,7 +16,7 @@ content. The provider does not load a remote page or request a runtime
 permission, but collection is active because Loupe executes scripts, renders a
 canvas, and creates a WebGL context.
 
-## Official and Equivalent Links
+## Official Links
 
 - Apple WebKit `WKWebView`: <https://developer.apple.com/documentation/webkit/wkwebview>
 - Apple WebKit `WKWebView.evaluateJavaScript(_:completionHandler:)`: <https://developer.apple.com/documentation/webkit/wkwebview/evaluatejavascript%28_%3Acompletionhandler%3A%29>

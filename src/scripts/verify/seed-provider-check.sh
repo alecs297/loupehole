@@ -286,10 +286,10 @@ SOURCE
 
 HOME="$tmpdir" cc \
   -DLH_STATE_TESTING=1 \
-  -Icore/include \
-  -Icore/generated \
-  core/generated/LHGeneratedConfig.c \
-  core/generated/LHGeneratedDerivationLabels.c \
+  -Isrc/core/include \
+  -Isrc/core/generated \
+  src/core/generated/LHGeneratedConfig.c \
+  src/core/generated/LHGeneratedDerivationLabels.c \
   src/runtime/config/LHConfig.c \
   src/runtime/scope/LHScope.c \
   src/runtime/seeds/LHSeed.c \

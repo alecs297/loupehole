@@ -6,6 +6,8 @@ The rootless `.deb` packages the same selected runtime that can also be copied a
 
 The current package metadata identifies `com.loupehole.runtime`, targets `iphoneos-arm64`, and declares `mobilesubstrate` plus `preferenceloader` as dependencies.
 
+The Theos project lives under `src/packaging/theos/` because it is source-adjacent build glue, not an end-user artifact directory. The root `make` target uses that same Theos project to build the standalone dylib, and `make package` uses it to assemble the rootless deb. Deb-only behavior is limited to package metadata, generated package layout, maintainer scripts, and PreferenceLoader installation.
+
 ```mermaid
 flowchart TD
     Deb[Rootless .deb] --> Dylib[Generated-loader dylib]
@@ -23,12 +25,12 @@ flowchart TD
 
 | Area | Purpose |
 | --- | --- |
-| `packaging/theos/Makefile` | Defines the arm64 rootless Theos build, dylib sources, generated inputs, Foundation linkage, and preference bundle. |
-| `packaging/theos/control` | Debian package metadata and runtime dependencies. |
-| `packaging/theos/Filter.plist` | Source template for the injection filter. The installed filter uses the generated loader basename. |
-| `ui/preferences/` | Preference store, controllers, Settings resources, and PreferenceLoader entry plist. |
-| `packaging/theos/generated/` | Generated package-specific build and preference metadata. |
-| `scripts/verify/package-layout-check.sh` | Verifies expected package layout after package build. |
+| `src/packaging/theos/Makefile` | Defines the arm64 Theos build for the standalone dylib, rootless package, generated inputs, Foundation linkage, and preference bundle. |
+| `src/packaging/theos/control` | Debian package metadata and runtime dependencies. |
+| `src/packaging/theos/Filter.plist` | Source template for the injection filter. The installed filter uses the generated loader basename. |
+| `src/ui/preferences/` | Preference store, controllers, Settings resources, and PreferenceLoader entry plist. |
+| `src/packaging/theos/generated/` | Generated package-specific build and preference metadata. |
+| `src/scripts/verify/package-layout-check.sh` | Verifies expected package layout after package build. |
 
 ## Injection and runtime guards
 

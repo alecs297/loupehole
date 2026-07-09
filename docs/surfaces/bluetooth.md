@@ -18,21 +18,21 @@ scan.
 
 ## Official Links
 
-- Apple Core Bluetooth `CBCentralManager`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanager>
-- Apple Core Bluetooth `CBCentralManager.scanForPeripherals(withServices:options:)`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/scanforperipherals%28withservices%3Aoptions%3A%29>
-- Apple Core Bluetooth `CBCentralManager.stopScan()`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/stopscan%28%29>
-- Apple Core Bluetooth `CBCentralManagerDelegate`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerdelegate>
-- Apple Core Bluetooth `centralManager(_:didDiscover:advertisementData:rssi:)`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerdelegate/centralmanager%28_%3Adiddiscover%3Aadvertisementdata%3Arssi%3A%29>
-- Apple Core Bluetooth `CBPeripheral`: <https://developer.apple.com/documentation/corebluetooth/cbperipheral>
-- Apple Core Bluetooth `CBPeripheral.name`: <https://developer.apple.com/documentation/corebluetooth/cbperipheral/name>
-- Apple Core Bluetooth advertising data keys: <https://developer.apple.com/documentation/corebluetooth/advertising-data>
-- Apple Core Bluetooth `CBAdvertisementDataLocalNameKey`: <https://developer.apple.com/documentation/corebluetooth/cbadvertisementdatalocalnamekey>
-- Apple Core Bluetooth `CBCentralManagerScanOptionAllowDuplicatesKey`: <https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerscanoptionallowduplicateskey>
-- Apple Core Bluetooth `CBManagerState`: <https://developer.apple.com/documentation/corebluetooth/cbmanagerstate>
-- Apple Core Bluetooth `CBManagerAuthorization`: <https://developer.apple.com/documentation/corebluetooth/cbmanagerauthorization>
-- Apple bundle resource `NSBluetoothAlwaysUsageDescription`: <https://developer.apple.com/documentation/bundleresources/information-property-list/nsbluetoothalwaysusagedescription>
+- [`CBCentralManager`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanager)
+- [`CBCentralManager.scanForPeripherals(withServices:options:)`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/scanforperipherals%28withservices%3Aoptions%3A%29)
+- [`CBCentralManager.stopScan()`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/stopscan%28%29)
+- [`CBCentralManagerDelegate`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerdelegate)
+- [`centralManager(_:didDiscover:advertisementData:rssi:)`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerdelegate/centralmanager%28_%3Adiddiscover%3Aadvertisementdata%3Arssi%3A%29)
+- [`CBPeripheral`](https://developer.apple.com/documentation/corebluetooth/cbperipheral)
+- [`CBPeripheral.name`](https://developer.apple.com/documentation/corebluetooth/cbperipheral/name)
+- [Core Bluetooth advertising data keys](https://developer.apple.com/documentation/corebluetooth/advertising-data)
+- [`CBAdvertisementDataLocalNameKey`](https://developer.apple.com/documentation/corebluetooth/cbadvertisementdatalocalnamekey)
+- [`CBCentralManagerScanOptionAllowDuplicatesKey`](https://developer.apple.com/documentation/corebluetooth/cbcentralmanagerscanoptionallowduplicateskey)
+- [`CBManagerState`](https://developer.apple.com/documentation/corebluetooth/cbmanagerstate)
+- [`CBManagerAuthorization`](https://developer.apple.com/documentation/corebluetooth/cbmanagerauthorization)
+- [`NSBluetoothAlwaysUsageDescription`](https://developer.apple.com/documentation/bundleresources/information-property-list/nsbluetoothalwaysusagedescription)
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ results by RSSI descending. It uses the peripheral name first, then the
 advertised local name, and finally the peripheral identifier UUID string as a
 fallback display label.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 This is an active permissioned scan, not a passive local read. Loupe calls
 `scanForPeripherals(withServices:nil, options:)`, waits five seconds, then calls
@@ -131,7 +131,7 @@ RSSI should be coarse if exposed. Bucket values into broad proximity classes or
 round to large intervals. Do not derive stable per-device RSSI values from the
 instance seed; RSSI is live radio state and should remain noisy.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Bluetooth scan data is environment state, not stable user identity. Strict
 profiles should prefer reduction over invention:

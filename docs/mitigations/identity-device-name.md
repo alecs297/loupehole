@@ -17,6 +17,12 @@ The device-name option reduces user-assigned device-name entropy by returning a 
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None; user-assigned name access may also depend on entitlement behavior on modern iOS |
 
+## References
+
+- Apple Developer: `UIDevice`.
+- Apple Developer: `UIDevice.name`.
+- Apple Developer: `UIDevice.userInterfaceIdiom`.
+
 ## Surface And Relevance
 
 `UIDevice.name` can expose a personalized device name on some OS versions, platforms, or entitlemented builds. Personalized names can reveal owner, household, or local-network naming choices.
@@ -29,7 +35,14 @@ The hostname mitigation uses the same vocabulary so `UIDevice.name` and hostname
 
 ## Derivation And Lifetime
 
-No mitigation-owned state is used. The returned value is a common cohort value chosen from the current UI idiom at call time. It rotates only when the device class observed by UIKit changes.
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Helper/state owner | Local module idiom check only |
+| Value shape | `NSString` value `iPad` or `iPhone` |
+| Derivation input | Current `UIDevice.userInterfaceIdiom` |
+| Storage behavior | No mitigation-owned state blob |
+| Lifetime | Common cohort value changes only when the device class observed by UIKit changes |
 
 ## Impact And Tradeoffs
 

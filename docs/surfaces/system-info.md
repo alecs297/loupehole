@@ -1,17 +1,18 @@
-# System Info Fingerprint Category
+# System Info
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/SystemInfoProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/SystemInfoProvider.swift`
 
 Loupe category: System Info
-Loupe tier: passive
+Loupe tier: passive local system/runtime state
 Permission required: none
-Primary relevance: OS/kernel coherence, boot-time correlation, and rare security-state leakage.
+Primary relevance: OS/kernel coherence, boot-time correlation, and rare
+security-state leakage.
 
 This category covers system state that normal apps can read without a prompt. It
 is small, but it is high leverage because the values are easy to combine with
 device identity, storage, WebView, and locale surfaces.
 
-## Reference Links
+## Official Links
 
 - Apple Foundation `ProcessInfo.processorCount`: <https://developer.apple.com/documentation/foundation/processinfo/processorcount>
 - Apple Foundation `ProcessInfo.physicalMemory`: <https://developer.apple.com/documentation/foundation/processinfo/physicalmemory>
@@ -49,9 +50,7 @@ external device.
 
 ## Mitigation Strategy Ideas
 
-### OS Version String
-
-Mitigation ID idea: `system.os_version_string`
+### `system.os_version_string`
 
 Default behavior should be cohort-normalized only when the broader OS profile is
 selected. Otherwise, pass through. A synthetic value must come from a common OS
@@ -68,9 +67,7 @@ Avoid making the app believe it is running on an OS version whose APIs or
 feature flags do not match runtime reality. If OS-version normalization is not
 complete for the process, pass through rather than return a contradictory value.
 
-### Kernel Version and Kernel State
-
-Mitigation ID idea: `system.kernel_version`
+### `system.kernel_version`
 
 `kern.version` should be generated from the same cohort OS profile as the public
 Foundation/UIKit OS fields. The mitigation should cover both string-name and MIB
@@ -81,9 +78,7 @@ The safest default is pass-through until the OS/kernel profile can be returned
 coherently across Foundation, Darwin, UIKit, and WebKit. Strict mode can return
 a cohort kernel build string, but only as part of a complete OS profile.
 
-### Boot Time
-
-Existing option: `system.boot_time`
+### `system.boot_time`
 
 The current boot-time mitigation already treats `kern.boottime` as part of the
 first mitigation group. Keep it as a synthetic per-scope timeline value derived
@@ -101,9 +96,7 @@ creation time, app install time, and any future reset/profile-epoch timestamps.
 Hook behavior should preserve the sysctl buffer-size and error behavior as
 closely as possible, and non-boot-time sysctl keys should pass through.
 
-### Lockdown Mode
-
-Mitigation ID idea: `system.lockdown_mode`
+### `system.lockdown_mode`
 
 Compatibility default should pass through. Lockdown Mode is a real security
 choice, and hiding it can conflict with observable platform behavior such as

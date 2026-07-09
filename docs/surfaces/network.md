@@ -1,4 +1,4 @@
-# Network Fingerprint Category
+# Network
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/NetworkProvider.swift`
 
@@ -98,9 +98,7 @@ with device name, `kern.hostname`, app install state, and local IP data.
 
 ## Mitigation Strategy Ideas
 
-### Hostname
-
-Mitigation ID idea: `network.hostname`
+### `network.hostname`
 
 Hook equivalent host-name reads as one surface:
 
@@ -120,9 +118,7 @@ Do not change real network behavior just to hide a read. If the target app is a
 network diagnostic, MDM, file-sharing, local-discovery, or enterprise tool that
 needs the real host identity, pass through this surface.
 
-### Path Cost and Constraint Flags
-
-Mitigation ID idea: `network.path_policy`
+### `network.path_policy`
 
 Treat `NWPath.isExpensive`, `NWPath.isConstrained`, and equivalent path-policy
 observations as a linked tuple. Compatibility default should pass through
@@ -136,9 +132,7 @@ exposing cellular-only interfaces or cellular addresses. Do not report
 `isConstrained == false` if other visible behavior makes Low Data Mode obvious,
 such as reduced fetch behavior or system-imposed path decisions.
 
-### Available Interfaces and Interface Addresses
-
-Mitigation ID ideas: `network.interface_types` and `network.interface_addresses`
+### `network.interface_types` and `network.interface_addresses`
 
 Cover the native surfaces together:
 
@@ -174,9 +168,7 @@ Avoid exposing deterministic but unique synthetic subnets across many apps. A
 stable fake `192.168.x.y` derived directly from the seed can become a new
 identifier.
 
-### VPN Active Heuristic and Scoped Proxy Keys
-
-Mitigation ID idea: `network.vpn_status`
+### `network.vpn_status`
 
 Loupe's VPN boolean is derived from scoped proxy/interface keys, not from a
 formal VPN-status API. Preserve that relationship:

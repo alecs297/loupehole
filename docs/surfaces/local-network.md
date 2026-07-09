@@ -1,4 +1,4 @@
-# Local Network Fingerprint Category
+# Local Network
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/LocalNetworkProvider.swift`
 
@@ -20,7 +20,7 @@ The provider comment says it reports counts without revealing names, but the
 reviewed code currently emits service names. That makes this category more
 sensitive than a count-only inventory.
 
-## Official and Equivalent Links
+## Official Links
 
 - Apple Network `NWBrowser`: <https://developer.apple.com/documentation/network/nwbrowser>
 - Apple Network `NWBrowser.Descriptor.bonjour(type:domain:)`: <https://developer.apple.com/documentation/network/nwbrowser/descriptor-swift.enum/bonjour%28type%3Adomain%3A%29>

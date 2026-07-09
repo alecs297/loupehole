@@ -9,11 +9,21 @@ This option adds scoped continuous perturbation to permission-free Core Motion r
 | Option ID | `sensors.device_motion` |
 | Implemented mitigation | `sensors.device_motion.coremotion.seeded_jitter` |
 | Policy seeds | `device_motion_acceleration`, `device_motion_rotation_rate`, `device_motion_magnetic_field`, `device_motion_attitude`, `device_motion_heading` |
+| User-facing name | Device motion |
 | Status | Experimental |
 | Surface | Device Motion |
+| Classification | Passive motion-sensor surface; active Objective-C getter hook mitigation |
 | Affected APIs | `CMAccelerometerData.acceleration`, `CMGyroData.rotationRate`, `CMMagnetometerData.magneticField`, `CMDeviceMotion.gravity`, `CMDeviceMotion.userAcceleration`, `CMDeviceMotion.rotationRate`, `CMDeviceMotion.magneticField`, `CMDeviceMotion.heading`, `CMAttitude.roll`, `CMAttitude.pitch`, `CMAttitude.yaw` |
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | None for the covered `CMMotionManager` data paths |
+
+## References
+
+- Apple Developer: [`CMAccelerometerData`](https://developer.apple.com/documentation/coremotion/cmaccelerometerdata).
+- Apple Developer: [`CMGyroData`](https://developer.apple.com/documentation/coremotion/cmgyrodata).
+- Apple Developer: [`CMMagnetometerData`](https://developer.apple.com/documentation/coremotion/cmmagnetometerdata).
+- Apple Developer: [`CMDeviceMotion`](https://developer.apple.com/documentation/coremotion/cmdevicemotion).
+- Apple Developer: [`CMAttitude`](https://developer.apple.com/documentation/coremotion/cmattitude).
 
 ## Surface And Relevance
 
@@ -44,7 +54,7 @@ The policy seeds select a small finite perturbation profile for each semantic st
 
 Rotation occurs when the active seed, scope, or policy seed identifiers change.
 
-## Impact And Gaps
+## Impact And Tradeoffs
 
 Continuous perturbation preserves more compatibility than a frozen synthetic profile and avoids obvious bucket edges, but it does not remove all behavioral or hardware-bias information. Apps can still observe update timing, timestamps, availability, manager lifecycle behavior, and broad movement.
 

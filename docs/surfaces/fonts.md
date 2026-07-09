@@ -1,6 +1,6 @@
-# Fonts Fingerprint Category
+# Fonts
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/FontsProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/FontsProvider.swift`
 
 Loupe category: Fonts
 Loupe tier: passive local font inventory
@@ -15,21 +15,21 @@ or creative workflow adds fonts that change the family list.
 
 ## Official Links
 
-- Apple CoreText [`CTFontManagerCopyAvailableFontFamilyNames()`](https://developer.apple.com/documentation/coretext/ctfontmanagercopyavailablefontfamilynames%28%29)
-- Apple CoreText [Core Text Functions](https://developer.apple.com/documentation/coretext/core-text-functions)
-- Apple CoreText [`CTFontDescriptor`](https://developer.apple.com/documentation/coretext/ctfontdescriptor)
-- Apple UIKit [`UIFont.familyNames`](https://developer.apple.com/documentation/uikit/uifont/familynames)
-- Apple UIKit [`UIFont.fontNames(forFamilyName:)`](https://developer.apple.com/documentation/uikit/uifont/fontnames%28forfamilyname%3A%29)
-- Apple AppKit [`NSFontManager.availableFontFamilies`](https://developer.apple.com/documentation/appkit/nsfontmanager/availablefontfamilies)
-- Apple AppKit [`NSFontManager.availableFontNames(with:)`](https://developer.apple.com/documentation/appkit/nsfontmanager/availablefontnames%28with%3A%29)
-- Apple Bundle Resources [`UIAppFonts`](https://developer.apple.com/documentation/bundleresources/information-property-list/uiappfonts)
+- [`CTFontManagerCopyAvailableFontFamilyNames()`](https://developer.apple.com/documentation/coretext/ctfontmanagercopyavailablefontfamilynames%28%29)
+- [Core Text Functions](https://developer.apple.com/documentation/coretext/core-text-functions)
+- [`CTFontDescriptor`](https://developer.apple.com/documentation/coretext/ctfontdescriptor)
+- [`UIFont.familyNames`](https://developer.apple.com/documentation/uikit/uifont/familynames)
+- [`UIFont.fontNames(forFamilyName:)`](https://developer.apple.com/documentation/uikit/uifont/fontnames%28forfamilyname%3A%29)
+- [`NSFontManager.availableFontFamilies`](https://developer.apple.com/documentation/appkit/nsfontmanager/availablefontfamilies)
+- [`NSFontManager.availableFontNames(with:)`](https://developer.apple.com/documentation/appkit/nsfontmanager/availablefontnames%28with%3A%29)
+- [`UIAppFonts`](https://developer.apple.com/documentation/bundleresources/information-property-list/uiappfonts)
 
 Loupe uses CoreText directly through `PlatformFont.familyNames`, which calls
 `CTFontManagerCopyAvailableFontFamilyNames()`. UIKit and AppKit font-family
 enumeration are equivalent surfaces for mitigation planning even though the
 provider does not call them directly.
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Platforms | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -40,7 +40,7 @@ Loupe sorts the family list before emitting it. It does not enumerate individual
 font faces, PostScript names, glyph coverage, font tables, rendering metrics,
 or app-specific typography output in this provider.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No included Fonts signal requires Contacts, Location, Bluetooth, Local Network,
 Motion, Photos, Microphone, Files, or another user-granted runtime permission.
