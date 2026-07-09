@@ -2,6 +2,7 @@
 #include "LHGeneratedMitigationRegistry.h"
 
 #import <Foundation/Foundation.h>
+#import <objc/message.h>
 #import <objc/runtime.h>
 
 #include <dlfcn.h>
@@ -24,6 +25,19 @@ static LHSysctlByNameOriginal LHHostnameSysctlByNameOriginalImplementation;
 static LHHostNameOriginal LHProcessInfoHostNameOriginalImplementation;
 
 static const char *LHNetworkSyntheticHostName(void) {
+    Class deviceClass = NSClassFromString(@"UIDevice");
+    SEL currentDeviceSelector = sel_registerName("currentDevice");
+    if (deviceClass != Nil && currentDeviceSelector != 0 && [deviceClass respondsToSelector:currentDeviceSelector]) {
+        id (*messageID)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+        id device = messageID((id)deviceClass, currentDeviceSelector);
+        SEL idiomSelector = sel_registerName("userInterfaceIdiom");
+        if (device != nil && idiomSelector != 0 && [device respondsToSelector:idiomSelector]) {
+            NSInteger (*messageInteger)(id, SEL) = (NSInteger (*)(id, SEL))objc_msgSend;
+            if (messageInteger(device, idiomSelector) == 1) {
+                return "iPad";
+            }
+        }
+    }
     return "iPhone";
 }
 

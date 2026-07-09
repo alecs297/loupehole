@@ -28,7 +28,7 @@ Local host names can encode a user name, owner label, device nickname, enterpris
 
 ## Mitigation Strategy
 
-The mitigation hooks the main observed native paths and returns `iPhone` as a low-entropy cohort value. `uname` calls first ask the original implementation for the rest of the structure, then replace only `nodename`.
+The mitigation hooks the main observed native paths and returns `iPhone` or `iPad` as a low-entropy cohort value using the same runtime device-family check as the identity hostname/device-name mitigations. `uname` calls first ask the original implementation for the rest of the structure, then replace only `nodename`.
 
 The module intentionally avoids seed-derived names. A stable unique fake hostname can become a stronger identifier than a common generic value.
 
@@ -44,7 +44,7 @@ Host-name normalization can confuse diagnostics, enterprise tools, device-manage
 
 Expected observations:
 
-- `gethostname` reports `iPhone`.
+- `gethostname` reports `iPhone` or `iPad` according to the runtime device family.
 - `uname.nodename`, `kern.hostname`, and `NSProcessInfo.hostName` report the same value through covered paths.
 - Non-hostname sysctl calls pass through.
 
