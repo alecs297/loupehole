@@ -25,7 +25,7 @@ Loupehole does not aim to make every observation random. Its default approach is
 
 ## Project status
 
-The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 29 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
+The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 30 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
 
 The broader surface inventory remains larger and deeper than the implemented set. The [surfaces](docs/surfaces/) folder contains the research inventory, while [mitigations](docs/mitigations/) presents the behavior pages for modules compiled by the default selection. A compiled mitigation is not a universal claim for its whole surface; trust each mitigation page for exact API coverage.
 
@@ -53,6 +53,7 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [power.battery](docs/mitigations/power-battery.md) | [power/battery_state](src/mitigations/power/battery_state/) | `power.battery.uidevice.curved_level` |
 | [power.low_power_mode](docs/mitigations/power-low-power-mode.md) | [power/low_power_mode](src/mitigations/power/low_power_mode/) | `power.low_power_mode.processinfo.normalized_false` |
 | [power.thermal_state](docs/mitigations/power-thermal-state.md) | [power/thermal_state](src/mitigations/power/thermal_state/) | `power.thermal_state.processinfo.nominalized` |
+| [sensors.device_motion](docs/mitigations/sensors-device-motion-seeded-jitter.md) | [sensors/device_motion](src/mitigations/sensors/device_motion/) | `sensors.device_motion.coremotion.seeded_jitter` |
 | [bluetooth.corebluetooth](docs/mitigations/bluetooth-corebluetooth-scan-empty.md) | [bluetooth/corebluetooth](src/mitigations/bluetooth/corebluetooth/) | `bluetooth.corebluetooth.scan.empty` |
 | [telephony.radio_access](docs/mitigations/telephony-radio-access-single-lte.md) | [telephony/radio_access](src/mitigations/telephony/radio_access/) | `telephony.radio_access.coretelephony.single_lte` |
 | [personal_data.eventkit](docs/mitigations/personal-data-eventkit-empty.md) | [personal_data/eventkit_empty](src/mitigations/personal_data/eventkit_empty/) | `personal_data.eventkit.inventory.empty` |
@@ -65,7 +66,7 @@ The broader surface inventory remains larger and deeper than the implemented set
 
 The default selection intentionally mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. The temporal mitigations remain linked through the documented `volume_creation_date` policy seed so volume creation, app install, and boot time stay ordered. Other modules are narrow adapters and should be evaluated by their mitigation pages rather than by surface name alone.
 
-Location, motion and sensors, contacts, Photos, and music-library inventory are intentionally not compiled in the default selection. Those domains already have granular iOS permission controls, and Loupehole treats pass-through or system denial as preferable to partial synthetic inventories there. Bluetooth, local network, Calendar, and Reminders remain in scope for mitigation design where permissioned fair use can still expose unrelated inventory.
+Location, permission-gated motion/sensor inventory, contacts, Photos, and music-library inventory are intentionally not compiled in the default selection. Those domains already have granular iOS permission controls, and Loupehole treats pass-through or system denial as preferable to partial synthetic inventories there. Permission-free device-motion getters remain mitigated because they can expose live movement and sensor-bias signals without an explicit user permission grant. Bluetooth, local network, Calendar, and Reminders remain in scope for mitigation design where permissioned fair use can still expose unrelated inventory.
 
 ## Documentation
 

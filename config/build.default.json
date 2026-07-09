@@ -25,6 +25,7 @@
     "power.battery.uidevice.curved_level",
     "power.low_power_mode.processinfo.normalized_false",
     "power.thermal_state.processinfo.nominalized",
+    "sensors.device_motion.coremotion.seeded_jitter",
     "bluetooth.corebluetooth.scan.empty",
     "telephony.radio_access.coretelephony.single_lte",
     "personal_data.eventkit.inventory.empty",
