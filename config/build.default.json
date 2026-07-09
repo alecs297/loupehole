@@ -22,7 +22,7 @@
     "camera.unique_id.avcapturedevice.scoped_id",
     "display.brightness.uiscreen.bucketed",
     "display.dynamic_type.uikit.bucketed",
-    "power.battery.uidevice.bucketed_level",
+    "power.battery.uidevice.curved_level",
     "power.low_power_mode.processinfo.normalized_false",
     "power.thermal_state.processinfo.nominalized",
     "sensors.device_motion.coremotion.quantized",

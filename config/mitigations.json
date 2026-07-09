@@ -203,7 +203,7 @@
       "optionDoc": "docs/mitigations/display-dynamic-type.md"
     },
     {
-      "id": "power.battery.uidevice.bucketed_level",
+      "id": "power.battery.uidevice.curved_level",
       "sources": [
         "src/mitigations/power/battery_state/PowerBatteryStateMitigation.m"
       ],

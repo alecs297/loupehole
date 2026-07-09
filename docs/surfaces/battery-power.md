@@ -105,9 +105,12 @@ resource decisions, and incorrect values are visible to users.
 Strict mode can return a synthetic per-scope battery timeline. The timeline
 should be plausible rather than fixed: level should drift slowly, charging state
 should explain the direction of drift, and `full` should only appear at or near
-100 percent. Use common bucketed levels where possible instead of high-entropy
-per-user decimals. If returning `unknown`, keep both level and state unknown and
-preserve the platform's disabled-monitoring behavior.
+100 percent. Until Loupehole owns the full timeline and notification surface, a
+scoped transfer curve over the real level is a safer middle ground than a fixed
+level or a 1:1 raw value. Use a small finite curve family and common display
+precision rather than high-entropy per-user decimals. If returning `unknown`,
+keep both level and state unknown and preserve the platform's disabled-monitoring
+behavior.
 
 Do not spoof only `batteryLevel` while leaving `batteryState` real. That creates
 easy contradictions such as an unplugged state with rapidly rising charge, or a
@@ -161,6 +164,14 @@ Use coarse common buckets unless an app genuinely needs fine-grained values.
 Loupe displays two decimals, but returning a unique seed-derived decimal can
 turn mitigation into a new identifier. A deterministic value from a common
 population shape is safer than a high-cardinality synthetic charge.
+
+The current compiled `power.battery` module is an intermediate mitigation, not a
+complete synthetic timeline. It passes through `batteryState`, maps valid real
+levels through a scoped monotonic nonlinear curve selected from a small finite
+seeded family, and rounds to two decimals. This keeps reported charge continuous
+with real movement but not 1:1 with the raw level. A future strict mode should
+also own monitoring enablement, notifications, charging direction, and
+state-level coherence.
 
 Low Power Mode should be a policy choice, not a high-cardinality derivation.
 The useful modes are pass-through, normalize false, or explicitly preserve true
