@@ -236,61 +236,6 @@
       "optionDoc": "docs/mitigations/power-thermal-state.md"
     },
     {
-      "id": "sensors.device_motion.coremotion.seeded_jitter",
-      "sources": [
-        "src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m"
-      ],
-      "frameworks": [
-        "CoreMotion",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/sensors-device-motion-seeded-jitter.md"
-    },
-    {
-      "id": "sensors.activity.coremotion.confidence_shaped",
-      "sources": [
-        "src/mitigations/sensors/activity/ActivityLowEntropyMitigation.m"
-      ],
-      "frameworks": [
-        "CoreMotion",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/sensors-activity-confidence-shaped.md"
-    },
-    {
-      "id": "sensors.pedometer.coremotion.seeded_jitter",
-      "sources": [
-        "src/mitigations/sensors/pedometer/PedometerQuantizationMitigation.m"
-      ],
-      "frameworks": [
-        "CoreMotion",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/sensors-pedometer-seeded-jitter.md"
-    },
-    {
-      "id": "sensors.altimeter.coremotion.seeded_jitter",
-      "sources": [
-        "src/mitigations/sensors/altimeter/AltimeterQuantizationMitigation.m"
-      ],
-      "frameworks": [
-        "CoreMotion",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/sensors-altimeter-seeded-jitter.md"
-    },
-    {
-      "id": "location.core_location.foundation.seeded_jitter",
-      "sources": [
-        "src/mitigations/location/core_location/LocationCoarseMitigation.m"
-      ],
-      "frameworks": [
-        "CoreLocation",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/location-core-location-seeded-jitter.md"
-    },
-    {
       "id": "bluetooth.corebluetooth.scan.empty",
       "sources": [
         "src/mitigations/bluetooth/corebluetooth/BluetoothScanEmptyMitigation.m"
@@ -313,17 +258,6 @@
       "optionDoc": "docs/mitigations/telephony-radio-access-single-lte.md"
     },
     {
-      "id": "contacts.permissioned.inventory.empty",
-      "sources": [
-        "src/mitigations/contacts/permissioned_empty/ContactsPermissionedEmptyMitigation.m"
-      ],
-      "frameworks": [
-        "Contacts",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/contacts-permissioned-inventory-empty.md"
-    },
-    {
       "id": "personal_data.eventkit.inventory.empty",
       "sources": [
         "src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m"
@@ -333,30 +267,6 @@
         "Foundation"
       ],
       "optionDoc": "docs/mitigations/personal-data-eventkit-empty.md"
-    },
-    {
-      "id": "photos.library.inventory.empty",
-      "sources": [
-        "src/mitigations/photos/library_empty/PhotosLibraryEmptyMitigation.m"
-      ],
-      "frameworks": [
-        "Photos",
-        "CoreLocation",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/photos-library-empty.md"
-    },
-    {
-      "id": "media_library.music.inventory.empty",
-      "sources": [
-        "src/mitigations/media_library/music_empty/MusicLibraryEmptyMitigation.m"
-      ],
-      "frameworks": [
-        "MediaPlayer",
-        "StoreKit",
-        "Foundation"
-      ],
-      "optionDoc": "docs/mitigations/media-library-music-empty.md"
     },
     {
       "id": "apps.url_scheme_probes.uiapplication.known_list",

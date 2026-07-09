@@ -2,7 +2,13 @@
 
 ## Present limitation: coverage is selective
 
-Loupehole currently compiles 37 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
+Loupehole currently compiles 29 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
+
+## Platform-control boundary
+
+Location, motion and sensor access, contacts, Photos, and music-library inventory are intentionally not compiled as mitigations in the default build. Those domains already have granular iOS permission controls that users can deny directly, and the current project scope treats pass-through or system denial as less fingerprintable than partial synthetic inventories for these surfaces.
+
+Bluetooth, local network, Calendar, and Reminders remain candidates for mitigation work because fair app functionality can require permission while still not justifying unrelated inventory access. Their behavior should be evaluated by their mitigation pages and revisited with surface-specific design work.
 
 ## Cross-check limitation
 
@@ -11,7 +17,7 @@ A covered high-level API can be compared with an uncovered low-level API. Curren
 - Foundation volume and app install dates can be compared with filesystem metadata APIs that are not yet normalized.
 - Synthetic boot time and Foundation uptime do not normalize every monotonic clock, process age, log time, or mach-time path.
 - Scoped and generic identity values do not normalize all account, StoreKit, OS-version, anti-abuse, bundle metadata, previous-install, or generic Keychain signals.
-- Coarse sensor, location, network, media, and WebView modules can still be cross-checked against unimplemented delegate callbacks, lower-level APIs, arbitrary JavaScript, or server-side behavior.
+- Network, audio, camera, power, pasteboard, and WebView modules can still be cross-checked against unimplemented delegate callbacks, lower-level APIs, arbitrary JavaScript, or server-side behavior.
 
 These are documented gaps, not claims of invisibility.
 

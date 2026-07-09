@@ -82,17 +82,9 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `power.battery.uidevice.curved_level` | [power.battery](../mitigations/power-battery.md) | `src/mitigations/power/battery_state/PowerBatteryStateMitigation.m` |
 | `power.low_power_mode.processinfo.normalized_false` | [power.low_power_mode](../mitigations/power-low-power-mode.md) | `src/mitigations/power/low_power_mode/PowerLowPowerModeMitigation.m` |
 | `power.thermal_state.processinfo.nominalized` | [power.thermal_state](../mitigations/power-thermal-state.md) | `src/mitigations/power/thermal_state/PowerThermalStateMitigation.m` |
-| `sensors.device_motion.coremotion.seeded_jitter` | [sensors.device_motion](../mitigations/sensors-device-motion-seeded-jitter.md) | `src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m` |
-| `sensors.activity.coremotion.confidence_shaped` | [sensors.activity](../mitigations/sensors-activity-confidence-shaped.md) | `src/mitigations/sensors/activity/ActivityLowEntropyMitigation.m` |
-| `sensors.pedometer.coremotion.seeded_jitter` | [sensors.pedometer](../mitigations/sensors-pedometer-seeded-jitter.md) | `src/mitigations/sensors/pedometer/PedometerQuantizationMitigation.m` |
-| `sensors.altimeter.coremotion.seeded_jitter` | [sensors.altimeter](../mitigations/sensors-altimeter-seeded-jitter.md) | `src/mitigations/sensors/altimeter/AltimeterQuantizationMitigation.m` |
-| `location.core_location.foundation.seeded_jitter` | [location.core_location](../mitigations/location-core-location-seeded-jitter.md) | `src/mitigations/location/core_location/LocationCoarseMitigation.m` |
 | `bluetooth.corebluetooth.scan.empty` | [bluetooth.corebluetooth](../mitigations/bluetooth-corebluetooth-scan-empty.md) | `src/mitigations/bluetooth/corebluetooth/BluetoothScanEmptyMitigation.m` |
 | `telephony.radio_access.coretelephony.single_lte` | [telephony.radio_access](../mitigations/telephony-radio-access-single-lte.md) | `src/mitigations/telephony/radio_access/TelephonyRadioProfileMitigation.m` |
-| `contacts.permissioned.inventory.empty` | [contacts.permissioned_inventory](../mitigations/contacts-permissioned-inventory-empty.md) | `src/mitigations/contacts/permissioned_empty/ContactsPermissionedEmptyMitigation.m` |
 | `personal_data.eventkit.inventory.empty` | [personal_data.eventkit](../mitigations/personal-data-eventkit-empty.md) | `src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m` |
-| `photos.library.inventory.empty` | [photos.library](../mitigations/photos-library-empty.md) | `src/mitigations/photos/library_empty/PhotosLibraryEmptyMitigation.m` |
-| `media_library.music.inventory.empty` | [media_library.music](../mitigations/media-library-music-empty.md) | `src/mitigations/media_library/music_empty/MusicLibraryEmptyMitigation.m` |
 | `apps.url_scheme_probes.uiapplication.known_list` | [apps.url_scheme_probes](../mitigations/apps-url-scheme-probes.md) | `src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m` |
 | `network.hostname.composite.generic_device_name` | [network.hostname](../mitigations/network-hostname.md) | `src/mitigations/network/hostname/HostnameMitigation.m` |
 | `network.vpn_proxy.cfnetwork.scoped_filter` | [network.vpn_proxy](../mitigations/network-vpn-proxy.md) | `src/mitigations/network/vpn_proxy/VPNProxyMitigation.m` |
