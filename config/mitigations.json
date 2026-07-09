@@ -41,6 +41,336 @@
         "Foundation"
       ],
       "optionDoc": "docs/mitigations/storage-volume-time.md"
+    },
+    {
+      "id": "app_bundle.install_date.foundation.synthetic",
+      "sources": [
+        "src/mitigations/app_bundle/install_date/AppInstallDateMitigation.m",
+        "src/mitigations/app_bundle/install_date/AppInstallDateValues.c"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/app-bundle-install-date.md"
+    },
+    {
+      "id": "identity.device_name.uidevice.generic",
+      "sources": [
+        "src/mitigations/identity/device_name/DeviceNameMitigation.m"
+      ],
+      "frameworks": [
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/identity-device-name.md"
+    },
+    {
+      "id": "identity.hostname.composite.generic",
+      "sources": [
+        "src/mitigations/identity/hostname/HostnameMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/identity-hostname.md"
+    },
+    {
+      "id": "accessibility.common_preferences.uikit.normalized",
+      "sources": [
+        "src/mitigations/accessibility/common/AccessibilityCommonMitigation.m"
+      ],
+      "frameworks": [
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/accessibility-common-preferences.md"
+    },
+    {
+      "id": "account.ubiquity_token.filemanager.nil",
+      "sources": [
+        "src/mitigations/identity/apple_account/UbiquityTokenMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/account-ubiquity-token.md"
+    },
+    {
+      "id": "advertising.idfa.adsupport.zero",
+      "sources": [
+        "src/mitigations/advertising/idfa/AdvertisingIDFAMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "AdSupport"
+      ],
+      "optionDoc": "docs/mitigations/advertising-idfa.md"
+    },
+    {
+      "id": "storage.available_capacity.foundation.bucketed",
+      "sources": [
+        "src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/storage-available-capacity.md"
+    },
+    {
+      "id": "system.lockdown_mode.userdefaults.common_false",
+      "sources": [
+        "src/mitigations/system/lockdown_mode/LockdownModeMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/system-lockdown-mode.md"
+    },
+    {
+      "id": "system.memory_counters.mach.bucketed",
+      "sources": [
+        "src/mitigations/system/memory_counters/MemoryCountersMitigation.c"
+      ],
+      "optionDoc": "docs/mitigations/system-memory-counters.md"
+    },
+    {
+      "id": "locale.preferred_languages.foundation.primary_only",
+      "sources": [
+        "src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/locale-preferred-languages.md"
+    },
+    {
+      "id": "locale.keyboard_languages.uikit.primary_only",
+      "sources": [
+        "src/mitigations/locale/keyboard_languages/KeyboardLanguagesMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/locale-keyboard-languages.md"
+    },
+    {
+      "id": "voices.inventory.avspeech.downloaded_hidden",
+      "sources": [
+        "src/mitigations/voices/inventory/VoicesInventoryMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "AVFoundation",
+        "AVFAudio"
+      ],
+      "optionDoc": "docs/mitigations/voices-inventory.md"
+    },
+    {
+      "id": "audio.session.avaudiosession.shaped_values",
+      "sources": [
+        "src/mitigations/media/audio_session/AudioSessionMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "AVFoundation",
+        "AVFAudio"
+      ],
+      "optionDoc": "docs/mitigations/audio-session.md"
+    },
+    {
+      "id": "camera.unique_id.avcapturedevice.scoped_id",
+      "sources": [
+        "src/mitigations/camera/unique_id/CameraUniqueIDMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "AVFoundation"
+      ],
+      "optionDoc": "docs/mitigations/camera-unique-id.md"
+    },
+    {
+      "id": "display.brightness.uiscreen.curved",
+      "sources": [
+        "src/mitigations/display/brightness/DisplayBrightnessMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/display-brightness.md"
+    },
+    {
+      "id": "display.dynamic_type.uikit.bucketed",
+      "sources": [
+        "src/mitigations/display/dynamic_type/DisplayDynamicTypeMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/display-dynamic-type.md"
+    },
+    {
+      "id": "power.battery.uidevice.curved_level",
+      "sources": [
+        "src/mitigations/power/battery_state/PowerBatteryStateMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/power-battery.md"
+    },
+    {
+      "id": "power.low_power_mode.processinfo.normalized_false",
+      "sources": [
+        "src/mitigations/power/low_power_mode/PowerLowPowerModeMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/power-low-power-mode.md"
+    },
+    {
+      "id": "power.thermal_state.processinfo.nominalized",
+      "sources": [
+        "src/mitigations/power/thermal_state/PowerThermalStateMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/power-thermal-state.md"
+    },
+    {
+      "id": "sensors.device_motion.coremotion.seeded_jitter",
+      "sources": [
+        "src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m"
+      ],
+      "frameworks": [
+        "CoreMotion",
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/sensors-device-motion-seeded-jitter.md"
+    },
+    {
+      "id": "bluetooth.corebluetooth.scan.empty",
+      "sources": [
+        "src/mitigations/bluetooth/corebluetooth/BluetoothScanEmptyMitigation.m"
+      ],
+      "frameworks": [
+        "CoreBluetooth",
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/bluetooth-corebluetooth-scan-empty.md"
+    },
+    {
+      "id": "telephony.radio_access.coretelephony.single_lte",
+      "sources": [
+        "src/mitigations/telephony/radio_access/TelephonyRadioProfileMitigation.m"
+      ],
+      "frameworks": [
+        "CoreTelephony",
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/telephony-radio-access-single-lte.md"
+    },
+    {
+      "id": "personal_data.eventkit.inventory.empty",
+      "sources": [
+        "src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m"
+      ],
+      "frameworks": [
+        "EventKit",
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/personal-data-eventkit-empty.md"
+    },
+    {
+      "id": "apps.url_scheme_probes.uiapplication.default_false",
+      "sources": [
+        "src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/apps-url-scheme-probes.md"
+    },
+    {
+      "id": "network.hostname.composite.generic_device_name",
+      "sources": [
+        "src/mitigations/network/hostname/HostnameMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "optionDoc": "docs/mitigations/network-hostname.md"
+    },
+    {
+      "id": "network.wifi_identity.nehotspot.scoped",
+      "sources": [
+        "src/mitigations/network/wifi_identity/WiFiIdentityMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "CoreFoundation"
+      ],
+      "weakFrameworks": [
+        "NetworkExtension",
+        "SystemConfiguration"
+      ],
+      "optionDoc": "docs/mitigations/network-wifi-identity.md"
+    },
+    {
+      "id": "network.interface_inventory.composite.common",
+      "sources": [
+        "src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c"
+      ],
+      "frameworks": [
+        "CoreFoundation",
+        "CFNetwork",
+        "Network"
+      ],
+      "weakFrameworks": [
+        "SystemConfiguration"
+      ],
+      "optionDoc": "docs/mitigations/network-interface-inventory.md"
+    },
+    {
+      "id": "pasteboard.metadata.uikit.empty_shape",
+      "sources": [
+        "src/mitigations/pasteboard/metadata/PasteboardMetadataMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "UIKit"
+      ],
+      "optionDoc": "docs/mitigations/pasteboard-metadata.md"
+    },
+    {
+      "id": "webview.script_fingerprint.wkwebview.exact_probe_guard",
+      "sources": [
+        "src/mitigations/webview/script_fingerprint/WebViewScriptFingerprintMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "WebKit"
+      ],
+      "optionDoc": "docs/mitigations/webview-script-fingerprint.md"
     }
   ]
 }

@@ -129,6 +129,14 @@ Compatibility default should pass through. Camera apps, scanners, conferencing
 apps, AR apps, capture pipelines, and device-selection UIs may persist the
 selected camera by unique ID.
 
+The compiled `camera.unique_id` module follows that compatibility default for
+built-in and unknown devices. It only rewrites IDs for devices explicitly
+classified by the platform as external or Continuity cameras. This is not a
+complete hide-external-camera mitigation: device type, localized name, position,
+formats, capture behavior, and discovery-session presence can still expose the
+camera. If those values cannot be made coherent, pass-through remains safer
+than pretending the external camera is absent.
+
 Strict behavior can replace stable unique IDs with profile-scoped synthetic IDs
 only when the complete camera inventory is controlled. The replacement must be
 stable within the same scope, unique per synthetic camera, and accepted by any

@@ -62,9 +62,38 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 
 | Mitigation ID | Detailed page | Source entrypoint(s) |
 | --- | --- | --- |
-| `identity.idfv.uidevice.scoped_uuid` | [IDFV](../mitigations/identity-idfv.md) | `src/mitigations/identity/idfv/IDFVMitigation.m` |
-| `system.boot_time.composite.synthetic` | [Boot time](../mitigations/system-boot-time.md) | `src/mitigations/system/boot_time/BootTimeMitigation.m`, sysctl adapter, ProcessInfo adapter, boot-time value owner |
-| `storage.volume_creation_time.foundation.synthetic` | [Volume creation time](../mitigations/storage-volume-time.md) | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m`, volume-time value owner |
+| `identity.idfv.uidevice.scoped_uuid` | [identity.idfv](../mitigations/identity-idfv.md) | `src/mitigations/identity/idfv/IDFVMitigation.m` |
+| `system.boot_time.composite.synthetic` | [system.boot_time](../mitigations/system-boot-time.md) | `src/mitigations/system/boot_time/BootTimeMitigation.m`, `src/mitigations/system/boot_time/BootTimeSysctlMitigation.c`, `src/mitigations/system/boot_time/BootTimeProcessInfoMitigation.m`, `src/mitigations/system/boot_time/BootTimeValues.c` |
+| `storage.volume_creation_time.foundation.synthetic` | [storage.volume_creation_time](../mitigations/storage-volume-time.md) | `src/mitigations/storage/volume_creation_time/VolumeCreationTimeMitigation.m`, `src/mitigations/storage/volume_creation_time/VolumeCreationTimeValues.c` |
+| `app_bundle.install_date.foundation.synthetic` | [app_bundle.install_date](../mitigations/app-bundle-install-date.md) | `src/mitigations/app_bundle/install_date/AppInstallDateMitigation.m`, `src/mitigations/app_bundle/install_date/AppInstallDateValues.c` |
+| `identity.device_name.uidevice.generic` | [identity.device_name](../mitigations/identity-device-name.md) | `src/mitigations/identity/device_name/DeviceNameMitigation.m` |
+| `identity.hostname.composite.generic` | [identity.hostname](../mitigations/identity-hostname.md) | `src/mitigations/identity/hostname/HostnameMitigation.m` |
+| `accessibility.common_preferences.uikit.normalized` | [accessibility.common_preferences](../mitigations/accessibility-common-preferences.md) | `src/mitigations/accessibility/common/AccessibilityCommonMitigation.m` |
+| `account.ubiquity_token.filemanager.nil` | [account.ubiquity_token](../mitigations/account-ubiquity-token.md) | `src/mitigations/identity/apple_account/UbiquityTokenMitigation.m` |
+| `advertising.idfa.adsupport.zero` | [advertising.idfa](../mitigations/advertising-idfa.md) | `src/mitigations/advertising/idfa/AdvertisingIDFAMitigation.m` |
+| `storage.available_capacity.foundation.bucketed` | [storage.available_capacity](../mitigations/storage-available-capacity.md) | `src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m` |
+| `system.lockdown_mode.userdefaults.common_false` | [system.lockdown_mode](../mitigations/system-lockdown-mode.md) | `src/mitigations/system/lockdown_mode/LockdownModeMitigation.m` |
+| `system.memory_counters.mach.bucketed` | [system.memory_counters](../mitigations/system-memory-counters.md) | `src/mitigations/system/memory_counters/MemoryCountersMitigation.c` |
+| `locale.preferred_languages.foundation.primary_only` | [locale.preferred_languages](../mitigations/locale-preferred-languages.md) | `src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m` |
+| `locale.keyboard_languages.uikit.primary_only` | [locale.keyboard_languages](../mitigations/locale-keyboard-languages.md) | `src/mitigations/locale/keyboard_languages/KeyboardLanguagesMitigation.m` |
+| `voices.inventory.avspeech.downloaded_hidden` | [voices.inventory](../mitigations/voices-inventory.md) | `src/mitigations/voices/inventory/VoicesInventoryMitigation.m` |
+| `audio.session.avaudiosession.shaped_values` | [audio.session](../mitigations/audio-session.md) | `src/mitigations/media/audio_session/AudioSessionMitigation.m` |
+| `camera.unique_id.avcapturedevice.scoped_id` | [camera.unique_id](../mitigations/camera-unique-id.md) | `src/mitigations/camera/unique_id/CameraUniqueIDMitigation.m` |
+| `display.brightness.uiscreen.curved` | [display.brightness](../mitigations/display-brightness.md) | `src/mitigations/display/brightness/DisplayBrightnessMitigation.m` |
+| `display.dynamic_type.uikit.bucketed` | [display.dynamic_type](../mitigations/display-dynamic-type.md) | `src/mitigations/display/dynamic_type/DisplayDynamicTypeMitigation.m` |
+| `power.battery.uidevice.curved_level` | [power.battery](../mitigations/power-battery.md) | `src/mitigations/power/battery_state/PowerBatteryStateMitigation.m` |
+| `power.low_power_mode.processinfo.normalized_false` | [power.low_power_mode](../mitigations/power-low-power-mode.md) | `src/mitigations/power/low_power_mode/PowerLowPowerModeMitigation.m` |
+| `power.thermal_state.processinfo.nominalized` | [power.thermal_state](../mitigations/power-thermal-state.md) | `src/mitigations/power/thermal_state/PowerThermalStateMitigation.m` |
+| `sensors.device_motion.coremotion.seeded_jitter` | [sensors.device_motion](../mitigations/sensors-device-motion-seeded-jitter.md) | `src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m` |
+| `bluetooth.corebluetooth.scan.empty` | [bluetooth.corebluetooth](../mitigations/bluetooth-corebluetooth-scan-empty.md) | `src/mitigations/bluetooth/corebluetooth/BluetoothScanEmptyMitigation.m` |
+| `telephony.radio_access.coretelephony.single_lte` | [telephony.radio_access](../mitigations/telephony-radio-access-single-lte.md) | `src/mitigations/telephony/radio_access/TelephonyRadioProfileMitigation.m` |
+| `personal_data.eventkit.inventory.empty` | [personal_data.eventkit](../mitigations/personal-data-eventkit-empty.md) | `src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m` |
+| `apps.url_scheme_probes.uiapplication.default_false` | [apps.url_scheme_probes](../mitigations/apps-url-scheme-probes.md) | `src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m` |
+| `network.hostname.composite.generic_device_name` | [network.hostname](../mitigations/network-hostname.md) | `src/mitigations/network/hostname/HostnameMitigation.m` |
+| `network.wifi_identity.nehotspot.scoped` | [network.wifi_identity](../mitigations/network-wifi-identity.md) | `src/mitigations/network/wifi_identity/WiFiIdentityMitigation.m` |
+| `network.interface_inventory.composite.common` | [network.interface_inventory](../mitigations/network-interface-inventory.md) | `src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c` |
+| `pasteboard.metadata.uikit.empty_shape` | [pasteboard.metadata](../mitigations/pasteboard-metadata.md) | `src/mitigations/pasteboard/metadata/PasteboardMetadataMitigation.m` |
+| `webview.script_fingerprint.wkwebview.exact_probe_guard` | [webview.script_fingerprint](../mitigations/webview-script-fingerprint.md) | `src/mitigations/webview/script_fingerprint/WebViewScriptFingerprintMitigation.m` |
 
 ## Naming and Entry Points
 

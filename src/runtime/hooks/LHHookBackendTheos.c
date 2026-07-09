@@ -22,7 +22,7 @@ typedef struct LHTheosBackendContext {
     uint32_t registeredNoOpCount;
 } LHTheosBackendContext;
 
-static LHImportedSymbolBinding LHImportedSymbolBindings[16];
+static LHImportedSymbolBinding LHImportedSymbolBindings[128];
 static size_t LHImportedSymbolBindingCount;
 static bool LHImportedSymbolCallbackRegistered;
 

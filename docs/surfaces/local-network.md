@@ -119,10 +119,11 @@ Network authorization, the safest mitigation is to preserve denied or empty
 behavior. A hook should not expose synthetic nearby devices before the system
 permission state says local network access is available.
 
-If a target app only probes for fingerprinting, strict policy can force empty
-results or browser failure behavior that resembles denied/unavailable access.
+If a target app only probes for fingerprinting, strict policy can force an empty
+result stream. Prefer empty result delivery over artificial browser-start
+failure when the app-visible lifecycle would otherwise look like an error.
 Keep errors, timing, and absence of results consistent across all service types
-so the denial shape does not become a new fingerprint.
+so the empty shape does not become a new fingerprint.
 
 ### `local_network.service_inventory`
 

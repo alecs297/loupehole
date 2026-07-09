@@ -161,6 +161,10 @@ constants as independent System Info values. They are still relevant to
 fingerprinting, but they should be generated and tested as part of a complete
 hardware/device profile.
 
+The implemented `system.memory_counters` option covers live Mach VM counter
+precision only. It does not report a different RAM tier, physical memory amount,
+processor count, or hardware cohort.
+
 ## Exclusion Note
 
 Omitted Loupe System Info constants:

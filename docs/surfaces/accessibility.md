@@ -22,6 +22,7 @@ settings are enabled together.
 - [`UIAccessibility.isGrayscaleEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isgrayscaleenabled)
 - [`UIAccessibility.isInvertColorsEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isinvertcolorsenabled)
 - [`UIAccessibility.isReduceMotionEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isreducemotionenabled)
+- [`UIAccessibility.prefersCrossFadeTransitions`](https://developer.apple.com/documentation/uikit/uiaccessibility/preferscrossfadetransitions)
 - [`UIAccessibility.isAssistiveTouchRunning`](https://developer.apple.com/documentation/uikit/uiaccessibility/isassistivetouchrunning)
 - [`UIAccessibility.isShakeToUndoEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isshaketoundoenabled)
 - [`UIAccessibility.isBoldTextEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isboldtextenabled)
@@ -35,6 +36,8 @@ settings are enabled together.
 - [`UIAccessibility.shouldDifferentiateWithoutColor`](https://developer.apple.com/documentation/uikit/uiaccessibility/shoulddifferentiatewithoutcolor)
 - [`UIAccessibility.buttonShapesEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/buttonshapesenabled)
 - [`UIAccessibility.isOnOffSwitchLabelsEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isonoffswitchlabelsenabled)
+- [`UIAccessibilityHearingDevicePairedEar`](https://developer.apple.com/documentation/uikit/uiaccessibilityhearingdevicepairedear)
+- [`AXShowBordersEnabled`](https://developer.apple.com/documentation/accessibility/axshowbordersenabled)
 - [`UITraitCollection.userInterfaceStyle`](https://developer.apple.com/documentation/uikit/uitraitcollection/userinterfacestyle)
 - [`UITraitCollection.accessibilityContrast`](https://developer.apple.com/documentation/uikit/uitraitcollection/accessibilitycontrast)
 - [`NSWorkspace.isVoiceOverEnabled`](https://developer.apple.com/documentation/appkit/nsworkspace/isvoiceoverenabled)
@@ -59,6 +62,8 @@ equivalents and returns fixed fallback values for iOS-only settings.
 | `grayscaleEnabled` | `PlatformAccessibility.isGrayscaleEnabled` -> `UIAccessibility.isGrayscaleEnabled` on iOS | None | Passive local display-accessibility read | Medium when `true`. It is a rare visual preference and may correlate with color filter behavior. |
 | `invertColorsEnabled` | `PlatformAccessibility.isInvertColorsEnabled` -> `UIAccessibility.isInvertColorsEnabled` on iOS, `NSWorkspace.accessibilityDisplayShouldInvertColors` on macOS | None | Passive local display-accessibility read | Medium to high when `true`. Classic Invert is visually significant and uncommon. |
 | `reduceMotionEnabled` | `PlatformAccessibility.isReduceMotionEnabled` -> `UIAccessibility.isReduceMotionEnabled` on iOS, `NSWorkspace.accessibilityDisplayShouldReduceMotion` on macOS | None | Passive local display-accessibility read | Low to medium. More common than assistive input settings, but useful when joined with animation and timing behavior. |
+| `prefersCrossFadeTransitions` | iOS SDK flag `UIAccessibilityPrefersCrossFadeTransitions()` / Swift `UIAccessibility.prefersCrossFadeTransitions` | None | Passive local motion-accessibility read | Low to medium. It is a Reduce Motion subpreference and should agree with animation behavior and the broader motion profile. |
+| `hearingDevicePairedEar` | iOS SDK flag `UIAccessibilityHearingDevicePairedEar()` | None | Passive local hearing-device accessibility read | High when non-`none`. A paired hearing aid can be rare, personal, durable, and behaviorally relevant for audio apps. |
 | `activeFlags` | Merged enabled labels from additional `PlatformAccessibility` booleans | None | Passive local accessibility-preference read | Medium to high depending on active count and rarity. The comma-separated set can reveal a distinctive preference bundle. |
 | `userInterfaceStyle` | `PlatformScreen.displayInfo().userInterfaceStyle` from `UITraitCollection.userInterfaceStyle` on iOS, `NSApp.effectiveAppearance` on macOS | None | Passive local appearance-trait read | Low alone. Light or dark style is common, but it is a coherence anchor for WebView, CSS media queries, screenshots, and app theme behavior. |
 | `accessibilityContrast` | `PlatformScreen.displayInfo().accessibilityContrast` from `UITraitCollection.accessibilityContrast` on iOS, `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` on macOS | None | Passive local appearance-trait read | Medium when `high`. Increase Contrast is less common than light/dark style and overlaps with darker system colors. |
@@ -78,6 +83,13 @@ The `activeFlags` Loupe signal merges these additional labels when enabled:
 - `DifferentiateWithoutColor`
 - `ButtonShapes`
 - `OnOffLabels`
+
+On newer SDKs, `AXShowBordersEnabled` is the replacement for Button Shapes and
+belongs to the same visual-preference claim. `UIAccessibilityPrefersCrossFadeTransitions`
+and `UIAccessibilityHearingDevicePairedEar` are not part of Loupe's reviewed
+merged string, but they are adjacent permission-free accessibility flags and
+should be covered by the same mitigation boundary when strict normalization is
+selected.
 
 If no merged flag is active, Loupe returns `none enabled`. That common empty
 state is low value, but the exact enabled subset can become highly identifying.
@@ -154,6 +166,7 @@ profile more unique.
 Mitigation ID ideas:
 
 - `accessibility.reduce_motion`
+- `accessibility.prefers_cross_fade_transitions`
 - `accessibility.invert_colors`
 - `accessibility.grayscale`
 - `accessibility.bold_text`
@@ -171,10 +184,11 @@ should not randomize each boolean independently.
 
 For compatibility-first behavior, pass through all visual accessibility values.
 For strict behavior, the safest common tuple is usually normal contrast, no
-classic invert, no grayscale, no reduce transparency, no button shapes, no on/off
-labels, and a stable light/dark style chosen as part of the broader appearance
-profile. Reduce Motion may be normalized only if animation behavior, WebKit
-media queries, and app-observed transition behavior are also coherent.
+classic invert, no grayscale, no reduce transparency, no button shapes or show
+borders, no on/off labels, no prefer-cross-fade subpreference, and a stable
+light/dark style chosen as part of the broader appearance profile. Reduce Motion
+may be normalized only if animation behavior, WebKit media queries, and
+app-observed transition behavior are also coherent.
 
 Increase Contrast has two Loupe paths: the merged `IncreaseContrast` label via
 `UIAccessibility.isDarkerSystemColorsEnabled`, and the separate
@@ -192,6 +206,7 @@ Mitigation ID ideas:
 - `accessibility.closed_captioning`
 - `accessibility.video_autoplay`
 - `accessibility.shake_to_undo`
+- `accessibility.hearing_device_paired_ear`
 
 Compatibility default should pass through. These settings can affect media,
 spoken content, captions, undo affordances, and playback expectations.
@@ -200,6 +215,11 @@ Strict mode can normalize rare enabled states to common values, but only as
 policy constants. Do not derive a rare media-accessibility bundle per app or per
 user. If media behavior remains real, prefer pass-through rather than returning
 contradictory settings.
+
+For hearing-device pairing, the common normalized value is no paired ear. This
+reduces a strong passive fingerprint, but it can contradict real hearing-device
+audio behavior, so protected apps that need hearing-device adaptation should use
+pass-through policy.
 
 ### Merged `activeFlags`
 

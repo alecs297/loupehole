@@ -127,7 +127,7 @@ acceleration, and rotation rate over time.
 For fingerprint-only apps, a low-motion profile can be useful: common portrait
 or flat-table orientation, near-zero user acceleration, small rotation-rate
 noise, and a plausible gravity vector. For sensor-dependent apps, pass-through
-or very light quantization is safer.
+or very light continuous perturbation is safer than hard quantization.
 
 ### `motion.heading_magnetic`
 
@@ -192,5 +192,5 @@ can use it to recover behavioral, environmental, and hardware-bias signals even
 when conventional identifiers are hidden.
 
 Default behavior should be compatibility-first pass-through. Strict profiles
-can add coherent low-motion or quantized streams later, but only as a linked
-sensor model rather than independent per-axis randomization.
+can add coherent low-motion or lightly perturbed streams later, but only as a
+linked sensor model rather than independent per-axis randomization.

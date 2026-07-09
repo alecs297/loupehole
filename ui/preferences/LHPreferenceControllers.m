@@ -19,14 +19,40 @@
 @end
 
 static const NSInteger LHCustomSeedScopeMode = 3;
+static NSString * const LHPreferencesGitHubURLString = @"https://github.com/alecs297/loupehole";
 
-/** Builds the short enabled/scope/modules summary shown in policy rows. */
-static NSString *LHPolicySummary(LHPreferencePolicy *policy, BOOL override) {
-    NSString *state = policy.enabled ? @"On" : @"Off";
-    if (override) {
-        return [NSString stringWithFormat:@"Override: %@", state];
+#ifndef LH_PACKAGE_VERSION
+#define LH_PACKAGE_VERSION "unknown"
+#endif
+
+/** Returns the single UI-visible package version string. */
+static NSString *LHPreferencesVersionString(void) {
+    return @LH_PACKAGE_VERSION;
+}
+
+/** Returns the concise status text used by root and override preview rows. */
+static NSString *LHPolicyStatusText(LHPreferencePolicy *policy) {
+    if (!policy.enabled) {
+        return @"Off";
     }
-    return [NSString stringWithFormat:@"Default: %@", state];
+
+    switch (policy.scopeMode) {
+        case 0: return @"On - app install";
+        case 1: return @"On - app";
+        case 2: return @"On - Vendor group";
+        case 3: return @"On - Custom seed";
+        default: return @"On";
+    }
+}
+
+/** Builds the preview shown for one explicit app override. */
+static NSString *LHOverridePolicySummary(LHPreferencePolicy *policy) {
+    NSString *summary = [NSString stringWithFormat:@"Override: %@", LHPolicyStatusText(policy)];
+    if (policy.moduleFilterEnabled) {
+        summary = [summary stringByAppendingFormat:@" - %lu mitigations",
+                   (unsigned long)[policy.moduleIDs count]];
+    }
+    return summary;
 }
 
 /** Returns installed application display names keyed by bundle identifier. */
@@ -1456,9 +1482,8 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
 
 - (NSString *)previewStringForBundleIdentifier:(NSString *)bundleID {
     LHPreferenceStore *store = [LHPreferenceStore sharedStore];
-    BOOL override = [store hasOverrideForBundleIdentifier:bundleID];
-    LHPreferencePolicy *policy = [store effectivePolicyForBundleIdentifier:bundleID];
-    return LHPolicySummary(policy, override);
+    LHPreferencePolicy *policy = [store overridePolicyForBundleIdentifier:bundleID];
+    return policy == nil ? @"Default" : LHOverridePolicySummary(policy);
 }
 
 - (NSString *)previewStringForSpecifier:(PSSpecifier *)specifier {
@@ -1539,6 +1564,9 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
             LHGroupSpecifier(@"Configuration", nil),
             LHLinkSpecifier(@"Default Profile", self, [LHDefaultProfileController class], @selector(defaultPreviewForSpecifier:)),
             LHLinkSpecifier(@"App Overrides", self, [LHAppOverrideListController class], nil),
+            LHGroupSpecifier(@"About", nil),
+            LHStaticValueSpecifier(@"Version", LHPreferencesVersionString()),
+            LHButtonSpecifier(@"GitHub", self, @selector(openGitHub)),
             LHGroupSpecifier(@"Reset", nil),
             LHButtonSpecifier(@"Reset Configuration", self, @selector(confirmResetAll)),
             LHGroupSpecifier(@"Diagnostics", nil),
@@ -1551,7 +1579,22 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
 - (NSString *)defaultPreviewForSpecifier:(PSSpecifier *)specifier {
     (void)specifier;
     LHPreferencePolicy *policy = [[LHPreferenceStore sharedStore] defaultPolicy];
-    return policy.enabled ? @"On" : @"Off";
+    return LHPolicyStatusText(policy);
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    _specifiers = nil;
+    [self reloadSpecifiers];
+}
+
+- (void)openGitHub {
+    NSURL *url = [NSURL URLWithString:LHPreferencesGitHubURLString];
+    if (url == nil) {
+        return;
+    }
+    UIApplication *application = [UIApplication sharedApplication];
+    [application openURL:url options:@{} completionHandler:nil];
 }
 
 - (void)confirmResetAll {

@@ -113,8 +113,10 @@ or event counts.
 
 Compatibility default should pass through for calendar, scheduling,
 productivity, travel, meeting, enterprise, health, family, and automation apps.
-Strict privacy behavior can deny full access to apps whose request is not tied
-to a clear user-facing calendar feature.
+Strict privacy behavior can deny full access or use an authorized-empty profile
+for apps whose request is not tied to a clear user-facing calendar feature. If
+authorized-empty is selected, calendar inventory and event queries must both
+return empty native shapes.
 
 ### `calendar.inventory`
 

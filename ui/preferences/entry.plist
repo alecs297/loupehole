@@ -10,6 +10,8 @@
 		<string>PSLinkCell</string>
 		<key>detail</key>
 		<string>LHRootListController</string>
+		<key>icon</key>
+		<string>LoupeholeIcon</string>
 		<key>isController</key>
 		<true/>
 		<key>label</key>

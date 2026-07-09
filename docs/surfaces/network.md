@@ -46,8 +46,8 @@ compatibility target that may drift across OS releases.
 | `isExpensive` | `NWPath.isExpensive` from a sampled `NWPathMonitor` path | None | Passive path-state read; stream mode is active local monitoring | Include | Low to medium. Usually indicates cellular, hotspot, or another costly path. Useful when joined with IP, interface, data-saver, and session timing signals. |
 | `isConstrained` | `NWPath.isConstrained` from the same path | None | Passive path-state read; stream mode is active local monitoring | Include | Low to medium. Exposes Low Data Mode or equivalent constrained-path policy, which can reveal user/network preference and explain app behavior changes. |
 | `availableInterfaces` | `NWPath.availableInterfaces.map { NWInterface.InterfaceType }` | None | Passive path interface inventory | Include | Medium. Reports interface classes such as `wifi`, `cellular`, `wiredEthernet`, `loopback`, and `other`; multi-interface combinations narrow context and must match address/proxy state. |
-| `vpnActive` | `CFNetworkCopySystemProxySettings()["__SCOPED__"]` keys containing `tap`, `tun`, `ppp`, or `ipsec` | None | Passive proxy-settings heuristic | Include, with heuristic caveat | Medium to high when true. VPN use is a rare security/network posture and may be used for blocking, risk scoring, or cohort reduction. |
-| `vpnInterfaces` | Sorted scoped proxy keys whose names match Loupe's VPN tokens | None | Passive scoped proxy key enumeration | Include as the detailed form of `vpnActive` | High when present. Interface names and counts reveal more than the boolean and can disclose tunnel style. Loupe deliberately excludes `utun` from the VPN heuristic to avoid false positives from non-VPN Apple features. |
+| `vpnActive` | `CFNetworkCopySystemProxySettings()["__SCOPED__"]` keys containing `tap`, `tun`, `utun`, `ppp`, or `ipsec` | None | Passive proxy-settings heuristic | Include, with heuristic caveat | Medium to high when true. VPN use is a rare security/network posture and may be used for blocking, risk scoring, or cohort reduction. |
+| `vpnInterfaces` | Sorted scoped proxy keys whose names match Loupe's VPN tokens | None | Passive scoped proxy key enumeration | Include as the detailed form of `vpnActive` | High when present. Interface names and counts reveal more than the boolean and can disclose tunnel style. |
 | `addr.<index>.<interface>.<family>` | `getifaddrs` for up/running IPv4 and IPv6 interfaces, converted with `getnameinfo(..., NI_NUMERICHOST)` | None | Passive interface address enumeration | Include | High. Local, cellular, VPN, loopback, link-local, and IPv6 addresses can link sessions, reveal subnet context, and contradict path or proxy claims. |
 
 Loupe emits one `addr.*` signal per current address. The signal key includes the
@@ -190,16 +190,16 @@ Compatibility default should pass through. Apps may require a corporate VPN,
 avoid syncing on a VPN, apply security policy, or explain connection failures to
 the user.
 
-Strict mode can hide VPN posture by filtering `tap`, `tun`, `ppp`, and `ipsec`
+Strict mode can hide VPN posture by filtering `tap`, `tun`, `utun`, `ppp`, and `ipsec`
 keys out of the returned proxy settings dictionary and aligning any corresponding
 `getifaddrs` output. It should not merely force `vpnActive` to `false` while
 leaving scoped proxy keys or tunnel-like interface addresses visible.
 
-Do not blindly remove `utun`. Loupe explicitly excludes `utun` from its VPN
-heuristic because iOS can expose `utun` interfaces for non-VPN Apple features
-such as iCloud Private Relay, Personal Hotspot relay, Handoff, AirDrop, and
-other system networking paths. A policy that hides every `utun` can create false
-negatives, break legitimate behavior, or erase useful non-VPN context.
+The current injected-app strict profile treats `utun` as sensitive because
+system apps are not injected. Compatibility profiles may still preserve `utun`
+because iOS can expose it for non-VPN Apple features such as iCloud Private
+Relay, Personal Hotspot relay, Handoff, AirDrop, and other system networking
+paths.
 
 If proxy settings are rewritten, keep the documented CFNetwork proxy keys and
 value types intact. A malformed proxy dictionary can break URL loading or make
@@ -271,7 +271,19 @@ Identity category. Path flags and available interface types are lower entropy
 but critical for coherence.
 
 This page should feed future option docs for host-name normalization,
-interface/address reduction, path-policy handling, and VPN/proxy-status
+interface/address reduction, path-policy handling, current Wi-Fi identity,
+interface counter shaping, DNS resolver server-address research, and VPN/proxy-status
 handling. Network mitigations should remain conservative by default: pass
 through functional networking state unless a strict profile can return a
 complete, plausible, internally consistent tuple.
+
+Current implemented coverage includes narrow options for hostname
+normalization, composite interface/proxy/path inventory shaping, and current
+Wi-Fi SSID/BSSID shaping. Bonjour and DNS-SD browsing are not currently
+compiled because preserving local discovery functionality while hiding nearby
+device and service identity is not a coherent mitigation boundary. DNS resolver
+server-address masking is not currently compiled because attempted
+SystemConfiguration/BIND resolver inventory hooks caused guarded
+file-descriptor crashes on device. General URL loading, routing-table
+inspection, NetworkExtension state, DNS resolver inventory, Bonjour/DNS-SD
+browsing, and `getaddrinfo` resolution behavior remain pass-through.

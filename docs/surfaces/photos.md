@@ -132,10 +132,10 @@ Compatibility default should pass through. Photo editors, galleries, importers,
 backup tools, social apps, document scanners, messaging apps, and camera apps
 often need the real authorization state and real fetch results.
 
-Strict mode can prefer denied or limited access for apps that do not genuinely
-need the library. If the app is already authorized, a hook that only rewrites
-the status without constraining fetch results is incoherent. The app-visible
-authorization status and returned assets must agree.
+Strict mode can prefer denied, limited, or authorized-empty access for apps that
+do not genuinely need the library. If the app-visible status is authorized,
+fetch results must still be constrained to the chosen profile. A hook that only
+rewrites the status without constraining fetch results is incoherent.
 
 ### `photos.asset-counts`
 
@@ -154,6 +154,11 @@ consistent with those counts.
 Avoid seed-derived exact counts. A stable fake count tuple such as
 `4317 images, 286 videos, 2 audio assets` can become a new identifier. Coarse
 bins or explicit empty/limited states are safer.
+
+For current Loupehole scope, authorized-empty native fetch results are the
+least contradictory strict profile. A realistic fake Photos library would need
+coherent assets, collections, resources, image-manager reads, picker behavior,
+change notifications, and mutations.
 
 ### `photos.geotag-summary`
 

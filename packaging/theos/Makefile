@@ -4,6 +4,7 @@ export THEOS_PACKAGE_SCHEME ?= rootless
 THEOS_LAYOUT_DIR_NAME ?= generated/package-layout
 _THEOS_PLATFORM_DPKG_DEB ?= ../../scripts/build/dpkg-deb-root-owner-group.sh
 THEOS_PLATFORM_DEB_COMPRESSION_TYPE ?= xz
+PACKAGE_VERSION ?= $(shell awk -F': ' '/^Version:/ { print $$2; found = 1 } END { if (!found) print "0" }' control)
 LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 LH_EMBED_BUILD_SEED ?= 1
 LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
@@ -81,9 +82,10 @@ LoupeholePreferences_CFLAGS += \
 	-Wall \
 	-Wextra \
 	-Werror \
+	-DLH_PACKAGE_VERSION='"$(PACKAGE_VERSION)"' \
 	-DLH_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
 LoupeholePreferences_LDFLAGS += -undefined dynamic_lookup
-LoupeholePreferences_RESOURCE_DIRS := ../../ui/preferences/Resources
+LoupeholePreferences_RESOURCE_DIRS := ../../ui/preferences/Resources generated/preference-resources
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 include $(THEOS_MAKE_PATH)/bundle.mk

@@ -2,15 +2,26 @@
 
 ## Present limitation: coverage is selective
 
-Loupehole currently compiles three experimental mitigations. The surface inventory contains many more categories, including device identity, system state, power, storage, display, audio, locale, accessibility, network, fonts, application metadata, WebView, hardware/cohort, permissioned sensors, location, Bluetooth, local network, contacts, photos, calendar, reminders, and media. Inventory coverage is research coverage, not runtime coverage.
+Loupehole currently compiles 32 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
+
+## Platform-control boundary
+
+Location, permission-gated motion and sensor access, contacts, Photos, and music-library inventory are intentionally not compiled as mitigations in the default build. Those domains already have granular iOS permission controls that users can deny directly, and the current project scope treats pass-through or system denial as less fingerprintable than partial synthetic inventories for these surfaces. Permission-free device-motion getters remain in the default build because covered Core Motion data paths can expose live movement and sensor-bias signals without an explicit user permission grant.
+
+Bluetooth, Calendar, and Reminders remain candidates for mitigation work because fair app functionality can require permission while still not justifying unrelated inventory access. Their behavior should be evaluated by their mitigation pages and revisited with surface-specific design work.
+
+Local-network service discovery is not compiled as a mitigation. Bonjour and DNS-SD are functional discovery protocols: returning real results exposes nearby devices and service names, while returning synthetic or empty results breaks the feature and creates an obvious behavioral difference. Loupehole treats Local Network permission denial or pass-through as less misleading than a partial discovery shim.
 
 ## Cross-check limitation
 
 A covered high-level API can be compared with an uncovered low-level API. Current examples:
 
-- Foundation volume creation time can be compared with filesystem metadata APIs that are not yet normalized.
+- Foundation volume and app install dates can be compared with filesystem metadata APIs that are not yet normalized.
 - Synthetic boot time and Foundation uptime do not normalize every monotonic clock, process age, log time, or mach-time path.
-- A scoped IDFV does not normalize all identity, account, network, install-history, or anti-abuse signals.
+- Scoped and generic identity values do not normalize all account, StoreKit, OS-version, anti-abuse, bundle metadata, previous-install, or generic Keychain signals.
+- Bonjour and DNS-SD service discovery are intentionally pass-through. Earlier attempts to suppress local discovery showed that preserving the API's useful behavior while hiding its fingerprintable local-device context is not a coherent mitigation boundary.
+- DNS resolver server IPs are intentionally pass-through. Earlier DNS server-address hooks around SystemConfiguration and BIND resolver state caused guarded file-descriptor crashes on device, so the DNS mitigation was removed pending a safer design.
+- Network, memory, device-motion, audio, camera, power, pasteboard, and WebView modules can still be cross-checked against unimplemented delegate callbacks, lower-level APIs, arbitrary JavaScript, or server-side behavior.
 
 These are documented gaps, not claims of invisibility.
 
