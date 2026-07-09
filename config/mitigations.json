@@ -95,18 +95,6 @@
       "optionDoc": "docs/mitigations/account-ubiquity-token.md"
     },
     {
-      "id": "install_history.loupe.keychain_log.fresh_install",
-      "sources": [
-        "src/mitigations/identity/previous_installs/PreviousInstallsMitigation.m",
-        "src/mitigations/app_bundle/install_date/AppInstallDateValues.c"
-      ],
-      "frameworks": [
-        "Foundation",
-        "Security"
-      ],
-      "optionDoc": "docs/mitigations/install-history-loupe-keychain-log.md"
-    },
-    {
       "id": "storage.available_capacity.foundation.bucketed",
       "sources": [
         "src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m"

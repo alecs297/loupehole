@@ -70,7 +70,6 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `identity.hostname.composite.generic` | [identity.hostname](../mitigations/identity-hostname.md) | `src/mitigations/identity/hostname/HostnameMitigation.m` |
 | `accessibility.common_preferences.uikit.normalized` | [accessibility.common_preferences](../mitigations/accessibility-common-preferences.md) | `src/mitigations/accessibility/common/AccessibilityCommonMitigation.m` |
 | `account.ubiquity_token.filemanager.nil` | [account.ubiquity_token](../mitigations/account-ubiquity-token.md) | `src/mitigations/identity/apple_account/UbiquityTokenMitigation.m` |
-| `install_history.loupe.keychain_log.fresh_install` | [install_history.loupe_keychain_log](../mitigations/install-history-loupe-keychain-log.md) | `src/mitigations/identity/previous_installs/PreviousInstallsMitigation.m`, `src/mitigations/app_bundle/install_date/AppInstallDateValues.c` |
 | `storage.available_capacity.foundation.bucketed` | [storage.available_capacity](../mitigations/storage-available-capacity.md) | `src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m` |
 | `system.lockdown_mode.userdefaults.common_false` | [system.lockdown_mode](../mitigations/system-lockdown-mode.md) | `src/mitigations/system/lockdown_mode/LockdownModeMitigation.m` |
 | `locale.preferred_languages.foundation.primary_only` | [locale.preferred_languages](../mitigations/locale-preferred-languages.md) | `src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m` |

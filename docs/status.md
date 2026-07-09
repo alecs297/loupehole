@@ -14,13 +14,13 @@ Present components include:
 - a rootless Debian package with a PreferenceLoader Settings bundle;
 - package policy with default and per-bundle controls;
 - dylib and package verification targets;
-- 39 experimental mitigation modules selected by the default build.
+- 38 experimental mitigation modules selected by the default build.
 
 ## Implemented mitigation group
 
 | Group | Present behavior | Important boundary |
 | --- | --- | --- |
-| Identity and install context | Covers IDFV, device name, hostname, app install date, iCloud ubiquity-token absence, and Loupe-specific previous-install probes. | It does not normalize every account, StoreKit, OS-version, anti-abuse, bundle metadata, or generic Keychain signal. |
+| Identity and install context | Covers IDFV, device name, hostname, app install date, and iCloud ubiquity-token absence. | It does not normalize every account, StoreKit, OS-version, anti-abuse, bundle metadata, previous-install, or generic Keychain signal. |
 | Temporal and storage values | Covers boot time, Foundation volume creation date, app install date, and available-capacity bucketing. | It does not normalize all clocks, filesystem metadata, total capacity, volume UUID/name, logs, or mach-time APIs. |
 | Locale, fonts, voices, accessibility, display, audio, camera, and power | Covers narrow high-level getters with primary-language filtering, inventory filtering, coarse values, bucketed values, or common constants. | It does not provide a coherent full hardware, locale, rendering, media, accessibility, or camera-profile replacement. |
 | Motion, location, Bluetooth, telephony, personal-data, app, network, pasteboard, and WebView probes | Covers selected CoreMotion/CoreLocation quantization, empty or denied inventory shapes, URL-scheme probe filtering, proxy/Bonjour/hostname paths, pasteboard metadata, and exact WebView probe guards. | It does not normalize every delegate callback, timeline, permission path, arbitrary JavaScript fingerprint, network interface, local discovery workflow, or permissioned-data behavior. |

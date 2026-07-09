@@ -13,7 +13,6 @@
     "identity.hostname.composite.generic",
     "accessibility.common_preferences.uikit.normalized",
     "account.ubiquity_token.filemanager.nil",
-    "install_history.loupe.keychain_log.fresh_install",
     "storage.available_capacity.foundation.bucketed",
     "system.lockdown_mode.userdefaults.common_false",
     "locale.preferred_languages.foundation.primary_only",

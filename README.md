@@ -25,7 +25,7 @@ Loupehole does not aim to make every observation random. Its default approach is
 
 ## Project status
 
-The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 39 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
+The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 38 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
 
 The broader surface inventory remains larger and deeper than the implemented set. The [surfaces](docs/surfaces/) folder contains the research inventory, while [mitigations](docs/mitigations/) presents the behavior pages for modules compiled by the default selection. A compiled mitigation is not a universal claim for its whole surface; trust each mitigation page for exact API coverage.
 
@@ -41,7 +41,6 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [identity.hostname](docs/mitigations/identity-hostname.md) | [identity/hostname](src/mitigations/identity/hostname/) | `identity.hostname.composite.generic` |
 | [accessibility.common_preferences](docs/mitigations/accessibility-common-preferences.md) | [accessibility/common](src/mitigations/accessibility/common/) | `accessibility.common_preferences.uikit.normalized` |
 | [account.ubiquity_token](docs/mitigations/account-ubiquity-token.md) | [identity/apple_account](src/mitigations/identity/apple_account/) | `account.ubiquity_token.filemanager.nil` |
-| [install_history.loupe_keychain_log](docs/mitigations/install-history-loupe-keychain-log.md) | [identity/previous_installs](src/mitigations/identity/previous_installs/) | `install_history.loupe.keychain_log.fresh_install` |
 | [storage.available_capacity](docs/mitigations/storage-available-capacity.md) | [storage/available_capacity](src/mitigations/storage/available_capacity/) | `storage.available_capacity.foundation.bucketed` |
 | [system.lockdown_mode](docs/mitigations/system-lockdown-mode.md) | [system/lockdown_mode](src/mitigations/system/lockdown_mode/) | `system.lockdown_mode.userdefaults.common_false` |
 | [locale.preferred_languages](docs/mitigations/locale-preferred-languages.md) | [locale/language_preferences](src/mitigations/locale/language_preferences/) | `locale.preferred_languages.foundation.primary_only` |

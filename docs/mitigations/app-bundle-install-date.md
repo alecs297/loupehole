@@ -19,7 +19,7 @@ The app install-date option normalizes Foundation creation-date reads for the pr
 
 ## Surface And Relevance
 
-Loupe reads the Documents directory creation date as an app-install timeline anchor. That timestamp can link launches in the same install and can be compared with previous-install logs, volume creation time, boot time, cache files, and server first-seen records.
+Apps can read the Documents directory creation date as an app-install timeline anchor. That timestamp can link launches in the same install and can be compared with previous-install logs, volume creation time, boot time, cache files, and server first-seen records.
 
 ## Mitigation Strategy
 
@@ -43,7 +43,7 @@ LH_POLICY_SEED(volume_creation_date)
 | Derivation input | active/practical seed + generated policy seed + active `LHScope` |
 | Install range | Stable timestamp after the synthetic volume baseline, within a 90-day lookback, and at least one hour before first generation |
 | State behavior | Persisted through mitigationkit stable-time state with schema version `1` |
-| Coherence dependency | Reuses `volume_creation_date`; previous-install log mitigation reuses `app_install_date` |
+| Coherence dependency | Reuses `volume_creation_date` |
 
 ## Impact And Tradeoffs
 
