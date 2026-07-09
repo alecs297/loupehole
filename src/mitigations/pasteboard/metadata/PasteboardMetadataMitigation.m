@@ -19,6 +19,8 @@ static LHPasteboardBoolOriginal LHPasteboardHasURLsOriginalImplementation;
 static LHPasteboardBoolOriginal LHPasteboardHasImagesOriginalImplementation;
 static LHPasteboardBoolOriginal LHPasteboardHasColorsOriginalImplementation;
 static LHPolicyEngine *LHPasteboardMetadataPolicy;
+static BOOL LHPasteboardObservedBaseInitialized;
+static NSInteger LHPasteboardObservedBase;
 
 static NSInteger LHPasteboardSyntheticChangeCount(void) {
     uint64_t base = 0;
@@ -37,9 +39,22 @@ static NSInteger LHPasteboardSyntheticChangeCount(void) {
 }
 
 static NSInteger LHPasteboardChangeCountReplacement(id self, SEL selector) {
-    (void)self;
-    (void)selector;
-    return LHPasteboardSyntheticChangeCount();
+    NSInteger base = LHPasteboardSyntheticChangeCount();
+    if (LHPasteboardChangeCountOriginalImplementation == 0) {
+        return base;
+    }
+
+    NSInteger current = LHPasteboardChangeCountOriginalImplementation(self, selector);
+    if (!LHPasteboardObservedBaseInitialized) {
+        LHPasteboardObservedBase = current;
+        LHPasteboardObservedBaseInitialized = YES;
+    }
+
+    NSInteger delta = current - LHPasteboardObservedBase;
+    if (delta < 0) {
+        delta = 0;
+    }
+    return base + delta;
 }
 
 static NSInteger LHPasteboardNumberOfItemsReplacement(id self, SEL selector) {

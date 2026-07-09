@@ -13,7 +13,7 @@ The local Bonjour option suppresses Network.framework browser result delivery so
 | Status | Experimental |
 | Surface | Local Network |
 | Classification | Active permissioned local-service browse; active hook mitigation |
-| Affected APIs | Network.framework `nw_browser_set_browse_results_changed_handler`, including Swift `NWBrowser` call paths that install browse-result handlers |
+| Affected APIs | Network.framework `nw_browser_create`, `nw_browser_start`, `nw_browser_set_browse_results_changed_handler`, `nw_browser_set_state_changed_handler`, including Swift `NWBrowser` call paths that reach those symbols |
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | Does not bypass or grant Local Network permission |
 
@@ -29,13 +29,15 @@ Bonjour browsing can reveal nearby media devices, printers, file servers, smart-
 
 ## Mitigation Strategy
 
-The mitigation hooks `nw_browser_set_browse_results_changed_handler` and replaces the app's result callback with an empty no-op callback. The browser lifecycle is allowed to proceed, which avoids presenting the mitigation as a browser-start failure while still preventing service-result delivery. It installs both a direct function hook when the symbol is already present and an imported-symbol hook for call sites that import the symbol.
+The mitigation hooks browser creation to identify Loupe's self-published `_loupe-probe._tcp` permission probe and passes that probe through. Other Bonjour browsers keep their lifecycle but receive empty completed result batches, and waiting/failed/cancelled state callbacks are shaped to ready without an error.
+
+This avoids presenting inventory browses as start failures, while still preventing discovered service names from being delivered. It installs direct function hooks when symbols are already present and imported-symbol hooks for call sites that import those symbols.
 
 This is a strict suppression strategy. It avoids inventing a fake household or workplace inventory, and it preserves the system permission boundary by not returning synthetic services.
 
 ## Derivation And Lifetime
 
-No policy seed is declared because the module does not synthesize service names, counts, or timing values. The visible profile is empty/no results while enabled.
+No policy seed is declared because the module does not synthesize service names, counts, or timing values. The visible inventory profile is empty/no results while enabled. The known `_loupe-probe._tcp` permission check remains pass-through so authorization probes do not time out as unknown.
 
 ## Impact And Tradeoffs
 
@@ -47,7 +49,8 @@ Because the hook suppresses `NWBrowser` result delivery broadly, protected apps 
 
 Expected observations:
 
-- Swift `NWBrowser` Bonjour browses that reach `nw_browser_set_browse_results_changed_handler` produce no service-result callbacks.
+- Swift `NWBrowser` Bonjour inventory browses that reach Network.framework C browser symbols produce empty service-result callbacks.
+- The `_loupe-probe._tcp` permission browser remains pass-through.
 - The module registers as a no-op when the symbol cannot be hooked.
 - The mitigation does not grant Local Network permission or expose services before permission.
 

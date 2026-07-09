@@ -26,17 +26,7 @@ static bool LHWebViewScriptContainsAll(NSString *script, NSArray<NSString *> *ne
     return true;
 }
 
-static NSString *LHWebViewDebugRendererInfoNeedle(void) {
-    return [[@"WEBGL_" stringByAppendingString:@"de"] stringByAppendingString:@"bug_renderer_info"];
-}
-
 static NSString *LHWebViewReducedJavaScriptResult(NSString *script) {
-    if (LHWebViewScriptEquals(script, @"navigator.userAgent")) {
-        return @"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
-    }
-    if (LHWebViewScriptEquals(script, @"navigator.platform")) {
-        return @"iPhone";
-    }
     if (LHWebViewScriptEquals(script, @"JSON.stringify(navigator.languages)")) {
         return @"[\"en-US\",\"en\"]";
     }
@@ -50,13 +40,6 @@ static NSString *LHWebViewReducedJavaScriptResult(NSString *script) {
             @"Math.PI*2"
         ]))) {
         return @"data:,";
-    }
-    if (LHWebViewScriptContainsAll(script, (@[
-            @"getContext('webgl')",
-            LHWebViewDebugRendererInfoNeedle(),
-            @"UNMASKED_RENDERER_WEBGL"
-        ]))) {
-        return @"Apple Inc. | Apple GPU";
     }
 
     return nil;

@@ -30,7 +30,7 @@ Pasteboard metadata leaks cross-app workflow state without reading content. The 
 
 The mitigation hooks the UIKit metadata properties on `UIPasteboard` and also attempts to hook the concrete runtime class returned by `UIPasteboard.generalPasteboard`. It returns:
 
-- a scoped synthetic `changeCount` in `[0, 1024)`;
+- a scoped synthetic `changeCount` base in `[0, 1024)` plus the observed real pasteboard delta since first read;
 - `NO` for `hasStrings`, `hasURLs`, `hasImages`, and `hasColors`;
 - `0` for `numberOfItems`.
 
@@ -48,22 +48,22 @@ LH_POLICY_SEED(pasteboard_change_count_base)
 | --- | --- |
 | Policy seed identifier | `pasteboard_change_count_base` |
 | Helper | `LHMitigationDeriveBoundedU64` |
-| Value shape | Nonnegative integer below `1024` |
+| Value shape | Nonnegative integer starting below `1024`, then advancing with observed pasteboard changes |
 | Derivation input | active/practical seed + generated policy seed + active `LHScope` |
 | Storage behavior | No mitigation-owned state blob |
-| Lifetime | Stable until the active seed, policy seed, or scope changes |
+| Lifetime | Base is stable until the active seed, policy seed, or scope changes; delta follows same-session real pasteboard counter changes |
 
 ## Impact And Tradeoffs
 
 This strict empty shape can hide legitimate paste affordances. Apps may disable paste buttons, edit-menu entries, onboarding shortcuts, share flows, password-manager paste flows, or rich imports even when the real pasteboard contains usable content.
 
-The module does not hook content reads, pattern detection, named pasteboards, AppKit `NSPasteboard`, or pasteboard writes. If an app writes to the pasteboard and then expects `changeCount` to advance, this first version may under-report that modeled event.
+The module does not hook content reads, pattern detection, named pasteboards, AppKit `NSPasteboard`, or pasteboard writes. It observes the original `changeCount` and adds only the nonnegative same-session delta to a scoped base, so the value advances when the platform pasteboard counter advances but does not expose the absolute global counter.
 
 ## Validation
 
 Expected observations:
 
-- `UIPasteboard.general.changeCount` returns a stable scoped synthetic integer, including when the general pasteboard is a private concrete subclass.
+- `UIPasteboard.general.changeCount` returns a scoped synthetic integer that advances after observed pasteboard changes, including when the general pasteboard is a private concrete subclass.
 - Shape booleans are false and `numberOfItems` is `0`.
 - Content getters are untouched by this mitigation.
 

@@ -25,7 +25,7 @@ Audio route metadata can expose named accessories, current output volume, active
 
 The mitigation hooks audio-session scalar properties and port-name reads:
 
-- `portName` returns a generic label derived from the real `portType`, such as `Speaker`, `Receiver`, `Bluetooth Audio`, or `AirPlay`.
+- `portName` returns a generic label derived from the real `portType`, such as `Speaker`, `Receiver`, `Bluetooth Audio`, or `AirPlay`. If the original name is already a common generic label such as `Speaker`, it is preserved.
 - `outputVolume` is mapped through a scoped nonlinear curve selected from a small finite family.
 - `sampleRate` is downshifted to the nearest common 44.1 kHz or 48 kHz value when close enough to those cohorts.
 - `outputLatency` and `inputLatency` receive small scoped continuous perturbations instead of hard buckets.

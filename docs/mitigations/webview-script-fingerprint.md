@@ -31,14 +31,11 @@ The reviewed provider creates a hidden `WKWebView` and evaluates JavaScript for 
 
 The mitigation hooks `evaluateJavaScript:completionHandler:` and returns reduced values only for exact/simple probe shapes:
 
-- `navigator.userAgent` returns a common iPhone Safari/WebKit user-agent shape.
-- `navigator.platform` returns `iPhone`.
 - `JSON.stringify(navigator.languages)` returns `["en-US","en"]`.
 - `String(new Date().getTimezoneOffset())` returns `0`.
 - Canvas readback scripts matching the observed structure return a tiny stable data URL.
-- WebGL renderer scripts matching the observed structure return `Apple Inc. | Apple GPU`.
 
-All other JavaScript evaluation calls pass through to the original WebKit implementation. The module does not inject a user script into arbitrary pages, alter WebKit preferences, or change screen/CPU/RAM values that the surface page explicitly assigns to future hardware/display profiles.
+`navigator.userAgent`, `navigator.platform`, and WebGL renderer probes pass through to the original WebKit implementation. All other JavaScript evaluation calls also pass through. The module does not inject a user script into arbitrary pages, alter WebKit preferences, or change screen/CPU/RAM/GPU values that the surface page assigns to hardware/display/graphics profiles.
 
 ## Derivation And Lifetime
 
@@ -46,9 +43,9 @@ No policy seed is declared because this version uses common cohort constants rat
 
 ## Impact And Tradeoffs
 
-This is intentionally narrow and can be contradicted by native locale, time zone, OS version, display, GPU, Metal, HTTP User-Agent, and WebKit feature behavior until those profiles exist. The fixed time-zone and language values are compatibility risks for localized content and scheduling flows.
+This is intentionally narrow and can be contradicted by native locale, time zone, display, and WebKit feature behavior until those profiles exist. The fixed time-zone and language values are compatibility risks for localized content and scheduling flows.
 
-Canvas and WebGL reductions only affect scripts evaluated through the hooked native method and matching the observed structure. Page scripts running in normal web content, content worlds, user scripts, network request headers, JavaScriptCore outside WebKit, and lower-level WebGL behavior are not covered.
+Canvas reductions only affect scripts evaluated through the hooked native method and matching the observed structure. Page scripts running in normal web content, content worlds, user scripts, network request headers, JavaScriptCore outside WebKit, and lower-level WebGL behavior are not covered.
 
 ## Validation
 
@@ -57,7 +54,7 @@ Expected observations:
 - Exact `evaluateJavaScript` probes receive reduced string results.
 - Unrelated JavaScript evaluation passes through.
 - Canvas fingerprint code receives a stable low-detail data URL rather than the real rendered canvas readback.
-- WebGL renderer probe code receives a generic Apple GPU tuple.
+- User-agent, platform, and WebGL renderer probe code passes through.
 
 Repo-level validation is pending until the catalog entry is merged and the generated registry includes this module.
 

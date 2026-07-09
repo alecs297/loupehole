@@ -62,18 +62,51 @@ static NSString *LHAudioGenericPortName(NSString *portType) {
     return @"Audio Route";
 }
 
+static NSString *LHAudioCommonOriginalPortName(NSString *portName) {
+    if (![portName isKindOfClass:[NSString class]] || [portName length] == 0) {
+        return nil;
+    }
+
+    static NSArray<NSString *> *commonNames;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        commonNames = @[
+            @"Speaker",
+            @"Receiver",
+            @"Microphone",
+            @"Headphones",
+            @"Bluetooth Audio",
+            @"AirPlay",
+            @"Car Audio",
+            @"HDMI"
+        ];
+    });
+
+    for (NSString *name in commonNames) {
+        if ([portName isEqualToString:name]) {
+            return name;
+        }
+    }
+    return nil;
+}
+
 static NSString *LHAudioPortNameReplacement(id self, SEL selector) {
     SEL portTypeSelector = sel_registerName("portType");
     if (portTypeSelector != 0 && [self respondsToSelector:portTypeSelector]) {
         NSString *portType = ((NSString *(*)(id, SEL))objc_msgSend)(self, portTypeSelector);
         NSString *generic = LHAudioGenericPortName(portType);
-        if (generic != nil) {
+        if (generic != nil && ![generic isEqualToString:@"Audio Route"]) {
             return generic;
         }
     }
 
     if (LHAudioPortNameOriginalImplementation != 0) {
-        return LHAudioPortNameOriginalImplementation(self, selector);
+        NSString *original = LHAudioPortNameOriginalImplementation(self, selector);
+        NSString *common = LHAudioCommonOriginalPortName(original);
+        if (common != nil) {
+            return common;
+        }
+        return @"Audio Route";
     }
     return nil;
 }
