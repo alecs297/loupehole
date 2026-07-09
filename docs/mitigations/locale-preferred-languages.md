@@ -13,7 +13,7 @@ The preferred-languages option reduces ordered language-list entropy by preservi
 | Status | Experimental |
 | Surface | Locale and region |
 | Classification | Passive local language preference read; active Foundation hook mitigation |
-| Affected APIs | `+[NSLocale preferredLanguages]` |
+| Affected APIs | `+[NSLocale preferredLanguages]`, `-[NSUserDefaults objectForKey:]`, `-[NSUserDefaults arrayForKey:]`, `-[NSUserDefaults stringArrayForKey:]` for `AppleLanguages` |
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
@@ -29,7 +29,7 @@ An ordered preferred-language list can be high entropy for multilingual users. T
 
 ## Mitigation Strategy
 
-The mitigation hooks the `NSLocale` class method `preferredLanguages`. When the original list contains more than one valid string, the replacement returns an array containing only the original first language tag. Empty, malformed, or single-entry lists pass through unchanged.
+The mitigation hooks the `NSLocale` class method `preferredLanguages` and the `NSUserDefaults` read shapes commonly used for the backing `AppleLanguages` list. When the original list contains more than one valid string, the replacement returns an array containing only the original first language tag. Empty, malformed, single-entry lists, and unrelated defaults keys pass through unchanged.
 
 The module does not alter `Locale.current`, `NSLocale.currentLocale`, calendars, time zones, formatters, WebKit language surfaces, or server-side `Accept-Language` headers.
 
@@ -39,7 +39,7 @@ The module does not alter `Locale.current`, `NSLocale.currentLocale`, calendars,
 | --- | --- |
 | Policy seed identifiers | None |
 | Value shape | `NSArray<NSString *>` containing the original primary language |
-| Derivation input | Original preferred-language list |
+| Derivation input | Original preferred-language or `AppleLanguages` list |
 | Storage behavior | No mitigation-owned state |
 | Lifetime | Tracks the original primary language |
 | Dependencies | Should be paired with keyboard-language mitigation for Loupe's language tuple |
@@ -55,9 +55,10 @@ Apps may use secondary languages for localization fallback, content choice, sear
 Expected observations:
 
 - Loupe's preferred-language list contains the original first language only.
+- Direct `AppleLanguages` reads through covered `NSUserDefaults` getters contain the original first language only.
 - A single-language device reports the same list as before.
 - Locale identifier, calendar, time-zone, and formatter behavior remain unchanged.
 
 ## Rollback And Pass-Through
 
-If the class method is unavailable or hook installation fails, the module registers as a no-op. If the original list is empty, malformed, or already contains one language, the original result is returned unchanged.
+If the class method and defaults hooks are unavailable or hook installation fails, the module registers as a no-op. If the original list is empty, malformed, or already contains one language, the original result is returned unchanged. Defaults keys other than `AppleLanguages` pass through unchanged.
