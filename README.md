@@ -10,18 +10,18 @@
 >
 > Loupehole is experimental software. The first prototype works and already ships a meaningful set of mitigations, but coverage is incomplete, behavior can change quickly, and every device/app combination still needs careful validation. Use it at your own risk.
 
-Loupehole is an iOS privacy tweak and injectable runtime that reduces abusive fingerprinting from native apps and embedded web views. It is designed for people who want fewer stable, app-readable identifiers without turning their device into a pile of obvious fake values.
+Loupehole is an iOS privacy tweak and injectable runtime that reduces abusive fingerprinting from your other apps. It is designed for people who want fewer stable, app-readable identifiers without turning their device into a pile of obvious fake values.
 
 The project can be used in two modes:
 
-- **Systemwide tweak:** the best-case path, packaged as a rootless Debian package with a PreferenceLoader Settings pane and MobileSubstrate-compatible injection.
+- **Systemwide tweak:** the best-case path, packaged as a rootless package with a PreferenceLoader Settings pane and MobileSubstrate-compatible injection.
 - **Standalone dylib:** the same runtime built as an injectable dynamic library for owned-app testing, sideload-style workflows, or focused research.
 
 Loupehole is heavily inspired by [Loupe](https://github.com/mysk-research/loupe), and Loupe's public fingerprinting surfaces are a primary research source for this project. Loupehole is not affiliated with Loupe, Mysk, or its authors. The goal here is broader defensive coverage over time: first watch the surfaces Loupe demonstrates, then cover adjacent native and WebView signals where safe mitigation is possible.
 
 ## Why Loupehole Exists
 
-Apps can often recognize a device without asking for a single explicit identifier. They combine many small observations: boot time, volume creation dates, language lists, network names, battery state, WebView quirks, installed voices, pasteboard metadata, and other details. One value may look harmless; a stable cluster can become a fingerprint.
+Apps can often recognize a device without asking for a single explicit identifier. They combine many small observations: boot time, volume creation dates, language lists, network names, battery state, WebView quirks, installed voices, pasteboard metadata, and other details. One value may look harmless; a stable cluster can become a fingerprint. Give [Loupe](https://github.com/mysk-research/loupe) a try as a demonstration.
 
 Loupehole's approach is **smart randomization**. It does not make everything random on every read. Instead, it tries to return values that are:
 
@@ -30,7 +30,7 @@ Loupehole's approach is **smart randomization**. It does not make everything ran
 - **Coherent:** related mitigations should agree with each other, especially temporal values such as volume creation, app install, and boot time.
 - **Low drama:** when Loupehole cannot safely produce a documented value, the hook should pass through instead of inventing a broken one.
 
-At a high level, Loupehole combines a root/build seed, the active scope, per-mitigation policy seeds, and small persisted state where needed. The seed gives each build or install its own identity; the scope controls who sees the same derived values; policy seeds separate one value stream from another. See [Seeds](docs/concepts/seeds.md), [Scopes](docs/concepts/scopes.md), [Randomization](docs/concepts/randomization.md), and [Derivation](docs/concepts/derivation.md) for the deeper model.
+At a high level, Loupehole combines multiple concepts in order to implement spoofing policies : a root/build seed, an active scope, per-mitigation policy seeds, and small persisted state where needed. The seeds give each build or app install its own identity; the scope controls who sees the same derived values; policy seeds separate one value stream from another. See [Seeds](docs/concepts/seeds.md), [Scopes](docs/concepts/scopes.md), [Randomization](docs/concepts/randomization.md), and [Derivation](docs/concepts/derivation.md) for the deeper model.
 
 ## Current Status
 
@@ -42,8 +42,9 @@ Loupehole is in very early development. The current baseline includes:
 - a standalone dylib build for injection-focused workflows;
 - static verification scripts for seed derivation, package layout, binary strings, symbols, Swift runtime absence, debug logs, and mitigation helper behavior;
 - 32 experimental mitigation modules in the default selection.
+- an API and some documentation to allow contribution to the project
 
-The [surface inventory](docs/surfaces/) is research coverage. The [mitigation pages](docs/mitigations/) describe implemented behavior. A compiled mitigation is not a claim that the whole surface is solved; always read the linked mitigation page for exact API coverage, limitations, rollback behavior, and validation evidence.
+The [surface inventory](docs/surfaces/) is research coverage and explains some of the numerous ways applications could track you. The [mitigation pages](docs/mitigations/) describe implemented behaviors, and how Loupehole tries to limit that fingerprinting. A compiled mitigation is not a claim that the whole surface is solved; always read the linked mitigation page for exact API coverage, limitations, rollback behavior, and validation evidence.
 
 ## Available Mitigations
 
@@ -82,23 +83,23 @@ The [surface inventory](docs/surfaces/) is research coverage. The [mitigation pa
 | [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.empty_shape` |
 | [webview.script_fingerprint](docs/mitigations/webview-script-fingerprint.md) | [webview/script_fingerprint](src/mitigations/webview/script_fingerprint/) | `webview.script_fingerprint.wkwebview.exact_probe_guard` |
 
-The default selection mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. Some surfaces are intentionally not compiled by default because iOS already has strong permission controls or because a partial synthetic inventory would be more detectable than useful. See [Known limitations](docs/reference/known-limitations.md) for the current boundary.
+The default selection mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. Some surfaces are intentionally not covered because iOS already has strong permission controls or because a partial synthetic inventory would be more detectable than useful. See [Known limitations](docs/reference/known-limitations.md) for the current boundary.
 
 ## Build And Releases
 
-Loupehole builds from a **mitigation profile**. The profile chooses which mitigation modules are compiled and provides a build seed. The generator turns that selection into runtime config, module registry code, generated policy seed bytes, Settings metadata, and package layout inputs.
+Loupehole builds from a **mitigation profile**. The profile chooses which mitigation modules are compiled and provides a build seed. The generator turns that selection into runtime config, module registry code, generated policy seed bytes, settings metadata, and package layout inputs. By default, every existing mitigation is compiled, and the build seed is `123e4567-e89b-12d3-a456-426614174000`.
 
-From the repository root:
+These are the main commands in order to build the artifacts from the repository root:
 
 ```sh
 # Generate, build, sign, and copy the standalone dylib.
 make
 
-# Build the dylib and run static verification.
-make audit
-
 # Build and verify the rootless package.
 make package
+
+# Build the dylib and run static verification.
+make audit
 
 # Use a different profile.
 BUILD_SELECTION=path/to/selection.json make audit
@@ -106,7 +107,9 @@ BUILD_SELECTION=path/to/selection.json make audit
 
 `make` writes `dist/runtime.dylib`. `make package` writes `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`.
 
-For the standalone dylib, compiling it yourself is recommended so you control the build profile and seed. Some release builds may be provided with predefined seeds for easier testing, but those builds trade convenience for less personal control over generated build identity. See [Build profiles](docs/concepts/build-profiles.md), [Build environment](docs/development/build-environment.md), and [Build system reference](docs/reference/build-system.md) for details.
+For the standalone dylib, compiling it yourself is recommended so you control the build profile and seed. While the deb package manages a separate seed and allows scope selection, mitigations toggling and seed rotations, the dylib effectively uses the build seed and enabled all the mitigations that is has been compiled with.
+
+Some release builds may be provided with predefined seeds for ease of use, but those builds trade convenience for less personal control over generated build identity. See [Build profiles](docs/concepts/build-profiles.md), [Build environment](docs/development/build-environment.md), and [Build system reference](docs/reference/build-system.md) for details.
 
 ## Runtime Requirements
 
@@ -119,7 +122,7 @@ The rootless package expects:
 
 The package starts conservatively and uses Settings-managed policy to decide where protection is active. The runtime still refuses non-app, extension, and system-bundle contexts before resolving seeds or installing hooks.
 
-The standalone dylib is for controlled injection into an owned app process. It is useful for development and research, but it does not include the full package policy and rootless Settings lifecycle.
+The standalone dylib is for controlled injection into an owned app process. It is useful for development and research, but it does not include the full package policy and rootless Settings lifecycle. So far, the dylib has only been tested with [Sideloadly](https://sideloadly.io/).
 
 ## Documentation
 
@@ -142,4 +145,4 @@ The goal is a small set of auditable, reversible changes that make abusive corre
 
 ## Contribution Status
 
-The project is young, and contributions are most useful when they add well-researched surface coverage, preserve cross-API coherence, document limitations clearly, and include build plus runtime validation evidence. Start with [Project values](docs/development/project-values.md), [Adding a mitigation](docs/development/adding-a-mitigation.md), and [Mitigation principles](docs/development/mitigation-principles.md).
+The project is young, and contributions are most useful when they add well-researched surface coverage, preserve cross-API coherence, document limitations clearly, and include build plus runtime validation evidence. Start with [Project values](docs/development/project-values.md), [Adding a mitigation](docs/development/adding-a-mitigation.md), and [Mitigation principles](docs/development/mitigation-principles.md). While this project has been heavily vibe coded, strict validation was and will be enforced in order to preserve a minimum amount of quality. Feel free to get in touch if you would like to be part of this project (or just fork-it your way)
