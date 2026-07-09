@@ -152,7 +152,7 @@
       "optionDoc": "docs/mitigations/voices-inventory.md"
     },
     {
-      "id": "audio.session.avaudiosession.coarse_values",
+      "id": "audio.session.avaudiosession.shaped_values",
       "sources": [
         "src/mitigations/media/audio_session/AudioSessionMitigation.m"
       ],
@@ -179,7 +179,7 @@
       "optionDoc": "docs/mitigations/camera-unique-id.md"
     },
     {
-      "id": "display.brightness.uiscreen.bucketed",
+      "id": "display.brightness.uiscreen.curved",
       "sources": [
         "src/mitigations/display/brightness/DisplayBrightnessMitigation.m"
       ],
@@ -236,7 +236,7 @@
       "optionDoc": "docs/mitigations/power-thermal-state.md"
     },
     {
-      "id": "sensors.device_motion.coremotion.quantized",
+      "id": "sensors.device_motion.coremotion.seeded_jitter",
       "sources": [
         "src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m"
       ],
@@ -244,7 +244,7 @@
         "CoreMotion",
         "Foundation"
       ],
-      "optionDoc": "docs/mitigations/sensors-device-motion-quantized.md"
+      "optionDoc": "docs/mitigations/sensors-device-motion-seeded-jitter.md"
     },
     {
       "id": "sensors.activity.coremotion.low_entropy",

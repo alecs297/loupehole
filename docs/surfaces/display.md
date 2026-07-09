@@ -95,21 +95,22 @@ standalone mitigations to them.
 
 Mitigation ID idea: `display.brightness`
 
-Default behavior should reduce precision rather than invent a rare fixed value.
-Return a coarse bucket such as 0.2 increments, 0.1 increments, or a small common
-set selected by policy. Rounding the real value preserves broad UX intent while
-removing exact session-level entropy.
+Default behavior should reduce direct correlation rather than invent a rare
+fixed value. A scoped smooth transfer curve over the real value preserves broad
+UX intent and avoids obvious bucket edges while still breaking the exact raw
+brightness mirror.
 
 Strict behavior can return a stable common value such as mid brightness, but
 only for apps that do not legitimately adapt to brightness. Reading, camera,
 scanner, kiosk, video, and accessibility-oriented apps may expect the real value
-or may set brightness themselves. For those apps, pass-through or coarse
-rounding is safer than a fixed synthetic value.
+or may set brightness themselves. For those apps, pass-through or a continuous
+value derived from the post-write real value is safer than a fixed synthetic
+value.
 
 The hook should target `UIScreen.brightness` reads. Avoid interfering with
 brightness writes unless a separate policy explicitly covers setter behavior.
 If the app writes brightness and then reads it back, either pass through for
-that flow or return a bucketed value that is predictably derived from the
+that flow or return a shaped value that is predictably derived from the
 post-write real value.
 
 ### Dynamic Type Preference
@@ -154,10 +155,10 @@ the real display value rather than returning a hand-mixed synthetic trait.
 ## Derivation Considerations
 
 Brightness should not become a new per-user identifier. Prefer deterministic
-coarse rounding of the real value, a common policy constant, or a session-stable
-bucket drawn from a tiny common set. If a seeded synthetic value is used, derive
-only the bucket, not a precise floating-point value, and avoid making it stable
-across too many unrelated apps unless the profile explicitly calls for that.
+low-cardinality shaping of the real value, a common policy constant, or a
+session-stable common value drawn from a tiny set. If a seeded transfer function
+is used, choose from a small finite family and avoid making it stable across too
+many unrelated apps unless the profile explicitly calls for that.
 
 Dynamic Type should usually be a policy choice, not a random derivation. The
 default is pass-through because it preserves usability. Strict normalization

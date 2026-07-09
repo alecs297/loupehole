@@ -1,12 +1,15 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
+#include "LHValueQuantizer.h"
+
 #import <Foundation/Foundation.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
 
 #include <float.h>
 #include <math.h>
+#include <string.h>
 
 typedef NSString *(*LHAudioPortNameOriginal)(id self, SEL selector);
 typedef float (*LHAudioFloatOriginal)(id self, SEL selector);
@@ -19,6 +22,10 @@ static LHAudioDoubleOriginal LHAudioSampleRateOriginalImplementation;
 static LHAudioDoubleOriginal LHAudioOutputLatencyOriginalImplementation;
 static LHAudioDoubleOriginal LHAudioInputLatencyOriginalImplementation;
 static LHAudioBoolOriginal LHAudioOtherAudioOriginalImplementation;
+static LHPolicyEngine *LHAudioSessionPolicy;
+
+LH_POLICY_SEED(audio_output_volume_curve)
+LH_POLICY_SEED(audio_latency_jitter)
 
 static NSString *LHAudioGenericPortName(NSString *portType) {
     if (![portType isKindOfClass:[NSString class]] || [portType length] == 0) {
@@ -80,7 +87,20 @@ static float LHAudioOutputVolumeReplacement(id self, SEL selector) {
     if (!isfinite(volume) || volume < 0.0f || volume > 1.0f) {
         return volume;
     }
-    return roundf(volume * 10.0f) / 10.0f;
+    double shaped = volume;
+    if (LHAudioSessionPolicy != 0 &&
+        LHValueMapUnitIntervalCurve(&LHAudioSessionPolicy->config.buildSeed,
+                                    &LHGeneratedPolicySeed_audio_output_volume_curve,
+                                    &LHAudioSessionPolicy->appContext.scope,
+                                    (const uint8_t *)"outputVolume",
+                                    sizeof("outputVolume") - 1,
+                                    volume,
+                                    0.04,
+                                    0.015,
+                                    &shaped)) {
+        return (float)shaped;
+    }
+    return volume;
 }
 
 static double LHAudioNearestCommonSampleRate(double sampleRate) {
@@ -118,7 +138,21 @@ static double LHAudioLatencyReplacement(id self, SEL selector, LHAudioDoubleOrig
     if (!isfinite(latency) || latency < 0.0) {
         return latency;
     }
-    return round(latency * 200.0) / 200.0;
+    double shaped = latency;
+    const char *context = selector == sel_registerName("outputLatency") ? "outputLatency" : "inputLatency";
+    if (LHAudioSessionPolicy != 0 &&
+        LHValueApplySeededSinePerturbation(&LHAudioSessionPolicy->config.buildSeed,
+                                           &LHGeneratedPolicySeed_audio_latency_jitter,
+                                           &LHAudioSessionPolicy->appContext.scope,
+                                           (const uint8_t *)context,
+                                           strlen(context),
+                                           latency,
+                                           0.002,
+                                           0.04,
+                                           &shaped)) {
+        return shaped < 0.0 ? 0.0 : shaped;
+    }
+    return latency;
 }
 
 static double LHAudioOutputLatencyReplacement(id self, SEL selector) {
@@ -144,8 +178,8 @@ static bool LHAudioHookMessage(LHHookBackend *backend, Class targetClass, const 
     return LHHookBackendHookMessage(backend, targetClass, selector, replacement, original);
 }
 
-bool LHMitigation_audio_session_avaudiosession_coarse_values_install(LHHookBackend *backend, LHPolicyEngine *policy) {
-    (void)policy;
+bool LHMitigation_audio_session_avaudiosession_shaped_values_install(LHHookBackend *backend, LHPolicyEngine *policy) {
+    LHAudioSessionPolicy = policy;
 
     bool installed = false;
     Class portClass = NSClassFromString(@"AVAudioSessionPortDescription");
@@ -183,7 +217,7 @@ bool LHMitigation_audio_session_avaudiosession_coarse_values_install(LHHookBacke
                                    (void **)&LHAudioOtherAudioOriginalImplementation) || installed;
 
     if (!installed) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_audio_session_avaudiosession_coarse_values);
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_audio_session_avaudiosession_shaped_values);
     }
     return true;
 }

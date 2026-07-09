@@ -193,8 +193,9 @@ mode can return common values, but only with a full route tuple. For example, a
 built-in profile can use common sample rates and low built-in latency, while an
 AirPlay-like profile must account for much higher output latency.
 
-Avoid over-precise synthetic latency. Bucketed or cohort-known values are safer
-than per-user floating-point values with six decimal places.
+Avoid over-precise synthetic latency. Cohort-known values or small continuous
+perturbations selected from a finite seeded family are safer than hard bucket
+edges or per-user floating-point constants with six decimal places.
 
 ### `audio.other-audio-playing`
 
@@ -213,12 +214,12 @@ Hook `AVAudioSession.outputVolume`, CoreAudio virtual main volume reads, and
 observable update paths. Compatibility default should pass through for apps that
 display volume, react to mute/low volume, or provide media controls.
 
-Strict mode can bucket volume into common coarse values, such as tenths or a
-small set of common levels. Keep the value session-stable unless a modeled
-volume event occurs. If the hook supports volume-change notifications or KVO,
-the reported notification values must match future property reads.
+Strict mode can shape volume through a small finite family of continuous curves
+or map it to common coarse values. Keep the value session-stable unless a
+modeled volume event occurs. If the hook supports volume-change notifications
+or KVO, the reported notification values must match future property reads.
 
-Do not return a high-cardinality seed-derived decimal. A precise synthetic
+Do not return a high-cardinality seed-derived constant. A precise synthetic
 volume can be more identifying than the original value.
 
 ### `audio.channel-counts`
@@ -260,9 +261,9 @@ synthetic route than as values derived directly from the seed. If the selected
 profile rotates, rotate the tuple together.
 
 Output volume is a slowly varying state value. If spoofed, derive or store a
-coarse per-scope volume timeline that remains stable across repeated reads and
-changes only through plausible events. The value should not jump across reads
-unless the notification/KVO path reports the same change.
+coherent per-scope volume timeline or apply a finite-family transfer curve over
+the real value. The value should not jump across reads unless the
+notification/KVO path reports the same change.
 
 `isOtherAudioPlaying` should be pass-through or a low-entropy policy constant.
 Do not derive a rare `true` state per app or per user. A synthetic `true` can

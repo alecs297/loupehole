@@ -7,8 +7,8 @@ The audio-session option reduces precision and personalized labels from iOS audi
 | Field | Value |
 | --- | --- |
 | Option ID | `audio.session` |
-| Implemented mitigation | `audio.session.avaudiosession.coarse_values` |
-| Policy seeds | None; this mitigation buckets real values and returns generic cohort labels. |
+| Implemented mitigation | `audio.session.avaudiosession.shaped_values` |
+| Policy seeds | `audio_output_volume_curve`, `audio_latency_jitter` |
 | User-facing name | Audio session metadata |
 | Status | Experimental |
 | Surface | Audio route |
@@ -26,20 +26,20 @@ Audio route metadata can expose named accessories, current output volume, active
 The mitigation hooks audio-session scalar properties and port-name reads:
 
 - `portName` returns a generic label derived from the real `portType`, such as `Speaker`, `Receiver`, `Bluetooth Audio`, or `AirPlay`.
-- `outputVolume` is rounded to tenths.
+- `outputVolume` is mapped through a scoped nonlinear curve selected from a small finite family.
 - `sampleRate` is downshifted to the nearest common 44.1 kHz or 48 kHz value when close enough to those cohorts.
-- `outputLatency` and `inputLatency` are rounded to 5 ms buckets.
+- `outputLatency` and `inputLatency` receive small scoped continuous perturbations instead of hard buckets.
 - `isOtherAudioPlaying` returns `NO`.
 
 It does not alter route arrays, route-change notifications, audio-session activation, recording permission, CoreAudio HAL, macOS device inventory, channel counts, or actual audio capture/playback behavior.
 
 ## Derivation And Lifetime
 
-No policy seed is declared because this module does not create a scoped synthetic identity. It reduces the precision of the real value or returns a shared generic label. Repeated reads follow the underlying system state through the same bucket function.
+`audio_output_volume_curve` selects the unit-interval transfer curve for `outputVolume`. `audio_latency_jitter` selects the continuous perturbation profile for `outputLatency` and `inputLatency`. The module does not store state; repeated reads follow the underlying system state through the same scoped function. Port names remain generic labels derived from real route type, sample rate remains a common cohort value, and `isOtherAudioPlaying` remains a shared policy constant.
 
 ## Impact And Tradeoffs
 
-Generic port names hide personalized accessory names while preserving the broad route type. Coarse volume and latency reduce short-session entropy but can still be contradicted by apps that compare against KVO notifications, route-change payloads, audio-engine timing, or CoreAudio paths not covered here.
+Generic port names hide personalized accessory names while preserving the broad route type. Curved volume and perturbed latency reduce exact-value mirroring without creating hard bucket edges, but they can still be contradicted by apps that compare against KVO notifications, route-change payloads, audio-engine timing, or CoreAudio paths not covered here.
 
 Normalizing `isOtherAudioPlaying` to false can affect apps that decide whether to mix, duck, defer, or silence audio. Audio-centric apps may need this module disabled.
 
@@ -48,8 +48,8 @@ Normalizing `isOtherAudioPlaying` to false can affect apps that decide whether t
 Repository-level validation is pending until the catalog and default selection are merged. Expected observations:
 
 - Loupe's iOS audio route names no longer expose personalized port names.
-- Volume is reported in 0.1 buckets.
-- Latency is reported in 5 ms buckets.
+- Volume follows real changes through the scoped nonlinear curve.
+- Latency follows real changes with a small deterministic perturbation.
 - Sample rate reports common 44.1 kHz or 48 kHz cohorts where applicable.
 - Other audio playing reports false.
 

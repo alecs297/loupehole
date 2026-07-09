@@ -75,14 +75,14 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `locale.preferred_languages.foundation.primary_only` | [locale.preferred_languages](../mitigations/locale-preferred-languages.md) | `src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m` |
 | `locale.keyboard_languages.uikit.primary_only` | [locale.keyboard_languages](../mitigations/locale-keyboard-languages.md) | `src/mitigations/locale/keyboard_languages/KeyboardLanguagesMitigation.m` |
 | `voices.inventory.avspeech.downloaded_hidden` | [voices.inventory](../mitigations/voices-inventory.md) | `src/mitigations/voices/inventory/VoicesInventoryMitigation.m` |
-| `audio.session.avaudiosession.coarse_values` | [audio.session](../mitigations/audio-session.md) | `src/mitigations/media/audio_session/AudioSessionMitigation.m` |
+| `audio.session.avaudiosession.shaped_values` | [audio.session](../mitigations/audio-session.md) | `src/mitigations/media/audio_session/AudioSessionMitigation.m` |
 | `camera.unique_id.avcapturedevice.scoped_id` | [camera.unique_id](../mitigations/camera-unique-id.md) | `src/mitigations/camera/unique_id/CameraUniqueIDMitigation.m` |
-| `display.brightness.uiscreen.bucketed` | [display.brightness](../mitigations/display-brightness.md) | `src/mitigations/display/brightness/DisplayBrightnessMitigation.m` |
+| `display.brightness.uiscreen.curved` | [display.brightness](../mitigations/display-brightness.md) | `src/mitigations/display/brightness/DisplayBrightnessMitigation.m` |
 | `display.dynamic_type.uikit.bucketed` | [display.dynamic_type](../mitigations/display-dynamic-type.md) | `src/mitigations/display/dynamic_type/DisplayDynamicTypeMitigation.m` |
 | `power.battery.uidevice.curved_level` | [power.battery](../mitigations/power-battery.md) | `src/mitigations/power/battery_state/PowerBatteryStateMitigation.m` |
 | `power.low_power_mode.processinfo.normalized_false` | [power.low_power_mode](../mitigations/power-low-power-mode.md) | `src/mitigations/power/low_power_mode/PowerLowPowerModeMitigation.m` |
 | `power.thermal_state.processinfo.nominalized` | [power.thermal_state](../mitigations/power-thermal-state.md) | `src/mitigations/power/thermal_state/PowerThermalStateMitigation.m` |
-| `sensors.device_motion.coremotion.quantized` | [sensors.device_motion](../mitigations/sensors-device-motion-quantized.md) | `src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m` |
+| `sensors.device_motion.coremotion.seeded_jitter` | [sensors.device_motion](../mitigations/sensors-device-motion-seeded-jitter.md) | `src/mitigations/sensors/device_motion/DeviceMotionQuantizationMitigation.m` |
 | `sensors.activity.coremotion.low_entropy` | [sensors.activity](../mitigations/sensors-activity-low-entropy.md) | `src/mitigations/sensors/activity/ActivityLowEntropyMitigation.m` |
 | `sensors.pedometer.coremotion.quantized` | [sensors.pedometer](../mitigations/sensors-pedometer-quantized.md) | `src/mitigations/sensors/pedometer/PedometerQuantizationMitigation.m` |
 | `sensors.altimeter.coremotion.quantized` | [sensors.altimeter](../mitigations/sensors-altimeter-quantized.md) | `src/mitigations/sensors/altimeter/AltimeterQuantizationMitigation.m` |

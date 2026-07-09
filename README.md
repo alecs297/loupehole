@@ -46,14 +46,14 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [locale.preferred_languages](docs/mitigations/locale-preferred-languages.md) | [locale/language_preferences](src/mitigations/locale/language_preferences/) | `locale.preferred_languages.foundation.primary_only` |
 | [locale.keyboard_languages](docs/mitigations/locale-keyboard-languages.md) | [locale/keyboard_languages](src/mitigations/locale/keyboard_languages/) | `locale.keyboard_languages.uikit.primary_only` |
 | [voices.inventory](docs/mitigations/voices-inventory.md) | [voices/inventory](src/mitigations/voices/inventory/) | `voices.inventory.avspeech.downloaded_hidden` |
-| [audio.session](docs/mitigations/audio-session.md) | [media/audio_session](src/mitigations/media/audio_session/) | `audio.session.avaudiosession.coarse_values` |
+| [audio.session](docs/mitigations/audio-session.md) | [media/audio_session](src/mitigations/media/audio_session/) | `audio.session.avaudiosession.shaped_values` |
 | [camera.unique_id](docs/mitigations/camera-unique-id.md) | [camera/unique_id](src/mitigations/camera/unique_id/) | `camera.unique_id.avcapturedevice.scoped_id` |
-| [display.brightness](docs/mitigations/display-brightness.md) | [display/brightness](src/mitigations/display/brightness/) | `display.brightness.uiscreen.bucketed` |
+| [display.brightness](docs/mitigations/display-brightness.md) | [display/brightness](src/mitigations/display/brightness/) | `display.brightness.uiscreen.curved` |
 | [display.dynamic_type](docs/mitigations/display-dynamic-type.md) | [display/dynamic_type](src/mitigations/display/dynamic_type/) | `display.dynamic_type.uikit.bucketed` |
 | [power.battery](docs/mitigations/power-battery.md) | [power/battery_state](src/mitigations/power/battery_state/) | `power.battery.uidevice.curved_level` |
 | [power.low_power_mode](docs/mitigations/power-low-power-mode.md) | [power/low_power_mode](src/mitigations/power/low_power_mode/) | `power.low_power_mode.processinfo.normalized_false` |
 | [power.thermal_state](docs/mitigations/power-thermal-state.md) | [power/thermal_state](src/mitigations/power/thermal_state/) | `power.thermal_state.processinfo.nominalized` |
-| [sensors.device_motion](docs/mitigations/sensors-device-motion-quantized.md) | [sensors/device_motion](src/mitigations/sensors/device_motion/) | `sensors.device_motion.coremotion.quantized` |
+| [sensors.device_motion](docs/mitigations/sensors-device-motion-seeded-jitter.md) | [sensors/device_motion](src/mitigations/sensors/device_motion/) | `sensors.device_motion.coremotion.seeded_jitter` |
 | [sensors.activity](docs/mitigations/sensors-activity-low-entropy.md) | [sensors/activity](src/mitigations/sensors/activity/) | `sensors.activity.coremotion.low_entropy` |
 | [sensors.pedometer](docs/mitigations/sensors-pedometer-quantized.md) | [sensors/pedometer](src/mitigations/sensors/pedometer/) | `sensors.pedometer.coremotion.quantized` |
 | [sensors.altimeter](docs/mitigations/sensors-altimeter-quantized.md) | [sensors/altimeter](src/mitigations/sensors/altimeter/) | `sensors.altimeter.coremotion.quantized` |
