@@ -25,7 +25,7 @@ Loupehole does not aim to make every observation random. Its default approach is
 
 ## Project status
 
-The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 30 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
+The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 32 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
 
 The broader surface inventory remains larger and deeper than the implemented set. The [surfaces](docs/surfaces/) folder contains the research inventory, while [mitigations](docs/mitigations/) presents the behavior pages for modules compiled by the default selection. A compiled mitigation is not a universal claim for its whole surface; trust each mitigation page for exact API coverage.
 
@@ -41,8 +41,10 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [identity.hostname](docs/mitigations/identity-hostname.md) | [identity/hostname](src/mitigations/identity/hostname/) | `identity.hostname.composite.generic` |
 | [accessibility.common_preferences](docs/mitigations/accessibility-common-preferences.md) | [accessibility/common](src/mitigations/accessibility/common/) | `accessibility.common_preferences.uikit.normalized` |
 | [account.ubiquity_token](docs/mitigations/account-ubiquity-token.md) | [identity/apple_account](src/mitigations/identity/apple_account/) | `account.ubiquity_token.filemanager.nil` |
+| [advertising.idfa](docs/mitigations/advertising-idfa.md) | [advertising/idfa](src/mitigations/advertising/idfa/) | `advertising.idfa.adsupport.zero` |
 | [storage.available_capacity](docs/mitigations/storage-available-capacity.md) | [storage/available_capacity](src/mitigations/storage/available_capacity/) | `storage.available_capacity.foundation.bucketed` |
 | [system.lockdown_mode](docs/mitigations/system-lockdown-mode.md) | [system/lockdown_mode](src/mitigations/system/lockdown_mode/) | `system.lockdown_mode.userdefaults.common_false` |
+| [system.memory_counters](docs/mitigations/system-memory-counters.md) | [system/memory_counters](src/mitigations/system/memory_counters/) | `system.memory_counters.mach.bucketed` |
 | [locale.preferred_languages](docs/mitigations/locale-preferred-languages.md) | [locale/language_preferences](src/mitigations/locale/language_preferences/) | `locale.preferred_languages.foundation.primary_only` |
 | [locale.keyboard_languages](docs/mitigations/locale-keyboard-languages.md) | [locale/keyboard_languages](src/mitigations/locale/keyboard_languages/) | `locale.keyboard_languages.uikit.primary_only` |
 | [voices.inventory](docs/mitigations/voices-inventory.md) | [voices/inventory](src/mitigations/voices/inventory/) | `voices.inventory.avspeech.downloaded_hidden` |
@@ -59,14 +61,14 @@ The broader surface inventory remains larger and deeper than the implemented set
 | [personal_data.eventkit](docs/mitigations/personal-data-eventkit-empty.md) | [personal_data/eventkit_empty](src/mitigations/personal_data/eventkit_empty/) | `personal_data.eventkit.inventory.empty` |
 | [apps.url_scheme_probes](docs/mitigations/apps-url-scheme-probes.md) | [apps/url_scheme_probes](src/mitigations/apps/url_scheme_probes/) | `apps.url_scheme_probes.uiapplication.default_false` |
 | [network.hostname](docs/mitigations/network-hostname.md) | [network/hostname](src/mitigations/network/hostname/) | `network.hostname.composite.generic_device_name` |
-| [network.vpn_proxy](docs/mitigations/network-vpn-proxy.md) | [network/vpn_proxy](src/mitigations/network/vpn_proxy/) | `network.vpn_proxy.cfnetwork.scoped_filter` |
-| [network.local_bonjour](docs/mitigations/network-local-bonjour.md) | [network/local_bonjour](src/mitigations/network/local_bonjour/) | `network.local_bonjour.nwbrowser.empty_results` |
+| [network.wifi_identity](docs/mitigations/network-wifi-identity.md) | [network/wifi_identity](src/mitigations/network/wifi_identity/) | `network.wifi_identity.nehotspot.scoped` |
+| [network.interface_inventory](docs/mitigations/network-interface-inventory.md) | [network/interface_inventory](src/mitigations/network/interface_inventory/) | `network.interface_inventory.composite.common` |
 | [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.empty_shape` |
 | [webview.script_fingerprint](docs/mitigations/webview-script-fingerprint.md) | [webview/script_fingerprint](src/mitigations/webview/script_fingerprint/) | `webview.script_fingerprint.wkwebview.exact_probe_guard` |
 
 The default selection intentionally mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. The temporal mitigations remain linked through the documented `volume_creation_date` policy seed so volume creation, app install, and boot time stay ordered. Other modules are narrow adapters and should be evaluated by their mitigation pages rather than by surface name alone.
 
-Location, permission-gated motion/sensor inventory, contacts, Photos, and music-library inventory are intentionally not compiled in the default selection. Those domains already have granular iOS permission controls, and Loupehole treats pass-through or system denial as preferable to partial synthetic inventories there. Permission-free device-motion getters remain mitigated because they can expose live movement and sensor-bias signals without an explicit user permission grant. Bluetooth, local network, Calendar, and Reminders remain in scope for mitigation design where permissioned fair use can still expose unrelated inventory.
+Location, permission-gated motion/sensor inventory, contacts, Photos, music-library inventory, and local-network service discovery are intentionally not compiled in the default selection. Those domains already have granular iOS permission controls or functionality that cannot be preserved without exposing fingerprintable real-world context, and Loupehole treats pass-through or system denial as preferable to partial synthetic inventories there. Permission-free device-motion getters remain mitigated because they can expose live movement and sensor-bias signals without an explicit user permission grant. Bluetooth, Calendar, and Reminders remain in scope for mitigation design where permissioned fair use can still expose unrelated inventory.
 
 ## Documentation
 

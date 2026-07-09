@@ -1,8 +1,6 @@
 #include "LHModuleRegistry.h"
 #include "LHGeneratedMitigationRegistry.h"
 
-#include "LHMitigationValues.h"
-
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -10,26 +8,8 @@
 typedef NSDictionary<NSString *, NSString *> *(*LHServiceRATOriginal)(id self, SEL selector);
 typedef NSString *(*LHCurrentRATOriginal)(id self, SEL selector);
 
-LH_POLICY_SEED(telephony_radio_service_identifier)
-
 static LHServiceRATOriginal LHServiceRATOriginalImplementation;
 static LHCurrentRATOriginal LHCurrentRATOriginalImplementation;
-static LHPolicyEngine *LHTelephonyPolicy;
-
-static NSString *LHTelephonySyntheticServiceIdentifier(void) {
-    char identifier[17] = { 0 };
-    if (LHTelephonyPolicy == 0 ||
-        !LHMitigationDeriveASCIIString(&LHTelephonyPolicy->config.buildSeed,
-                                       &LHGeneratedPolicySeed_telephony_radio_service_identifier,
-                                       &LHTelephonyPolicy->appContext.scope,
-                                       "0123456789abcdef",
-                                       16,
-                                       identifier,
-                                       sizeof(identifier))) {
-        return nil;
-    }
-    return [NSString stringWithUTF8String:identifier];
-}
 
 static NSDictionary<NSString *, NSString *> *LHTelephonyServiceRATReplacement(id self, SEL selector) {
     NSDictionary<NSString *, NSString *> *original = nil;
@@ -41,11 +21,7 @@ static NSDictionary<NSString *, NSString *> *LHTelephonyServiceRATReplacement(id
         return original;
     }
 
-    NSString *serviceIdentifier = LHTelephonySyntheticServiceIdentifier();
-    if (serviceIdentifier == nil) {
-        return original;
-    }
-    return @{ serviceIdentifier: CTRadioAccessTechnologyLTE };
+    return @{ @"0000000000000000": CTRadioAccessTechnologyLTE };
 }
 
 static NSString *LHTelephonyCurrentRATReplacement(id self, SEL selector) {
@@ -69,7 +45,7 @@ static bool LHTelephonyHookMessage(LHHookBackend *backend,
 }
 
 bool LHMitigation_telephony_radio_access_coretelephony_single_lte_install(LHHookBackend *backend, LHPolicyEngine *policy) {
-    LHTelephonyPolicy = policy;
+    (void)policy;
     bool installed = false;
 
     installed = LHTelephonyHookMessage(backend, "serviceCurrentRadioAccessTechnology", (void *)LHTelephonyServiceRATReplacement, (void **)&LHServiceRATOriginalImplementation) || installed;

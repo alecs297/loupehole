@@ -95,6 +95,19 @@
       "optionDoc": "docs/mitigations/account-ubiquity-token.md"
     },
     {
+      "id": "advertising.idfa.adsupport.zero",
+      "sources": [
+        "src/mitigations/advertising/idfa/AdvertisingIDFAMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation"
+      ],
+      "weakFrameworks": [
+        "AdSupport"
+      ],
+      "optionDoc": "docs/mitigations/advertising-idfa.md"
+    },
+    {
       "id": "storage.available_capacity.foundation.bucketed",
       "sources": [
         "src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m"
@@ -113,6 +126,13 @@
         "Foundation"
       ],
       "optionDoc": "docs/mitigations/system-lockdown-mode.md"
+    },
+    {
+      "id": "system.memory_counters.mach.bucketed",
+      "sources": [
+        "src/mitigations/system/memory_counters/MemoryCountersMitigation.c"
+      ],
+      "optionDoc": "docs/mitigations/system-memory-counters.md"
     },
     {
       "id": "locale.preferred_languages.foundation.primary_only",
@@ -301,25 +321,34 @@
       "optionDoc": "docs/mitigations/network-hostname.md"
     },
     {
-      "id": "network.vpn_proxy.cfnetwork.scoped_filter",
+      "id": "network.wifi_identity.nehotspot.scoped",
       "sources": [
-        "src/mitigations/network/vpn_proxy/VPNProxyMitigation.m"
+        "src/mitigations/network/wifi_identity/WiFiIdentityMitigation.m"
+      ],
+      "frameworks": [
+        "Foundation",
+        "CoreFoundation"
+      ],
+      "weakFrameworks": [
+        "NetworkExtension",
+        "SystemConfiguration"
+      ],
+      "optionDoc": "docs/mitigations/network-wifi-identity.md"
+    },
+    {
+      "id": "network.interface_inventory.composite.common",
+      "sources": [
+        "src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c"
       ],
       "frameworks": [
         "CoreFoundation",
-        "CFNetwork"
-      ],
-      "optionDoc": "docs/mitigations/network-vpn-proxy.md"
-    },
-    {
-      "id": "network.local_bonjour.nwbrowser.empty_results",
-      "sources": [
-        "src/mitigations/network/local_bonjour/LocalBonjourMitigation.c"
-      ],
-      "frameworks": [
+        "CFNetwork",
         "Network"
       ],
-      "optionDoc": "docs/mitigations/network-local-bonjour.md"
+      "weakFrameworks": [
+        "SystemConfiguration"
+      ],
+      "optionDoc": "docs/mitigations/network-interface-inventory.md"
     },
     {
       "id": "pasteboard.metadata.uikit.empty_shape",

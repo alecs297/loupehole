@@ -8,7 +8,7 @@ This option normalizes visible CoreTelephony radio access technology to one acti
 | --- | --- |
 | Option ID | `telephony.radio_access` |
 | Implemented mitigation | `telephony.radio_access.coretelephony.single_lte` |
-| Policy seeds | `telephony_radio_service_identifier` |
+| Policy seeds | None |
 | Status | Experimental |
 | Surface | Telephony |
 | Affected APIs | `CTTelephonyNetworkInfo.serviceCurrentRadioAccessTechnology`, `CTTelephonyNetworkInfo.currentRadioAccessTechnology` |
@@ -24,14 +24,14 @@ Service count and radio access technology expose no-SIM, single-SIM, dual-SIM/eS
 The module hooks CoreTelephony radio getters:
 
 - if `serviceCurrentRadioAccessTechnology` is nil or empty, it passes through to avoid reporting cellular service on no-service or non-cellular contexts;
-- otherwise it returns one scoped opaque service key mapped to `CTRadioAccessTechnologyLTE`;
+- otherwise it returns one zero-shaped service key mapped to `CTRadioAccessTechnologyLTE`;
 - if the deprecated `currentRadioAccessTechnology` originally returns a value, it returns LTE.
 
 Carrier metadata and provider dictionaries are untouched.
 
 ## Derivation And Lifetime
 
-`LH_POLICY_SEED(telephony_radio_service_identifier)` derives a 16-character lowercase hex service key with `LHMitigationDeriveASCIIString`. The key is stable until active seed, scope, or policy seed changes. No state blob is used.
+No state or seed-derived value is used. Active service dictionaries collapse to a single common zero-shaped service identifier; nil and empty original dictionaries remain nil or empty.
 
 ## Impact And Gaps
 
@@ -43,10 +43,10 @@ Notifications, notification payloads, subscriber provider metadata, MCC/MNC, car
 
 Expected observations after integration:
 
-- active multi-service or 5G radio dictionaries collapse to one LTE entry;
+- active multi-service or 5G radio dictionaries collapse to one zero-key LTE entry;
 - nil or empty original dictionaries remain nil or empty;
 - the deprecated single-service getter reports LTE only when it originally reported a technology.
 
 ## Rollback And Pass-Through
 
-If `CTTelephonyNetworkInfo` or both selectors are unavailable, the module registers as no-op. If service-key derivation fails, the service dictionary passes through unchanged.
+If `CTTelephonyNetworkInfo` or both selectors are unavailable, the module registers as no-op.

@@ -13,8 +13,10 @@
     "identity.hostname.composite.generic",
     "accessibility.common_preferences.uikit.normalized",
     "account.ubiquity_token.filemanager.nil",
+    "advertising.idfa.adsupport.zero",
     "storage.available_capacity.foundation.bucketed",
     "system.lockdown_mode.userdefaults.common_false",
+    "system.memory_counters.mach.bucketed",
     "locale.preferred_languages.foundation.primary_only",
     "locale.keyboard_languages.uikit.primary_only",
     "voices.inventory.avspeech.downloaded_hidden",
@@ -31,8 +33,8 @@
     "personal_data.eventkit.inventory.empty",
     "apps.url_scheme_probes.uiapplication.default_false",
     "network.hostname.composite.generic_device_name",
-    "network.vpn_proxy.cfnetwork.scoped_filter",
-    "network.local_bonjour.nwbrowser.empty_results",
+    "network.wifi_identity.nehotspot.scoped",
+    "network.interface_inventory.composite.common",
     "pasteboard.metadata.uikit.empty_shape",
     "webview.script_fingerprint.wkwebview.exact_probe_guard"
   ]

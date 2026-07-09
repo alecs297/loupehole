@@ -70,8 +70,10 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `identity.hostname.composite.generic` | [identity.hostname](../mitigations/identity-hostname.md) | `src/mitigations/identity/hostname/HostnameMitigation.m` |
 | `accessibility.common_preferences.uikit.normalized` | [accessibility.common_preferences](../mitigations/accessibility-common-preferences.md) | `src/mitigations/accessibility/common/AccessibilityCommonMitigation.m` |
 | `account.ubiquity_token.filemanager.nil` | [account.ubiquity_token](../mitigations/account-ubiquity-token.md) | `src/mitigations/identity/apple_account/UbiquityTokenMitigation.m` |
+| `advertising.idfa.adsupport.zero` | [advertising.idfa](../mitigations/advertising-idfa.md) | `src/mitigations/advertising/idfa/AdvertisingIDFAMitigation.m` |
 | `storage.available_capacity.foundation.bucketed` | [storage.available_capacity](../mitigations/storage-available-capacity.md) | `src/mitigations/storage/available_capacity/AvailableCapacityMitigation.m` |
 | `system.lockdown_mode.userdefaults.common_false` | [system.lockdown_mode](../mitigations/system-lockdown-mode.md) | `src/mitigations/system/lockdown_mode/LockdownModeMitigation.m` |
+| `system.memory_counters.mach.bucketed` | [system.memory_counters](../mitigations/system-memory-counters.md) | `src/mitigations/system/memory_counters/MemoryCountersMitigation.c` |
 | `locale.preferred_languages.foundation.primary_only` | [locale.preferred_languages](../mitigations/locale-preferred-languages.md) | `src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m` |
 | `locale.keyboard_languages.uikit.primary_only` | [locale.keyboard_languages](../mitigations/locale-keyboard-languages.md) | `src/mitigations/locale/keyboard_languages/KeyboardLanguagesMitigation.m` |
 | `voices.inventory.avspeech.downloaded_hidden` | [voices.inventory](../mitigations/voices-inventory.md) | `src/mitigations/voices/inventory/VoicesInventoryMitigation.m` |
@@ -88,8 +90,8 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `personal_data.eventkit.inventory.empty` | [personal_data.eventkit](../mitigations/personal-data-eventkit-empty.md) | `src/mitigations/personal_data/eventkit_empty/EventKitPermissionedEmptyMitigation.m` |
 | `apps.url_scheme_probes.uiapplication.default_false` | [apps.url_scheme_probes](../mitigations/apps-url-scheme-probes.md) | `src/mitigations/apps/url_scheme_probes/URLSchemeProbeMitigation.m` |
 | `network.hostname.composite.generic_device_name` | [network.hostname](../mitigations/network-hostname.md) | `src/mitigations/network/hostname/HostnameMitigation.m` |
-| `network.vpn_proxy.cfnetwork.scoped_filter` | [network.vpn_proxy](../mitigations/network-vpn-proxy.md) | `src/mitigations/network/vpn_proxy/VPNProxyMitigation.m` |
-| `network.local_bonjour.nwbrowser.empty_results` | [network.local_bonjour](../mitigations/network-local-bonjour.md) | `src/mitigations/network/local_bonjour/LocalBonjourMitigation.c` |
+| `network.wifi_identity.nehotspot.scoped` | [network.wifi_identity](../mitigations/network-wifi-identity.md) | `src/mitigations/network/wifi_identity/WiFiIdentityMitigation.m` |
+| `network.interface_inventory.composite.common` | [network.interface_inventory](../mitigations/network-interface-inventory.md) | `src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c` |
 | `pasteboard.metadata.uikit.empty_shape` | [pasteboard.metadata](../mitigations/pasteboard-metadata.md) | `src/mitigations/pasteboard/metadata/PasteboardMetadataMitigation.m` |
 | `webview.script_fingerprint.wkwebview.exact_probe_guard` | [webview.script_fingerprint](../mitigations/webview-script-fingerprint.md) | `src/mitigations/webview/script_fingerprint/WebViewScriptFingerprintMitigation.m` |
 

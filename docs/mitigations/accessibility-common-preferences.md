@@ -13,7 +13,7 @@ The accessibility common-preferences option normalizes many high-entropy UIKit a
 | Status | Experimental |
 | Surface | Accessibility |
 | Classification | Passive local-preference reads; active UIKit hook mitigation |
-| Affected APIs | `UIAccessibility` boolean class properties for assistive input, visual, media, and speech flags; `UITraitCollection.accessibilityContrast` |
+| Affected APIs | `UIAccessibility` boolean class properties and the `UIAccessibilityDarkerSystemColorsEnabled` C function for assistive input, visual, media, and speech flags; `UITraitCollection.accessibilityContrast` |
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
@@ -25,7 +25,7 @@ Rare accessibility settings can strongly identify a user or preference bundle. H
 
 The mitigation hooks UIKit class methods for Loupe-observed `UIAccessibility` booleans. It returns `false` for rare enabled states such as VoiceOver, Switch Control, Guided Access, AssistiveTouch, Classic Invert, Grayscale, Reduce Motion, Bold Text, Increased Contrast, Reduce Transparency, captions, speech, and related flags. It returns `true` for common enabled defaults `isShakeToUndoEnabled` and `isVideoAutoplayEnabled`.
 
-It also hooks `-[UITraitCollection accessibilityContrast]` and returns normal contrast so `isDarkerSystemColorsEnabled` and the trait path agree.
+It also hooks `UIAccessibilityDarkerSystemColorsEnabled` and `-[UITraitCollection accessibilityContrast]` on the trait collection class family, returning normal contrast so the darker-system-colors and trait paths agree.
 
 ## Derivation And Lifetime
 
@@ -40,7 +40,7 @@ This module can degrade apps for users who rely on accessibility features. It do
 Expected observations after catalog selection and generation:
 
 - Loupe's UIKit accessibility booleans report the common tuple.
-- The darker-system-colors boolean and accessibility-contrast trait both report normal contrast.
+- The darker-system-colors C/Swift boolean and accessibility-contrast trait both report normal contrast.
 - The merged active-flags signal should collapse to no rare enabled flags except common defaults handled by Loupe's own string formatting.
 
 ## Rollback And Pass-Through

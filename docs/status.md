@@ -14,16 +14,16 @@ Present components include:
 - a rootless Debian package with a PreferenceLoader Settings bundle;
 - package policy with default and per-bundle controls;
 - dylib and package verification targets;
-- 30 experimental mitigation modules selected by the default build.
+- 32 experimental mitigation modules selected by the default build.
 
 ## Implemented mitigation group
 
 | Group | Present behavior | Important boundary |
 | --- | --- | --- |
 | Identity and install context | Covers IDFV, device name, hostname, app install date, and iCloud ubiquity-token absence. | It does not normalize every account, StoreKit, OS-version, anti-abuse, bundle metadata, previous-install, or generic Keychain signal. |
-| Temporal and storage values | Covers boot time, Foundation volume creation date, app install date, and available-capacity bucketing. | It does not normalize all clocks, filesystem metadata, total capacity, volume UUID/name, logs, or mach-time APIs. |
+| Temporal, storage, and memory values | Covers boot time, Foundation volume creation date, app install date, available-capacity bucketing, and Mach memory-counter perturbation. | It does not normalize all clocks, filesystem metadata, total capacity, volume UUID/name, logs, task-level memory APIs, hardware RAM claims, or mach-time APIs. |
 | Locale, voices, accessibility, display, audio, camera, power, and device motion | Covers narrow high-level getters with primary-language filtering, inventory filtering, shaped live values, coarse values, continuous perturbation, or common constants. | It does not provide a coherent full hardware, locale, rendering, media, accessibility, camera-profile, or motion-profile replacement. Font inventory is documented as a research surface but intentionally not compiled because partial filtering can be more fingerprintable than pass-through. |
-| Bluetooth, telephony, EventKit, app, network, pasteboard, and WebView probes | Covers selected Bluetooth scan behavior, EventKit empty inventory shape, URL-scheme probe filtering, proxy/Bonjour/hostname paths, pasteboard metadata, and exact WebView probe guards. | It does not normalize every delegate callback, timeline, permission path, arbitrary JavaScript fingerprint, network interface, local discovery workflow, or permissioned-data behavior. |
+| Bluetooth, telephony, EventKit, app, network, advertising, pasteboard, and WebView probes | Covers selected Bluetooth scan behavior, EventKit empty inventory shape, URL-scheme probe filtering, hostname paths, Wi-Fi identity shaping, composite interface/proxy/path inventory shaping, IDFA zeroing, pasteboard metadata, and exact WebView probe guards. | It does not normalize every delegate callback, timeline, permission path, arbitrary JavaScript fingerprint, `getaddrinfo`, URL loading, full network behavior, local discovery workflow, Bonjour/DNS-SD browsing, NetworkExtension state, routing tables, DNS resolver server IPs, DNS request behavior, or permissioned-data behavior. |
 
 The temporal modules are linked intentionally. They should not be evaluated as independent fake timestamps: their shared policy-seed use establishes `volume creation time < app install time < boot time < now` where the selected modules overlap.
 
