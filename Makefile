@@ -19,7 +19,7 @@ TARGET_DYLIB ?= packaging/theos/.theos/obj/$(LOADER_BASENAME).dylib
 ARTIFACT_DIR ?= dist
 FINAL_DYLIB ?= $(ARTIFACT_DIR)/runtime.dylib
 PACKAGE_NAME ?= com.loupehole.runtime
-PACKAGE_VERSION ?= 0.1.0
+PACKAGE_VERSION ?= $(shell awk -F': ' '/^Version:/ { print $$2; found = 1 } END { if (!found) print "0" }' packaging/theos/control)
 PACKAGE_ARCH ?= iphoneos-arm64
 TARGET_DEB ?= packaging/theos/packages/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
 FINAL_DEB ?= $(ARTIFACT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(PACKAGE_ARCH).deb
@@ -36,12 +36,12 @@ export LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
 all: copy-artifact
 
 build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) LH_PREFERENCES_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=$(THEOS_DEBUG) FINALPACKAGE=$(THEOS_FINALPACKAGE) PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) LH_PREFERENCES_EMBED_BUILD_SEED=$(LH_PREFERENCES_EMBED_BUILD_SEED)
 
 package: package-verify
 
 package-build: generate
-	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 LH_PREFERENCES_EMBED_BUILD_SEED=1 package
+	$(MAKE) -C packaging/theos THEOS="$(THEOS)" DEBUG=0 FINALPACKAGE=1 PACKAGE_VERSION="$(PACKAGE_VERSION)" LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage LH_EMBED_BUILD_SEED=0 LH_PREFERENCES_EMBED_BUILD_SEED=1 package
 
 copy-package: package-build
 	mkdir -p "$(ARTIFACT_DIR)"
@@ -52,6 +52,7 @@ package-verify: copy-package
 
 generate:
 	$(PYTHON) scripts/build/generate-mitigation-build.py --catalog "$(MITIGATION_CATALOG)" --selection "$(BUILD_SELECTION)"
+	PYTHON="$(PYTHON)" scripts/build/prepare-preference-assets.sh
 
 clean:
 	$(MAKE) -C packaging/theos THEOS="$(THEOS)" clean

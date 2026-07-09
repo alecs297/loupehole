@@ -158,6 +158,14 @@ with preference_loader.open("rb") as handle:
 entry = loader.get("entry", {})
 if entry.get("bundle") != "LoupeholePreferences" or entry.get("detail") != "LHRootListController":
     raise SystemExit("preference loader entry does not point at the Loupehole root controller")
+if entry.get("icon") != "LoupeholeIcon":
+    raise SystemExit("preference loader entry does not reference the Loupehole icon asset")
+preference_bundle = root / "var/jb/Library/PreferenceBundles/LoupeholePreferences.bundle"
+if (preference_bundle / "LoupeholeIcon.png").exists():
+    raise SystemExit("preference bundle includes stale unscaled LoupeholeIcon.png")
+for name in ("LoupeholeIcon@2x.png", "LoupeholeIcon@3x.png"):
+    if not (preference_bundle / name).is_file():
+        raise SystemExit(f"preference bundle is missing {name}")
 
 print(state_parent)
 PY
