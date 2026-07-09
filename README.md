@@ -10,7 +10,7 @@ Loupehole is a privacy-preserving iOS injected runtime/library that reduces abus
 
 The central design principle is not "make every device random." The safer target is to make protected apps see a coherent, common, low-entropy device profile. A per-user random pile of values is easy to recognize as synthetic and can become a stronger fingerprint than the real device.
 
-## Wha's inside
+## What's inside
 
 Loupehole can be compiled from custom build selections. A selection is a collection of fingerprinting mitigations that produces two deliverables:
 

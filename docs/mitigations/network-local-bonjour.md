@@ -13,7 +13,7 @@ The local Bonjour option suppresses Network.framework browser result delivery so
 | Status | Experimental |
 | Surface | Local Network |
 | Classification | Active permissioned local-service browse; active hook mitigation |
-| Affected APIs | Network.framework `nw_browser_create`, `nw_browser_start`, `nw_browser_set_browse_results_changed_handler`, `nw_browser_set_state_changed_handler`, including Swift `NWBrowser` call paths that reach those symbols |
+| Affected APIs | Network.framework `nw_browse_descriptor_create_bonjour_service`, `nw_browser_create`, `nw_browser_set_browse_results_changed_handler`, including Swift `NWBrowser` call paths that reach those symbols |
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | Does not bypass or grant Local Network permission |
 
@@ -29,9 +29,9 @@ Bonjour browsing can reveal nearby media devices, printers, file servers, smart-
 
 ## Mitigation Strategy
 
-The mitigation hooks browser creation to identify Loupe's self-published `_loupe-probe._tcp` permission probe and passes that probe through. Other Bonjour browsers keep their lifecycle but receive empty completed result batches, and waiting/failed/cancelled state callbacks are shaped to ready without an error.
+The mitigation hooks Bonjour descriptor and browser creation to identify Loupe's self-published `_loupe-probe._tcp` permission probe and passes that probe through. Other Bonjour browsers keep their lifecycle but have their browse-result handler replaced with a copied no-op block, so discovered services are not delivered to the app.
 
-This avoids presenting inventory browses as start failures, while still preventing discovered service names from being delivered. It installs direct function hooks when symbols are already present and imported-symbol hooks for call sites that import those symbols.
+This avoids presenting inventory browses as start failures and avoids fabricating invalid Network.framework result objects. It installs direct function hooks when symbols are already present and imported-symbol hooks for call sites that import those symbols.
 
 This is a strict suppression strategy. It avoids inventing a fake household or workplace inventory, and it preserves the system permission boundary by not returning synthetic services.
 
@@ -49,7 +49,7 @@ Because the hook suppresses `NWBrowser` result delivery broadly, protected apps 
 
 Expected observations:
 
-- Swift `NWBrowser` Bonjour inventory browses that reach Network.framework C browser symbols produce empty service-result callbacks.
+- Swift `NWBrowser` Bonjour inventory browses that reach Network.framework C browser symbols do not deliver service-result callbacks.
 - The `_loupe-probe._tcp` permission browser remains pass-through.
 - The module registers as a no-op when the symbol cannot be hooked.
 - The mitigation does not grant Local Network permission or expose services before permission.
