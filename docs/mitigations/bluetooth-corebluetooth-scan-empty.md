@@ -7,7 +7,7 @@ This option suppresses Core Bluetooth scan result creation and sanitizes direct 
 | Field | Value |
 | --- | --- |
 | Option ID | `bluetooth.corebluetooth` |
-| Implemented mitigation | `bluetooth.corebluetooth.scan_empty` |
+| Implemented mitigation | `bluetooth.corebluetooth.scan.empty` |
 | Policy seeds | `bluetooth_peripheral_identifier` |
 | Status | Experimental |
 | Surface | Bluetooth |

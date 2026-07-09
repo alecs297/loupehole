@@ -2,15 +2,16 @@
 
 ## Present limitation: coverage is selective
 
-Loupehole currently compiles three experimental mitigations. The surface inventory contains many more categories, including device identity, system state, power, storage, display, audio, locale, accessibility, network, fonts, application metadata, WebView, hardware/cohort, permissioned sensors, location, Bluetooth, local network, contacts, photos, calendar, reminders, and media. Inventory coverage is research coverage, not runtime coverage.
+Loupehole currently compiles 39 experimental mitigations in the default build. The surface inventory remains broader and deeper than those modules: each compiled mitigation covers only the exact APIs and behavior documented on its mitigation page. Inventory coverage is research coverage, not runtime coverage.
 
 ## Cross-check limitation
 
 A covered high-level API can be compared with an uncovered low-level API. Current examples:
 
-- Foundation volume creation time can be compared with filesystem metadata APIs that are not yet normalized.
+- Foundation volume and app install dates can be compared with filesystem metadata APIs that are not yet normalized.
 - Synthetic boot time and Foundation uptime do not normalize every monotonic clock, process age, log time, or mach-time path.
-- A scoped IDFV does not normalize all identity, account, network, install-history, or anti-abuse signals.
+- Scoped and generic identity values do not normalize all account, StoreKit, OS-version, anti-abuse, bundle metadata, or generic Keychain signals.
+- Coarse sensor, location, network, media, and WebView modules can still be cross-checked against unimplemented delegate callbacks, lower-level APIs, arbitrary JavaScript, or server-side behavior.
 
 These are documented gaps, not claims of invisibility.
 

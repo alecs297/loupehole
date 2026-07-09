@@ -14,21 +14,22 @@ Present components include:
 - a rootless Debian package with a PreferenceLoader Settings bundle;
 - package policy with default and per-bundle controls;
 - dylib and package verification targets;
-- three experimental mitigation modules selected by the default build.
+- 39 experimental mitigation modules selected by the default build.
 
 ## Implemented mitigation group
 
 | Group | Present behavior | Important boundary |
 | --- | --- | --- |
-| IDFV | Hooks `UIDevice.identifierForVendor` and returns a scoped UUID derived with a mitigation policy seed. | It does not normalize every identity API or prove vendor-group behavior for every app topology. |
-| Device lifetime | Hooks supported boot-time sysctl forms and `NSProcessInfo.systemUptime` from one temporal state. | It does not normalize all clocks, process lifetime values, logs, or mach-time APIs. |
-| Storage lifetime | Hooks Foundation URL volume-creation-date resource values. | It does not normalize lower-level filesystem metadata such as `stat`, `fstat`, `lstat`, `getattrlist`, or direct filesystem queries. |
+| Identity and install context | Covers IDFV, device name, hostname, app install date, iCloud ubiquity-token absence, and Loupe-specific previous-install probes. | It does not normalize every account, StoreKit, OS-version, anti-abuse, bundle metadata, or generic Keychain signal. |
+| Temporal and storage values | Covers boot time, Foundation volume creation date, app install date, and available-capacity bucketing. | It does not normalize all clocks, filesystem metadata, total capacity, volume UUID/name, logs, or mach-time APIs. |
+| Locale, fonts, voices, accessibility, display, audio, camera, and power | Covers narrow high-level getters with primary-language filtering, inventory filtering, coarse values, bucketed values, or common constants. | It does not provide a coherent full hardware, locale, rendering, media, accessibility, or camera-profile replacement. |
+| Motion, location, Bluetooth, telephony, personal-data, app, network, pasteboard, and WebView probes | Covers selected CoreMotion/CoreLocation quantization, empty or denied inventory shapes, URL-scheme probe filtering, proxy/Bonjour/hostname paths, pasteboard metadata, and exact WebView probe guards. | It does not normalize every delegate callback, timeline, permission path, arbitrary JavaScript fingerprint, network interface, local discovery workflow, or permissioned-data behavior. |
 
-The temporal modules are linked intentionally. They should not be evaluated as independent fake timestamps: their shared helper establishes `volume creation time < boot time < now`.
+The temporal modules are linked intentionally. They should not be evaluated as independent fake timestamps: their shared policy-seed use establishes `volume creation time < app install time < boot time < now` where the selected modules overlap.
 
 ## Why the status remains experimental
 
-A hook can compile and still be unsuitable for broad use. The current modules need ongoing testing across OS versions, jailbreak environments, app types, Swift and Objective-C call paths, package upgrades, disabled policy paths, and cross-surface checks. Coverage also remains much smaller than the surface inventory in `docs/surfaces/`.
+A hook can compile and still be unsuitable for broad use. The current modules need ongoing testing across OS versions, jailbreak environments, app types, Swift, Objective-C, C, imported-symbol call paths, package upgrades, disabled policy paths, and cross-surface checks. Many APIs named by the surface inventory remain unimplemented or intentionally pass through.
 
 Experimental does **not** mean safe to assume universal compatibility. It means the module has a defined intended behavior, a controlled fallback, and early validation evidence, while compatibility and anti-fingerprinting efficacy remain open to revision.
 

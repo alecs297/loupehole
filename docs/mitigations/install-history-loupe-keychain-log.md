@@ -7,7 +7,7 @@ The Loupe previous-install log option isolates the exact Keychain/UserDefaults p
 | Field | Value |
 | --- | --- |
 | Option ID | `install_history.loupe_keychain_log` |
-| Implemented mitigation | `install_history.loupe_keychain_log.fresh_install` |
+| Implemented mitigation | `install_history.loupe.keychain_log.fresh_install` |
 | Policy seeds | `app_install_date`, `volume_creation_date` |
 | User-facing name | Loupe previous-install log |
 | Status | Experimental |

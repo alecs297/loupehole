@@ -25,21 +25,55 @@ Loupehole does not aim to make every observation random. Its default approach is
 
 ## Project status
 
-The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. Three mitigations are compiled by the default build selection. Their coverage is intentionally narrow, and each mitigation page records its current development status.
+The current baseline contains the runtime, generator, rootless package, Settings bundle, scope and seed machinery, state persistence, and verification scripts. The default build selection now compiles 39 experimental mitigation modules. Their coverage is intentionally narrow, and each mitigation page records its current development status, affected APIs, rollback behavior, and known gaps.
 
-The broader surface inventory is substantially larger than the implemented set. The [surfaces](docs/surfaces/) folder contains the list of targettable fingerprinting surfaces, while [mitigations](docs/mitigations/) presents the currently implemented mitigations. 
-
-The documentation links below target those final names.
+The broader surface inventory remains larger and deeper than the implemented set. The [surfaces](docs/surfaces/) folder contains the research inventory, while [mitigations](docs/mitigations/) presents the behavior pages for modules compiled by the default selection. A compiled mitigation is not a universal claim for its whole surface; trust each mitigation page for exact API coverage.
 
 ## Available mitigations
 
-| Surface | Mitigation | Source folder | ID |
-| --- | --- | --- | --- |
-| [Device identity](docs/surfaces/device-identity.md) | [Vendor identifier (IDFV)](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | `identity.idfv.uidevice.scoped_uuid` |
-| [System information / lifetime](docs/surfaces/system-info.md) | [Device boot time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) | `system.boot_time.composite.synthetic` |
-| [Storage](docs/surfaces/storage.md) | [Volume creation time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) | `storage.volume_creation_time.foundation.synthetic` |
+| Mitigation | Source folder | ID |
+| --- | --- | --- |
+| [identity.idfv](docs/mitigations/identity-idfv.md) | [identity/idfv](src/mitigations/identity/idfv/) | `identity.idfv.uidevice.scoped_uuid` |
+| [system.boot_time](docs/mitigations/system-boot-time.md) | [system/boot_time](src/mitigations/system/boot_time/) | `system.boot_time.composite.synthetic` |
+| [storage.volume_creation_time](docs/mitigations/storage-volume-time.md) | [storage/volume_creation_time](src/mitigations/storage/volume_creation_time/) | `storage.volume_creation_time.foundation.synthetic` |
+| [app_bundle.install_date](docs/mitigations/app-bundle-install-date.md) | [app_bundle/install_date](src/mitigations/app_bundle/install_date/) | `app_bundle.install_date.foundation.synthetic` |
+| [identity.device_name](docs/mitigations/identity-device-name.md) | [identity/device_name](src/mitigations/identity/device_name/) | `identity.device_name.uidevice.generic` |
+| [identity.hostname](docs/mitigations/identity-hostname.md) | [identity/hostname](src/mitigations/identity/hostname/) | `identity.hostname.composite.generic` |
+| [accessibility.common_preferences](docs/mitigations/accessibility-common-preferences.md) | [accessibility/common](src/mitigations/accessibility/common/) | `accessibility.common_preferences.uikit.normalized` |
+| [account.ubiquity_token](docs/mitigations/account-ubiquity-token.md) | [identity/apple_account](src/mitigations/identity/apple_account/) | `account.ubiquity_token.filemanager.nil` |
+| [install_history.loupe_keychain_log](docs/mitigations/install-history-loupe-keychain-log.md) | [identity/previous_installs](src/mitigations/identity/previous_installs/) | `install_history.loupe.keychain_log.fresh_install` |
+| [storage.available_capacity](docs/mitigations/storage-available-capacity.md) | [storage/available_capacity](src/mitigations/storage/available_capacity/) | `storage.available_capacity.foundation.bucketed` |
+| [system.lockdown_mode](docs/mitigations/system-lockdown-mode.md) | [system/lockdown_mode](src/mitigations/system/lockdown_mode/) | `system.lockdown_mode.userdefaults.common_false` |
+| [locale.preferred_languages](docs/mitigations/locale-preferred-languages.md) | [locale/language_preferences](src/mitigations/locale/language_preferences/) | `locale.preferred_languages.foundation.primary_only` |
+| [locale.keyboard_languages](docs/mitigations/locale-keyboard-languages.md) | [locale/keyboard_languages](src/mitigations/locale/keyboard_languages/) | `locale.keyboard_languages.uikit.primary_only` |
+| [fonts.family_inventory](docs/mitigations/fonts-family-inventory.md) | [fonts/family_inventory](src/mitigations/fonts/family_inventory/) | `fonts.family_inventory.coretext.filtered` |
+| [voices.inventory](docs/mitigations/voices-inventory.md) | [voices/inventory](src/mitigations/voices/inventory/) | `voices.inventory.avspeech.downloaded_hidden` |
+| [audio.session](docs/mitigations/audio-session.md) | [media/audio_session](src/mitigations/media/audio_session/) | `audio.session.avaudiosession.coarse_values` |
+| [camera.unique_id](docs/mitigations/camera-unique-id.md) | [camera/unique_id](src/mitigations/camera/unique_id/) | `camera.unique_id.avcapturedevice.scoped_id` |
+| [display.brightness](docs/mitigations/display-brightness.md) | [display/brightness](src/mitigations/display/brightness/) | `display.brightness.uiscreen.bucketed` |
+| [display.dynamic_type](docs/mitigations/display-dynamic-type.md) | [display/dynamic_type](src/mitigations/display/dynamic_type/) | `display.dynamic_type.uikit.bucketed` |
+| [power.battery](docs/mitigations/power-battery.md) | [power/battery_state](src/mitigations/power/battery_state/) | `power.battery.uidevice.bucketed_level` |
+| [power.low_power_mode](docs/mitigations/power-low-power-mode.md) | [power/low_power_mode](src/mitigations/power/low_power_mode/) | `power.low_power_mode.processinfo.normalized_false` |
+| [power.thermal_state](docs/mitigations/power-thermal-state.md) | [power/thermal_state](src/mitigations/power/thermal_state/) | `power.thermal_state.processinfo.nominalized` |
+| [sensors.device_motion](docs/mitigations/sensors-device-motion-quantized.md) | [sensors/device_motion](src/mitigations/sensors/device_motion/) | `sensors.device_motion.coremotion.quantized` |
+| [sensors.activity](docs/mitigations/sensors-activity-low-entropy.md) | [sensors/activity](src/mitigations/sensors/activity/) | `sensors.activity.coremotion.low_entropy` |
+| [sensors.pedometer](docs/mitigations/sensors-pedometer-quantized.md) | [sensors/pedometer](src/mitigations/sensors/pedometer/) | `sensors.pedometer.coremotion.quantized` |
+| [sensors.altimeter](docs/mitigations/sensors-altimeter-quantized.md) | [sensors/altimeter](src/mitigations/sensors/altimeter/) | `sensors.altimeter.coremotion.quantized` |
+| [location.core_location](docs/mitigations/location-core-location-coarse.md) | [location/core_location](src/mitigations/location/core_location/) | `location.core_location.foundation.coarse` |
+| [bluetooth.corebluetooth](docs/mitigations/bluetooth-corebluetooth-scan-empty.md) | [bluetooth/corebluetooth](src/mitigations/bluetooth/corebluetooth/) | `bluetooth.corebluetooth.scan.empty` |
+| [telephony.radio_access](docs/mitigations/telephony-radio-access-single-lte.md) | [telephony/radio_access](src/mitigations/telephony/radio_access/) | `telephony.radio_access.coretelephony.single_lte` |
+| [contacts.permissioned_inventory](docs/mitigations/contacts-permissioned-inventory-empty.md) | [contacts/permissioned_empty](src/mitigations/contacts/permissioned_empty/) | `contacts.permissioned.inventory.empty` |
+| [personal_data.eventkit](docs/mitigations/personal-data-eventkit-empty.md) | [personal_data/eventkit_empty](src/mitigations/personal_data/eventkit_empty/) | `personal_data.eventkit.inventory.empty` |
+| [photos.library](docs/mitigations/photos-library-empty.md) | [photos/library_empty](src/mitigations/photos/library_empty/) | `photos.library.inventory.empty` |
+| [media_library.music](docs/mitigations/media-library-music-empty.md) | [media_library/music_empty](src/mitigations/media_library/music_empty/) | `media_library.music.inventory.empty` |
+| [apps.url_scheme_probes](docs/mitigations/apps-url-scheme-probes.md) | [apps/url_scheme_probes](src/mitigations/apps/url_scheme_probes/) | `apps.url_scheme_probes.uiapplication.known_list` |
+| [network.hostname](docs/mitigations/network-hostname.md) | [network/hostname](src/mitigations/network/hostname/) | `network.hostname.composite.generic_device_name` |
+| [network.vpn_proxy](docs/mitigations/network-vpn-proxy.md) | [network/vpn_proxy](src/mitigations/network/vpn_proxy/) | `network.vpn_proxy.cfnetwork.scoped_filter` |
+| [network.local_bonjour](docs/mitigations/network-local-bonjour.md) | [network/local_bonjour](src/mitigations/network/local_bonjour/) | `network.local_bonjour.nwbrowser.suppress_start` |
+| [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.empty_shape` |
+| [webview.script_fingerprint](docs/mitigations/webview-script-fingerprint.md) | [webview/script_fingerprint](src/mitigations/webview/script_fingerprint/) | `webview.script_fingerprint.wkwebview.exact_probe_guard` |
 
-The boot-time and volume-creation-time mitigations are coherent without shared mitigation-owned code: both use the documented `volume_creation_date` policy seed identifier when they need that baseline, and boot time persists its own state after deriving a value later than that baseline. The IDFV mitigation is scoped and seed-derived, rather than being a literal UUID embedded in hook code.
+The default selection intentionally mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. The temporal mitigations remain linked through the documented `volume_creation_date` policy seed so volume creation, app install, and boot time stay ordered. Other modules are narrow adapters and should be evaluated by their mitigation pages rather than by surface name alone.
 
 ## Documentation
 
