@@ -17,7 +17,6 @@
     "system.lockdown_mode.userdefaults.common_false",
     "locale.preferred_languages.foundation.primary_only",
     "locale.keyboard_languages.uikit.primary_only",
-    "fonts.family_inventory.coretext.filtered",
     "voices.inventory.avspeech.downloaded_hidden",
     "audio.session.avaudiosession.coarse_values",
     "camera.unique_id.avcapturedevice.scoped_id",

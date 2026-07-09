@@ -138,20 +138,6 @@
       "optionDoc": "docs/mitigations/locale-keyboard-languages.md"
     },
     {
-      "id": "fonts.family_inventory.coretext.filtered",
-      "sources": [
-        "src/mitigations/fonts/family_inventory/FontFamilyInventoryMitigation.m"
-      ],
-      "frameworks": [
-        "Foundation",
-        "CoreText"
-      ],
-      "weakFrameworks": [
-        "UIKit"
-      ],
-      "optionDoc": "docs/mitigations/fonts-family-inventory.md"
-    },
-    {
       "id": "voices.inventory.avspeech.downloaded_hidden",
       "sources": [
         "src/mitigations/voices/inventory/VoicesInventoryMitigation.m"

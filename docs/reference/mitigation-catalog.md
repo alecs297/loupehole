@@ -74,7 +74,6 @@ Policy seeds must always be combined with the practical/active seed. A policy se
 | `system.lockdown_mode.userdefaults.common_false` | [system.lockdown_mode](../mitigations/system-lockdown-mode.md) | `src/mitigations/system/lockdown_mode/LockdownModeMitigation.m` |
 | `locale.preferred_languages.foundation.primary_only` | [locale.preferred_languages](../mitigations/locale-preferred-languages.md) | `src/mitigations/locale/language_preferences/LanguagePreferencesMitigation.m` |
 | `locale.keyboard_languages.uikit.primary_only` | [locale.keyboard_languages](../mitigations/locale-keyboard-languages.md) | `src/mitigations/locale/keyboard_languages/KeyboardLanguagesMitigation.m` |
-| `fonts.family_inventory.coretext.filtered` | [fonts.family_inventory](../mitigations/fonts-family-inventory.md) | `src/mitigations/fonts/family_inventory/FontFamilyInventoryMitigation.m` |
 | `voices.inventory.avspeech.downloaded_hidden` | [voices.inventory](../mitigations/voices-inventory.md) | `src/mitigations/voices/inventory/VoicesInventoryMitigation.m` |
 | `audio.session.avaudiosession.coarse_values` | [audio.session](../mitigations/audio-session.md) | `src/mitigations/media/audio_session/AudioSessionMitigation.m` |
 | `camera.unique_id.avcapturedevice.scoped_id` | [camera.unique_id](../mitigations/camera-unique-id.md) | `src/mitigations/camera/unique_id/CameraUniqueIDMitigation.m` |

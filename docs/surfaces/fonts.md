@@ -80,6 +80,26 @@ the family list is incomplete if rendering still proves the fonts exist.
 
 ## Mitigation Strategy Ideas
 
+### Current implementation status
+
+Loupehole does not currently compile a `fonts.family_inventory` mitigation.
+The previous prefix-filtering prototype was removed because it could return a
+font set that differs from both the stock device inventory and the real
+Loupehole-disabled inventory. That mismatch is itself fingerprintable.
+
+A reliable implementation needs more than a handwritten allowlist. It would
+need observed OS/build/locale baseline inventories, a way to distinguish
+system, user/profile-installed, and app-bundled fonts, and coherent behavior
+for lower-level font descriptors, matching, rendering metrics, WebKit/canvas
+font probes, PDF/text layout, and family/name enumeration. Without that
+coverage, hiding a custom family from `familiesAll` while the text engine still
+matches or renders it creates an observable contradiction.
+
+The safest current behavior is pass-through. This surface remains documented
+for future work, but it should not be re-enabled until Loupehole can return a
+complete, common baseline profile and keep enumeration, counts, matching, and
+rendering behavior aligned.
+
 ### `fonts.family_inventory`
 
 Hook the family-list surfaces together:
