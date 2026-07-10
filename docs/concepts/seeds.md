@@ -10,7 +10,7 @@ The seed model exists to make stability and rotation explicit. The same active s
 
 | Layer | Meaning | Typical origin | Purpose |
 | --- | --- | --- | --- |
-| Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib starting seed when embedded; package preference debug metadata. |
+| Build seed | UUID supplied by the build selection. | `config/build.default.json` or another selection file. | Generator input for generated names and compile-time policy seed bytes; standalone dylib practical seed; package preference debug metadata. |
 | Package root seed | Persisted random seed in package mode. | Created once by `LHSeedProvider` when absent. | Stable package-level root without embedding the selection build seed in the deb-mode dylib. |
 | Practical seed | Effective parent seed before scoping. | Custom manual-group seed, embedded build seed, or package root seed. | Unifies package and standalone modes. |
 | Active seed | Seed used by mitigations after scope resolution. | Deterministic scoped derivation or app-install derivation. | Produces mitigation values and opaque names for the current context. |
@@ -21,7 +21,7 @@ The seed model exists to make stability and rotation explicit. The same active s
 
 The runtime field is named `buildSeed` in both modes:
 
-- In standalone dylib mode, it starts as the configured build seed when embedded.
+- In standalone dylib mode, it starts as the configured build seed. Standalone dylib builds always embed this seed so the runtime never falls back to a fresh random seed on every launch.
 - In deb/package mode, the raw selection build seed is not embedded in the injected package dylib; after seed-provider resolution the same field holds the package-derived active seed.
 
 This single name avoids a split build/instance vocabulary in the injected dylib. The important boundary is that package mode can carry the build seed in the deb's preference metadata, but not in the injected runtime dylib.
@@ -32,7 +32,7 @@ The package root seed is stored as 16 raw random bytes. The preferences debug pa
 
 Literal replacement values are difficult to rotate, easy to share accidentally, and can reveal a custom build. Seeds allow the project to derive outputs without storing every output in the binary. They also let a reset or scope change rotate a family of dependent values together.
 
-A seed does not automatically make an output privacy-preserving. A mitigation still needs a plausible value shape and cross-surface coherence. Seeded uniqueness used without a shared-surface policy can still be fingerprintable.
+A seed does not automatically make an output privacy-preserving. A mitigation still needs a plausible value shape, a suitable scope, and cross-surface coherence. With the default per-app-install scope, the standalone build seed is the practical seed but the final active seed also depends on the app-install marker. With deterministic scopes such as per-app or per-vendor, the build seed has more direct user-visible importance because it is the stable parent for that scope.
 
 ## Derivation Inputs
 

@@ -7,10 +7,14 @@
 #define LH_DEFAULT_STATE_PROVIDER_KIND LHStateProviderKindLocal
 #endif
 
+#ifndef LH_DEFAULT_SCOPE_MODE
+#define LH_DEFAULT_SCOPE_MODE LHScopeModePerAppInstall
+#endif
+
 /** Builds the default runtime configuration from generated build inputs. */
 LHRuntimeConfig LHRuntimeConfigDefault(void) {
     LHRuntimeConfig config = {
-        .scopeMode = LHScopeModePerAppInstall,
+        .scopeMode = LH_DEFAULT_SCOPE_MODE,
         .stateProviderKind = LH_DEFAULT_STATE_PROVIDER_KIND,
         .policyEnabled = LH_DEFAULT_STATE_PROVIDER_KIND != LHStateProviderKindPackage,
         .moduleFilterEnabled = false,

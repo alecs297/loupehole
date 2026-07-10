@@ -8,6 +8,13 @@ PACKAGE_VERSION ?= $(shell awk -F': ' '/^Version:/ { print $$2; found = 1 } END 
 LH_STATE_PROVIDER_KIND ?= LHStateProviderKindLocal
 LH_EMBED_BUILD_SEED ?= 1
 LH_PREFERENCES_EMBED_BUILD_SEED ?= 1
+LH_DEFAULT_SCOPE_MODE ?= LHScopeModePerAppInstall
+
+ifeq ($(LH_STATE_PROVIDER_KIND),LHStateProviderKindPackage)
+LH_RUNTIME_EMBED_BUILD_SEED := $(LH_EMBED_BUILD_SEED)
+else
+LH_RUNTIME_EMBED_BUILD_SEED := 1
+endif
 
 # This Makefile is package/build glue only. Runtime code lives under ../../runtime,
 # preference UI under ../../ui, and generated package inputs under ./generated.
@@ -54,7 +61,8 @@ $(LH_LOADER_BASENAME)_CFLAGS += \
 	-Werror \
 	-DLH_ENABLE_VARIABILITY=$(LH_ENABLE_VARIABILITY) \
 	-DLH_ENABLE_DIAGNOSTICS=$(LH_ENABLE_DIAGNOSTICS) \
-	-DLH_EMBED_BUILD_SEED=$(LH_EMBED_BUILD_SEED) \
+	-DLH_EMBED_BUILD_SEED=$(LH_RUNTIME_EMBED_BUILD_SEED) \
+	-DLH_DEFAULT_SCOPE_MODE=$(LH_DEFAULT_SCOPE_MODE) \
 	-DLH_DEFAULT_STATE_PROVIDER_KIND=$(LH_STATE_PROVIDER_KIND)
 
 $(LH_LOADER_BASENAME)_CCFLAGS += $($(LH_LOADER_BASENAME)_CFLAGS) -fvisibility-inlines-hidden

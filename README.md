@@ -30,7 +30,7 @@ Loupehole's approach is **smart randomization**. It does not make everything ran
 - **Coherent:** related mitigations should agree with each other, especially temporal values such as volume creation, app install, and boot time.
 - **Low drama:** when Loupehole cannot safely produce a documented value, the hook should pass through instead of inventing a broken one.
 
-At a high level, Loupehole combines multiple concepts in order to implement spoofing policies : a root/build seed, an active scope, per-mitigation policy seeds, and small persisted state where needed. The seeds give each build or app install its own identity; the scope controls who sees the same derived values; policy seeds separate one value stream from another. See [Seeds](docs/concepts/seeds.md), [Scopes](docs/concepts/scopes.md), [Randomization](docs/concepts/randomization.md), and [Derivation](docs/concepts/derivation.md) for the deeper model.
+At a high level, Loupehole combines multiple concepts in order to implement spoofing policies: a root/build seed, an active scope, per-mitigation policy seeds, and small persisted state where needed. The seed gives each build or package install its parent identity; the scope controls who sees the same derived values; policy seeds separate one value stream from another. See [Seeds](docs/concepts/seeds.md), [Scopes](docs/concepts/scopes.md), [Randomization](docs/concepts/randomization.md), and [Derivation](docs/concepts/derivation.md) for the deeper model.
 
 ## Current Status
 
@@ -103,11 +103,18 @@ make audit
 
 # Use a different profile.
 BUILD_SELECTION=path/to/selection.json make audit
+
+# Build the standalone dylib with a different default scope.
+make audit LH_DEFAULT_SCOPE_MODE=LHScopeModePerApp
 ```
 
 `make` writes `dist/runtime.dylib`. `make package` writes `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb`.
 
-For the standalone dylib, compiling it yourself is recommended so you control the build profile and seed. While the deb package manages a separate seed and allows scope selection, mitigations toggling and seed rotations, the dylib effectively uses the build seed and enabled all the mitigations that is has been compiled with.
+For the standalone dylib, compiling it yourself is recommended so you control the build profile, build seed, selected mitigations, and scope. Standalone dylib builds always embed the build seed as a base, then derive values based on the selected scope.
+
+The default standalone scope is `LHScopeModePerAppInstall`, which derives the active seed from the build seed, bundle identifier, and an app-install marker. That gives routine unlinking after reinstall or marker reset, so the build seed is important but not the only identity input. If you compile with a deterministic scope such as `LHScopeModePerApp`, the build seed becomes critical, as it will represent the stable parent seed for that app scope.
+
+The deb package manages a separate package root seed and allows scope selection, mitigation toggling, and seed rotations from Settings. In this context, the build seed mostly determines the pseudo-random paths that the package will use on the system.
 
 Some release builds may be provided with predefined seeds for ease of use, but those builds trade convenience for less personal control over generated build identity. See [Build profiles](docs/concepts/build-profiles.md), [Build environment](docs/development/build-environment.md), and [Build system reference](docs/reference/build-system.md) for details.
 

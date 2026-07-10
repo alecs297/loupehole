@@ -14,7 +14,8 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `ARTIFACT_DIR` | `dist` | Final copied artifact directory. |
 | `LH_ENABLE_VARIABILITY` | `1` | Build variability feature flag. |
 | `LH_ENABLE_DIAGNOSTICS` | `0` | Diagnostics feature flag. |
-| `LH_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed in the injected runtime dylib; package builds force `0` for that dylib. |
+| `LH_DEFAULT_SCOPE_MODE` | `LHScopeModePerAppInstall` | Compile-time default scope used before package policy is applied. Standalone dylib builds should use `LHScopeModePerAppInstall`, `LHScopeModePerApp`, or `LHScopeModePerVendorGroup`; manual linked-group scope needs package policy/custom-seed support. |
+| `LH_EMBED_BUILD_SEED` | `1` | Package-runtime seed embedding flag. Standalone dylib builds ignore `0` and always embed the selection build seed; package builds force `0` for the injected runtime dylib. |
 | `LH_PREFERENCES_EMBED_BUILD_SEED` | `1` | Embeds the selection build seed in the preferences bundle metadata for the debug pane. |
 
 ## Targets
@@ -107,7 +108,15 @@ Policy seeds must always be combined with the active/practical seed and scope. A
 
 ## Package Build Differences
 
-The standalone dylib build uses the local state provider by default and embeds the configured build seed when `LH_EMBED_BUILD_SEED=1`.
+The standalone dylib build uses the local state provider by default and always embeds the configured build seed. The Theos adapter intentionally ignores `LH_EMBED_BUILD_SEED=0` unless the runtime is being compiled with `LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage`; this prevents a standalone dylib from falling back to a fresh random runtime seed on every process launch.
+
+Standalone dylib scope can be selected at compile time:
+
+```sh
+make audit LH_DEFAULT_SCOPE_MODE=LHScopeModePerApp
+```
+
+The default remains `LHScopeModePerAppInstall`.
 
 `make package-build` sets the injected runtime dylib to package mode:
 
@@ -116,7 +125,7 @@ LH_STATE_PROVIDER_KIND=LHStateProviderKindPackage
 LH_EMBED_BUILD_SEED=0
 ```
 
-It also keeps `LH_PREFERENCES_EMBED_BUILD_SEED=1`, so the deb can include the raw selection build seed in the PreferenceLoader bundle debug metadata. That seed must not be compiled into the injected package dylib.
+It also keeps `LH_PREFERENCES_EMBED_BUILD_SEED=1`, so the deb can include the raw selection build seed in the PreferenceLoader bundle debug metadata. That seed must not be compiled into the injected package dylib. Package scope is normally managed by runtime policy from the Settings bundle; `LH_DEFAULT_SCOPE_MODE` is only the pre-policy fallback.
 
 At runtime the package creates or reads its package root seed and then resolves the active scoped seed. The runtime field remains named `buildSeed` because it is the seed value that the injected dylib uses after config and seed-provider resolution.
 

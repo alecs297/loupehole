@@ -1566,7 +1566,7 @@ static PSSpecifier *LHStaticValueSpecifier(NSString *label, NSString *value) {
             LHLinkSpecifier(@"App Overrides", self, [LHAppOverrideListController class], nil),
             LHGroupSpecifier(@"About", nil),
             LHStaticValueSpecifier(@"Version", LHPreferencesVersionString()),
-            LHButtonSpecifier(@"GitHub", self, @selector(openGitHub)),
+            LHButtonSpecifier(LHPreferencesGitHubURLString, self, @selector(openGitHub)),
             LHGroupSpecifier(@"Reset", nil),
             LHButtonSpecifier(@"Reset Configuration", self, @selector(confirmResetAll)),
             LHGroupSpecifier(@"Diagnostics", nil),

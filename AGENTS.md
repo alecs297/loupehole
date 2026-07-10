@@ -34,6 +34,8 @@ Treat `README.md`, `docs/README.md`, `docs/status.md`, and the files under `docs
 - Always combine policy seeds with the active/practical seed and scope. A policy seed alone is only a domain separator.
 - Coherence is owned by each mitigation's code and documented policy seed identifiers, not by central coherence/cohort profiles or shared mitigation-owned state modules.
 - The runtime field is named `buildSeed` in both standalone and package mode. In package mode, the raw selection build seed must not be embedded in the deb-mode dylib; after resolution the field holds package-derived active seed material.
+- Standalone dylib builds must always embed the selection build seed. Ignore `LH_EMBED_BUILD_SEED=0` unless the runtime is being built with `LHStateProviderKindPackage`.
+- The standalone default scope is `LHScopeModePerAppInstall`; `LH_DEFAULT_SCOPE_MODE` may select app or vendor scope at compile time, while manual linked-group scope belongs to package policy with a custom seed.
 - Generated files are disposable. Patch the generator or source declarations, then regenerate.
 - If a helper or shipped package artifact is generated, patch the generator first.
 - Preserve pass-through behavior when a hook cannot safely provide its documented value.
