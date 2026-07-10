@@ -17,6 +17,12 @@ The Dynamic Type option buckets content-size categories to lower entropy while p
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: `UITraitCollection.preferredContentSizeCategory`.
+- Apple Developer: `UIApplication.preferredContentSizeCategory`.
+- Apple Developer: `UIContentSizeCategory`.
+
 ## Surface And Relevance
 
 Dynamic Type can reveal reading and accessibility preferences. Rare large or accessibility categories add entropy and affect layout, so full normalization can harm usability.
@@ -29,7 +35,14 @@ It does not hook content-size change notifications, accessibility settings, text
 
 ## Derivation And Lifetime
 
-No policy seed or state blob is used. The output is a shared bucket for the current platform category. The value changes when the underlying category crosses bucket boundaries.
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Helper/state owner | Local module bucket mapping only |
+| Value shape | UIKit content-size category string |
+| Derivation input | Original platform category returned by the hooked getter |
+| Storage behavior | No mitigation-owned state blob |
+| Lifetime | The output changes when the underlying category crosses the standard/accessibility bucket boundary |
 
 ## Impact And Tradeoffs
 
@@ -45,4 +58,4 @@ Repository-level validation is pending until catalog integration. Expected obser
 
 ## Rollback And Pass-Through
 
-If neither UIKit selector is available, the module registers as a no-op. Unknown categories pass through. Disabling the module restores the user's exact Dynamic Type category.
+If neither UIKit selector is available, the module registers as a no-op. Unknown or non-string categories pass through. Disabling the module restores the user's exact Dynamic Type category.

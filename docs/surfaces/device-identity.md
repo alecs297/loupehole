@@ -2,27 +2,17 @@
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/DeviceIdentityProvider.swift`
 
+Loupe category: Device Identity
+Loupe tier: passive native identity
+Permission required: none for included IDFV, hostname, and version reads;
+user-assigned device name requires Apple's entitlement on modern iOS
+Primary relevance: vendor-scoped identity, host naming, OS-version coherence,
+and separation from model-constant hardware claims.
+
 This page scopes Loupehole's Device Identity fingerprint category to values
 that identify the user, app/vendor relationship, host naming, or OS identity.
 Static hardware cohort fields are intentionally excluded here even though Loupe
 shows them in the same category.
-
-## Loupe Signals
-
-| Loupe signal | Provider source | Decision | Reason |
-| --- | --- | --- | --- |
-| `idfv` | `PlatformDevice.identifierForVendor` -> `UIDevice.current.identifierForVendor` on iOS | Include | Stable vendor-scoped native identifier with high correlation value. |
-| `name` | `PlatformDevice.name` -> `UIDevice.current.name` on iOS | Include | Usually generic on modern iOS, but entitlemented apps, older OS behavior, and macOS-style host names can expose user-assigned naming. |
-| `kern.hostname` | `SysctlHelper.string("kern.hostname")` | Include | Passive kernel hostname can mirror the user-visible device name or local network identity. |
-| `systemVersion` | `PlatformDevice.systemVersion` -> `UIDevice.current.systemVersion` on iOS | Include | OS patch/version narrows the anonymity set and must stay coherent with other OS/WebKit/kernel surfaces. |
-| `hw.machine` | `SysctlHelper.modelIdentifier()`, plus `hw.model` board detail on iOS and `uname.machine` architecture on macOS | Exclude | Coarse/model-constant hardware profile. Track with hardware/model cohort surfaces, not this identity page. |
-| `hw.cputype` | `SysctlHelper.int64("hw.cputype")` and `hw.cpusubtype` | Exclude | CPU architecture constants are model classifiers. Track with CPU/hardware cohort surfaces, not this identity page. |
-
-Exclusion note: omit `hw.machine`, `hw.model`, `uname.machine`,
-`hw.cputype`, and `hw.cpusubtype` from Device Identity mitigation planning in
-this document. They remain relevant to fingerprinting, but belong in a coherent
-hardware/system-profile document where model, SoC, CPU, RAM, GPU, display, and
-WebKit hardware values can be generated together.
 
 ## Official Links
 
@@ -33,6 +23,17 @@ WebKit hardware values can be generated together.
 - [`sysctl` / `sysctlbyname` manual page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/sysctl.3.html)
 - [`gethostname` manual page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/gethostname.3.html)
 - [`uname` manual page](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/uname.3.html)
+
+## Loupe Signals
+
+| Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
+| --- | --- | --- | --- | --- | --- |
+| `idfv` | `PlatformDevice.identifierForVendor` -> `UIDevice.current.identifierForVendor` on iOS | None | Passive native identity read | Include | High. Stable vendor-scoped native identifier with high correlation value. |
+| `name` | `PlatformDevice.name` -> `UIDevice.current.name` on iOS | None for generic device name; user-assigned name requires Apple's entitlement on modern iOS | Passive native identity read | Include | Medium to high when personalized. Usually generic on modern iOS, but entitlemented apps, older OS behavior, and macOS-style host names can expose user-assigned naming. |
+| `kern.hostname` | `SysctlHelper.string("kern.hostname")` | None for reads available to the process sandbox | Passive kernel hostname read | Include | Medium. It can mirror the user-visible device name or local network identity. |
+| `systemVersion` | `PlatformDevice.systemVersion` -> `UIDevice.current.systemVersion` on iOS | None | Passive OS-version read | Include | Medium. OS patch/version narrows the anonymity set and must stay coherent with other OS/WebKit/kernel surfaces. |
+| `hw.machine` | `SysctlHelper.modelIdentifier()`, plus `hw.model` board detail on iOS and `uname.machine` architecture on macOS | None | Passive hardware/model read | Exclude | High as a model classifier, but coarse/model-constant hardware belongs in a hardware/system profile, not this identity page. |
+| `hw.cputype` | `SysctlHelper.int64("hw.cputype")` and `hw.cpusubtype` | None | Passive CPU architecture read | Exclude | Medium to high as a model classifier. Track with CPU/hardware cohort surfaces, not this identity page. |
 
 ## Permission and Collection Class
 
@@ -161,6 +162,14 @@ The safest behavior is coherent reduction, not maximal falsification. Returning
 common values that agree across APIs is less unique than returning rare,
 over-randomized, or internally contradictory values.
 
+## Exclusion Note
+
+Omit `hw.machine`, `hw.model`, `uname.machine`, `hw.cputype`, and
+`hw.cpusubtype` from Device Identity mitigation planning in this document. They
+remain relevant to fingerprinting, but belong in a coherent
+hardware/system-profile document where model, SoC, CPU, RAM, GPU, display, and
+WebKit hardware values can be generated together.
+
 ## Relevance
 
 Device Identity is a core passive-native fingerprint category because it gives
@@ -170,6 +179,6 @@ modern iOS has already reduced the default exposure, but entitlemented and
 cross-surface cases still matter. OS version remains P0 as a coherence anchor
 for the broader device/system profile.
 
-This page should feed option docs for IDFV, device name, hostname, and OS
-version. Hardware model and CPU constants should remain out of this page and be
-handled by a separate coherent hardware profile plan.
+This page should feed future mitigation docs for IDFV, device name, hostname,
+and OS version. Hardware model and CPU constants should remain out of this page
+and be handled by a separate coherent hardware profile plan.

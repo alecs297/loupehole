@@ -74,7 +74,7 @@ The iOS `stream()` path yields an initial snapshot, observes
 `AVAudioSession.routeChangeNotification`. The macOS stream path yields one
 CoreAudio snapshot and finishes.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No included Loupe signal requires Contacts, Location, Bluetooth, Local Network,
 Motion, Photos, Microphone, or another user-granted runtime permission. The

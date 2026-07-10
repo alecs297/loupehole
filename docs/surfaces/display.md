@@ -1,6 +1,6 @@
-# Display Fingerprint Category
+# Display
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/DisplayProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/DisplayProvider.swift`
 
 Loupe category: Display
 Loupe tier: passive live
@@ -16,25 +16,25 @@ though Loupe reports them.
 
 ## Official Links
 
-- Apple UIKit `UIWindowScene.screen`: <https://developer.apple.com/documentation/uikit/uiwindowscene/screen>
-- Apple UIKit `UIScreen`: <https://developer.apple.com/documentation/uikit/uiscreen>
-- Apple UIKit `UIScreen.nativeBounds`: <https://developer.apple.com/documentation/uikit/uiscreen/nativebounds>
-- Apple UIKit `UIScreen.scale`: <https://developer.apple.com/documentation/uikit/uiscreen/scale>
-- Apple UIKit `UIScreen.nativeScale`: <https://developer.apple.com/documentation/uikit/uiscreen/nativescale>
-- Apple UIKit `UIScreen.maximumFramesPerSecond`: <https://developer.apple.com/documentation/uikit/uiscreen/maximumframespersecond>
-- Apple UIKit `UIScreen.brightness`: <https://developer.apple.com/documentation/uikit/uiscreen/brightness>
-- Apple UIKit `UITraitCollection.displayGamut`: <https://developer.apple.com/documentation/uikit/uitraitcollection/displaygamut>
-- Apple UIKit `UITraitCollection.horizontalSizeClass`: <https://developer.apple.com/documentation/uikit/uitraitcollection/horizontalsizeclass>
-- Apple UIKit `UITraitCollection.verticalSizeClass`: <https://developer.apple.com/documentation/uikit/uitraitcollection/verticalsizeclass>
-- Apple UIKit `UITraitCollection.preferredContentSizeCategory`: <https://developer.apple.com/documentation/uikit/uitraitcollection/preferredcontentsizecategory>
-- Apple UIKit `UIContentSizeCategory`: <https://developer.apple.com/documentation/uikit/uicontentsizecategory>
-- Apple UIKit `UIView.safeAreaInsets`: <https://developer.apple.com/documentation/uikit/uiview/safeareainsets>
-- Apple AppKit `NSScreen`: <https://developer.apple.com/documentation/appkit/nsscreen>
-- Apple AppKit `NSScreen.backingScaleFactor`: <https://developer.apple.com/documentation/appkit/nsscreen/backingscalefactor>
-- Apple AppKit `NSScreen.maximumFramesPerSecond`: <https://developer.apple.com/documentation/appkit/nsscreen/maximumframespersecond>
-- Apple AppKit `NSScreen.safeAreaInsets`: <https://developer.apple.com/documentation/appkit/nsscreen/safeareainsets>
+- [`UIWindowScene.screen`](https://developer.apple.com/documentation/uikit/uiwindowscene/screen)
+- [`UIScreen`](https://developer.apple.com/documentation/uikit/uiscreen)
+- [`UIScreen.nativeBounds`](https://developer.apple.com/documentation/uikit/uiscreen/nativebounds)
+- [`UIScreen.scale`](https://developer.apple.com/documentation/uikit/uiscreen/scale)
+- [`UIScreen.nativeScale`](https://developer.apple.com/documentation/uikit/uiscreen/nativescale)
+- [`UIScreen.maximumFramesPerSecond`](https://developer.apple.com/documentation/uikit/uiscreen/maximumframespersecond)
+- [`UIScreen.brightness`](https://developer.apple.com/documentation/uikit/uiscreen/brightness)
+- [`UITraitCollection.displayGamut`](https://developer.apple.com/documentation/uikit/uitraitcollection/displaygamut)
+- [`UITraitCollection.horizontalSizeClass`](https://developer.apple.com/documentation/uikit/uitraitcollection/horizontalsizeclass)
+- [`UITraitCollection.verticalSizeClass`](https://developer.apple.com/documentation/uikit/uitraitcollection/verticalsizeclass)
+- [`UITraitCollection.preferredContentSizeCategory`](https://developer.apple.com/documentation/uikit/uitraitcollection/preferredcontentsizecategory)
+- [`UIContentSizeCategory`](https://developer.apple.com/documentation/uikit/uicontentsizecategory)
+- [`UIView.safeAreaInsets`](https://developer.apple.com/documentation/uikit/uiview/safeareainsets)
+- [`NSScreen`](https://developer.apple.com/documentation/appkit/nsscreen)
+- [`NSScreen.backingScaleFactor`](https://developer.apple.com/documentation/appkit/nsscreen/backingscalefactor)
+- [`NSScreen.maximumFramesPerSecond`](https://developer.apple.com/documentation/appkit/nsscreen/maximumframespersecond)
+- [`NSScreen.safeAreaInsets`](https://developer.apple.com/documentation/appkit/nsscreen/safeareainsets)
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Source API | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -55,7 +55,7 @@ scene-derived traits time-varying observations, but the collection is still
 passive: the app reads local UIKit/AppKit state and does not trigger a user
 permission prompt.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 | Surface | Runtime permission | Passive or active | Notes |
 | --- | --- | --- | --- |
@@ -91,9 +91,7 @@ standalone mitigations to them.
 
 ## Mitigation Strategy Ideas
 
-### Brightness
-
-Mitigation ID idea: `display.brightness`
+### `display.brightness`
 
 Default behavior should reduce direct correlation rather than invent a rare
 fixed value. A scoped smooth transfer curve over the real value preserves broad
@@ -113,9 +111,7 @@ If the app writes brightness and then reads it back, either pass through for
 that flow or return a shaped value that is predictably derived from the
 post-write real value.
 
-### Dynamic Type Preference
-
-Mitigation ID idea: `display.dynamic_type`
+### `display.dynamic_type`
 
 Compatibility default should pass through. Dynamic Type is an accessibility and
 readability preference, and hiding it by default can make apps render text too
@@ -227,7 +223,7 @@ Within this scoped page, the actionable included surfaces are narrower:
 brightness is a P1/P2 live correlation signal, while Dynamic Type is P1 because
 rare user preference states are identifying and user-impacting.
 
-This page should feed future option docs for brightness precision reduction and
-Dynamic Type preference handling. It should not be used to justify standalone
-screen-size, scale, safe-area, or refresh-rate spoofing outside a complete
-device-profile generator.
+This page should feed future mitigation docs for brightness precision reduction
+and Dynamic Type preference handling. It should not be used to justify
+standalone screen-size, scale, safe-area, or refresh-rate spoofing outside a
+complete device-profile generator.

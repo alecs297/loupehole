@@ -17,6 +17,11 @@ The ubiquity-token option hides the app-visible iCloud ubiquity identity token b
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: `NSFileManager.ubiquityIdentityToken`.
+- Apple Developer: `NSUbiquityIdentityDidChange`.
+
 ## Surface And Relevance
 
 The ubiquity identity token reflects iCloud account state. Loupe hashes the archived token, but the hash is still a durable equality marker while the token remains stable.
@@ -30,6 +35,16 @@ StoreKit storefront country and account-region APIs are not covered by this modu
 ## Derivation And Lifetime
 
 No state or seed-derived values are used. The mitigation returns the documented absent shape for every covered read while enabled.
+
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Generated seed symbols | None |
+| Helpers/state owner | None |
+| Value shape | `nil` ubiquity identity token |
+| Derivation input | None |
+| Lifetime | Stable while the module is enabled |
+| Temporal dependencies | None |
 
 ## Impact And Tradeoffs
 

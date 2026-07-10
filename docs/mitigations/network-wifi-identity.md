@@ -22,7 +22,7 @@ The Wi-Fi identity option replaces current-network SSID and BSSID reads with sco
 - Apple NetworkExtension: `NEHotspotNetwork`.
 - Apple SystemConfiguration: `CNCopyCurrentNetworkInfo`.
 
-## Surface And Relevance
+## Surface and Relevance
 
 SSID and BSSID reveal the currently joined Wi-Fi network and access point. The pair can identify a home, workplace, hotel, school, or router, and can be compared with local IP, interface, DNS, VPN, and Bonjour observations.
 
@@ -34,7 +34,7 @@ It only rewrites values after the original API has already exposed a current net
 
 The synthetic SSID is a 12-character lowercase alphanumeric string. The synthetic BSSID is a valid locally administered unicast MAC-shaped value. Signal strength is normalized to a common mid-strength value when the original value is in the documented `[0, 1]` range, and security type is normalized to a common personal-network shape.
 
-## Derivation And Lifetime
+## Derivation and Lifetime
 
 | Policy seed identifier | Meaning |
 | --- | --- |
@@ -43,7 +43,7 @@ The synthetic SSID is a 12-character lowercase alphanumeric string. The syntheti
 
 Values are derived from active seed, scope, and policy seed. They rotate when active seed, scope, or policy seed changes.
 
-## Impact And Tradeoffs
+## Impact and Tradeoffs
 
 Accessory setup apps, hotspot helpers, enterprise Wi-Fi tools, diagnostics, and apps that verify the exact joined SSID may misbehave. This mitigation does not alter real routing, DNS, local network discovery, Wi-Fi association, or server-observed egress.
 
@@ -57,6 +57,6 @@ Expected observations:
 
 Device validation is required for entitlement-gated paths and deprecated CaptiveNetwork behavior on current SDKs.
 
-## Rollback And Pass-Through
+## Rollback and Pass-Through
 
 Disabling the module restores original current-network values. If the class, selector, symbol, or derivation path is unavailable, the module passes through or registers as a no-op.

@@ -17,6 +17,11 @@ The brightness option maps `UIScreen` brightness through a scoped smooth curve w
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: `UIScreen`.
+- Apple Developer: `UIScreen.brightness`.
+
 ## Surface And Relevance
 
 Exact brightness can link short app sessions and reveal context such as night use, outdoor use, media playback, or auto-brightness behavior. It is a live setting rather than a hardware constant.
@@ -27,7 +32,15 @@ The mitigation hooks `-[UIScreen brightness]` and maps valid values in `[0.0, 1.
 
 ## Derivation And Lifetime
 
-No state blob is used. The returned value is the current real brightness passed through a deterministic scoped curve, so user changes are still reflected continuously.
+| Item | Value |
+| --- | --- |
+| Policy seed identifier | `display_brightness_curve` |
+| Generated seed symbol | `LHGeneratedPolicySeed_display_brightness_curve` |
+| Helper | `LHValueMapUnitIntervalCurve` |
+| Value shape | `double` in `[0.0, 1.0]` for valid platform brightness values |
+| Derivation input | active/practical seed + generated policy seed + active `LHScope` + local `"brightness"` context |
+| Storage behavior | No mitigation-owned state blob |
+| Lifetime | Curve selection is stable until active seed, scope, or policy seed changes; returned brightness still follows real brightness movement |
 
 ## Impact And Tradeoffs
 
@@ -43,4 +56,4 @@ Repository-level validation is pending until catalog integration. Expected obser
 
 ## Rollback And Pass-Through
 
-If `UIScreen` or the selector is unavailable, the module registers as a no-op. Disabling the module restores the original brightness value.
+If `UIScreen` or the selector is unavailable, the module registers as a no-op. Invalid or out-of-range original values pass through unchanged. Disabling the module restores the original brightness value.

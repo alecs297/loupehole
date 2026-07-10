@@ -21,17 +21,17 @@ permission or otherwise receive stable capture-device identifiers.
 
 ## Official Links
 
-- Apple AVFoundation `AVCaptureDevice`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice>
-- Apple AVFoundation `AVCaptureDevice.DiscoverySession`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/discoverysession>
-- Apple AVFoundation `AVCaptureDevice.DeviceType`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/devicetype-swift.struct>
-- Apple AVFoundation `AVCaptureDevice.Position`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/position>
-- Apple AVFoundation `AVCaptureDevice.uniqueID`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/uniqueid>
-- Apple AVFoundation `AVCaptureDevice.init(uniqueID:)`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/init%28uniqueid%3A%29>
-- Apple AVFoundation `AVCaptureDevice.Format.videoFieldOfView`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/videofieldofview>
-- Apple AVFoundation camera authorization `requestAccess(for:completionHandler:)`: <https://developer.apple.com/documentation/avfoundation/avcapturedevice/requestaccess%28for%3Acompletionhandler%3A%29>
-- Apple bundle resource `NSCameraUsageDescription`: <https://developer.apple.com/documentation/bundleresources/information-property-list/nscamerausagedescription>
+- [`AVCaptureDevice`](https://developer.apple.com/documentation/avfoundation/avcapturedevice)
+- [`AVCaptureDevice.DiscoverySession`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/discoverysession)
+- [`AVCaptureDevice.DeviceType`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/devicetype-swift.struct)
+- [`AVCaptureDevice.Position`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/position)
+- [`AVCaptureDevice.uniqueID`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/uniqueid)
+- [`AVCaptureDevice.init(uniqueID:)`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/init%28uniqueid%3A%29)
+- [`AVCaptureDevice.Format.videoFieldOfView`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/videofieldofview)
+- [`AVCaptureDevice.requestAccess(for:completionHandler:)`](https://developer.apple.com/documentation/avfoundation/avcapturedevice/requestaccess%28for%3Acompletionhandler%3A%29)
+- [`NSCameraUsageDescription`](https://developer.apple.com/documentation/bundleresources/information-property-list/nscamerausagedescription)
 
-## Loupe Signals and Decisions
+## Loupe Signals
 
 | Loupe signal | Provider source | Permission | Classification | Decision | Fingerprinting value |
 | --- | --- | --- | --- | --- | --- |
@@ -50,7 +50,7 @@ For each discovered device, Loupe emits the localized name and position. On iOS
 it also reports the first format's video field of view when available. It then
 emits the device `uniqueID`.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 The provider does not call `AVCaptureDevice.requestAccess`, does not start an
 `AVCaptureSession`, and does not capture frames. In that narrow sense Loupe's
@@ -148,7 +148,7 @@ Do not derive readable IDs or names. Do not generate a unique synthetic ID per
 app launch. Do not expose a synthetic external/Continuity camera unless the
 profile also models its presence.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Camera lineup values should be cohort static. Choose from real device profiles
 rather than deriving each camera trait independently from a seed.

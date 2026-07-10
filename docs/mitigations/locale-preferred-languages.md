@@ -23,7 +23,7 @@ The preferred-languages option reduces ordered language-list entropy by preservi
 - Apple Developer: `NSLocale`.
 - Unicode LDML / CLDR locale identifiers.
 
-## Surface And Relevance
+## Surface and Relevance
 
 An ordered preferred-language list can be high entropy for multilingual users. The first entry is often needed for app localization, while secondary entries can reveal language ability, region, travel, education, or accessibility choices.
 
@@ -33,7 +33,7 @@ The mitigation hooks the `NSLocale` class method `preferredLanguages`, `CFLocale
 
 The module does not alter `Locale.current`, `NSLocale.currentLocale`, calendars, time zones, formatters, WebKit language surfaces, or server-side `Accept-Language` headers.
 
-## Derivation And Lifetime
+## Derivation and Lifetime
 
 | Item | Value |
 | --- | --- |
@@ -46,7 +46,7 @@ The module does not alter `Locale.current`, `NSLocale.currentLocale`, calendars,
 
 This is a reduction, not a generated locale profile. A future strict locale profile should use a cohort table and cover locale identifier, calendar, hour cycle, time zone, formatters, keyboards, and WebKit together.
 
-## Impact And Tradeoffs
+## Impact and Tradeoffs
 
 Apps may use secondary languages for localization fallback, content choice, search, translation, or support flows. This mitigation can reduce those fallbacks for protected apps. It preserves the primary language to avoid the most visible UI mismatch.
 
@@ -59,6 +59,6 @@ Expected observations:
 - A single-language device reports the same list as before.
 - Locale identifier, calendar, time-zone, and formatter behavior remain unchanged.
 
-## Rollback And Pass-Through
+## Rollback and Pass-Through
 
 If the class method and defaults hooks are unavailable or hook installation fails, the module registers as a no-op. If the original list is empty, malformed, or already contains one language, the original result is returned unchanged. Defaults keys other than `AppleLanguages` pass through unchanged.

@@ -1,6 +1,6 @@
-# Telephony Fingerprint Category
+# Telephony
 
-Upstream source: `.research/upstream/loupe/code/Loupe/Providers/TelephonyProvider.swift`
+Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/TelephonyProvider.swift`
 
 Loupe category: Telephony
 Loupe tier: passive local cellular service state

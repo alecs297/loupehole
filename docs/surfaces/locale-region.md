@@ -15,7 +15,7 @@ the tuple: a user's preferred language order, enabled keyboard languages, region
 format, time zone, calendar system, 12-hour or 24-hour preference, and first day
 of week.
 
-## Official and Equivalent Links
+## Official Links
 
 - [`Locale`](https://developer.apple.com/documentation/foundation/locale)
 - [`Locale.current`](https://developer.apple.com/documentation/foundation/locale/current)
@@ -260,4 +260,3 @@ The most important Loupe signals are `preferredLanguages`, `keyboards`, and
 `tz.identifier`. `identifier`, `calendar`, `hourCycle`, and `firstDayOfWeek`
 are essential coherence anchors. They should feed a single locale-profile plan
 rather than many independent mitigation toggles.
-

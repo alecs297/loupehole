@@ -36,6 +36,16 @@ It does not request tracking authorization, change ATT prompts, spoof attributio
 
 No policy seed is declared because the value is the platform's common zero shape rather than a scoped synthetic identifier.
 
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Generated seed symbols | None |
+| Helpers/state owner | None |
+| Value shape | All-zero `NSUUID` and tracking-disabled boolean |
+| Derivation input | None |
+| Lifetime | Stable while the module is enabled |
+| Temporal dependencies | None |
+
 ## Impact And Tradeoffs
 
 Apps and SDKs that expect a nonzero advertising identifier observe the same shape as a tracking-denied device. Attribution, ad personalization, or analytics flows can lose precision.

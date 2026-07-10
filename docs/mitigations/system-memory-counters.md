@@ -35,7 +35,16 @@ It does not claim more memory than the system reported, does not alter allocatio
 
 ## Derivation And Lifetime
 
-`LH_POLICY_SEED(system_memory_counter_noise)` selects stable per-field noise domains. Values follow the real memory state with small deterministic perturbation and require no state storage.
+| Item | Value |
+| --- | --- |
+| Policy seed identifier | `system_memory_counter_noise` |
+| Generated seed symbol | `LHGeneratedPolicySeed_system_memory_counter_noise` |
+| Value shape | Mach VM page counts, lifetime counters, and available-memory byte counts |
+| Derivation input | active/practical seed + generated policy seed + active `LHScope` + original counter value |
+| Storage behavior | No mitigation-owned state |
+| Lifetime | Values follow real memory state with small deterministic perturbation |
+
+`LH_POLICY_SEED(system_memory_counter_noise)` selects stable per-field noise domains. The module requires no state storage.
 
 ## Impact And Tradeoffs
 

@@ -39,6 +39,8 @@ The startup path is intentionally narrow. No hook should require its own indepen
 
 | File or area | Responsibility |
 | --- | --- |
+| `src/core/include/` | Internal runtime and mitigationkit headers shared across runtime, mitigations, tests, and Preferences support code. |
+| `src/core/generated/` | Generated configuration, derivation labels, mitigation registry, and policy seeds. Never hand-edit. |
 | `src/runtime/entry/Runtime.mm` | Constructor entry point only. |
 | `src/runtime/engine/LHRuntime.m` | Once-only runtime initialization, engine creation, and registry installation. |
 | `src/runtime/engine/LHPolicyEngine.c` | Central policy lifecycle, module enablement, seed derivation access, and state access. |
@@ -55,7 +57,10 @@ The startup path is intentionally narrow. No hook should require its own indepen
 | `src/runtime/hooks/LHHookBackendTheos.c` | Theos/MobileSubstrate-compatible hook implementation. |
 | `src/runtime/engine/LHModuleRegistry.c` | Iteration over generated mitigation descriptors and no-op registration. |
 | `src/mitigations/` | Mitigation installers, hook adapters, and mitigation-owned value/state helpers. |
-| `core/generated/` | Generated configuration, derivation labels, mitigation registry, and policy seeds. Never hand-edit. |
+| `src/packaging/theos/` | Theos build adapter used by both the standalone dylib and rootless package. |
+| `src/ui/preferences/` | PreferenceLoader Settings UI and package policy writer. |
+| `src/scripts/build/` | Generator, signing, package builder shims, and preference asset preparation. |
+| `src/scripts/verify/` | Static and package verification scripts. |
 
 ## Generated Outputs
 

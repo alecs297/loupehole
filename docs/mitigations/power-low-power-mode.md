@@ -17,6 +17,11 @@ The Low Power Mode option normalizes `NSProcessInfo` Low Power Mode reads to the
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: [`ProcessInfo.isLowPowerModeEnabled`](https://developer.apple.com/documentation/foundation/processinfo/islowpowermodeenabled).
+- Apple Developer: [`NSProcessInfoPowerStateDidChangeNotification`](https://developer.apple.com/documentation/foundation/nsnotification/name-swift.struct/nsprocessinfopowerstatedidchange).
+
 ## Surface And Relevance
 
 Low Power Mode is a boolean, but the enabled state can be rarer and can correlate with battery level, background policy, timer behavior, and performance.
@@ -27,7 +32,16 @@ The mitigation hooks `-[NSProcessInfo isLowPowerModeEnabled]` and returns `NO`. 
 
 ## Derivation And Lifetime
 
-No policy seed or state blob is used. The value is the shared low-entropy disabled state.
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Value shape | `BOOL` false / `NO` |
+| Derivation input | None |
+| Storage behavior | No mitigation-owned state |
+| Lifetime | Stable while the module is enabled |
+| Dependencies | Real OS Low Power Mode scheduling and notification behavior remain outside coverage |
+
+The value is a shared low-entropy disabled state rather than a seed-derived boolean.
 
 ## Impact And Tradeoffs
 

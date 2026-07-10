@@ -1,4 +1,4 @@
-# Accessibility Fingerprint Category
+# Accessibility
 
 Source reviewed: `.research/upstream/loupe/code/Loupe/Providers/AccessibilityProvider.swift`
 
@@ -36,7 +36,7 @@ settings are enabled together.
 - [`UIAccessibility.shouldDifferentiateWithoutColor`](https://developer.apple.com/documentation/uikit/uiaccessibility/shoulddifferentiatewithoutcolor)
 - [`UIAccessibility.buttonShapesEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/buttonshapesenabled)
 - [`UIAccessibility.isOnOffSwitchLabelsEnabled`](https://developer.apple.com/documentation/uikit/uiaccessibility/isonoffswitchlabelsenabled)
-- [`UIAccessibilityHearingDevicePairedEar`](https://developer.apple.com/documentation/uikit/uiaccessibilityhearingdevicepairedear)
+- [`UIAccessibility.hearingDevicePairedEar`](https://developer.apple.com/documentation/uikit/uiaccessibility/hearingdevicepairedear)
 - [`AXShowBordersEnabled`](https://developer.apple.com/documentation/accessibility/axshowbordersenabled)
 - [`UITraitCollection.userInterfaceStyle`](https://developer.apple.com/documentation/uikit/uitraitcollection/userinterfacestyle)
 - [`UITraitCollection.accessibilityContrast`](https://developer.apple.com/documentation/uikit/uitraitcollection/accessibilitycontrast)
@@ -94,7 +94,7 @@ selected.
 If no merged flag is active, Loupe returns `none enabled`. That common empty
 state is low value, but the exact enabled subset can become highly identifying.
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No included Accessibility signal needs Contacts, Location, Bluetooth, Local
 Network, Motion, Photos, Microphone, Camera, or another user-granted runtime

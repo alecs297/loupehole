@@ -39,6 +39,15 @@ The mitigation hooks `evaluateJavaScript:completionHandler:` and returns reduced
 
 ## Derivation And Lifetime
 
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Value shape | Common language string, fixed time-zone-offset string, and tiny stable canvas data URL for exact guarded probes |
+| Derivation input | Exact JavaScript source string matched by the guard |
+| Storage behavior | No mitigation-owned state |
+| Lifetime | Stable while the module is enabled and the probe matches the guarded shapes |
+| Dependencies | Native locale, time zone, display, WebKit, and WebGL behavior remain outside coverage |
+
 No policy seed is declared because this version uses common cohort constants rather than scoped unique values. That choice avoids turning WebView fingerprints into a new per-app identifier.
 
 ## Impact And Tradeoffs

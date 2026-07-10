@@ -23,6 +23,16 @@ Many native values are not simply “device values.” Their intended lifetime m
 
 For per-app-install mode, the provider persists an app-install marker at an opaque, derived path and derives the active seed from the practical seed, scope, and marker. For deterministic modes, it derives active seed material directly from practical seed and scope. Manual linked group uses an explicitly configured custom seed.
 
+Standalone dylib builds use `LHScopeModePerAppInstall` by default. Builders can choose a different compile-time default with `LH_DEFAULT_SCOPE_MODE`:
+
+```sh
+make audit LH_DEFAULT_SCOPE_MODE=LHScopeModePerApp
+```
+
+For standalone dylib builds, use `LHScopeModePerAppInstall`, `LHScopeModePerApp`, or `LHScopeModePerVendorGroup`. Manual linked-group scope is intended for package policy with an explicit custom seed; compiling a standalone dylib with that enum does not provide the Settings-managed custom-seed workflow.
+
+The rootless package normally chooses scope through Settings-managed runtime policy instead. The compile-time scope is only the default before package policy is applied.
+
 ```mermaid
 flowchart TD
     Context[App context] --> Mode[Configured scope mode]

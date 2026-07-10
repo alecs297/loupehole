@@ -17,7 +17,7 @@ The interface inventory option shapes local interface disclosure across low-leve
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | None |
 
-## Surface And Relevance
+## Surface and Relevance
 
 Interface rows, scoped proxy dictionaries, and path snapshots reveal local IPv4 and IPv6 addresses, link-layer identifiers, tunnel-like interface names, traffic counters, error counters, line speed, administrative-change time, path interface classes, and VPN-like proxy scopes. These values can identify a network, expose VPN posture, reveal Wi-Fi/cellular usage patterns, and contradict Wi-Fi, DNS, proxy, and telephony claims.
 
@@ -31,7 +31,7 @@ Interfaces whose names begin with `tap`, `tun`, `utun`, `ppp`, or `ipsec` are re
 
 Non-loopback byte counters are generated from a per-interface seeded base and a seeded rate multiplied by current uptime since `kern.boottime`; packet counters are derived from the synthetic byte counts using seeded average packet sizes. Small error counters are reduced to tiny seeded values, collisions are cleared, non-loopback baud rates are normalized to common Wi-Fi/cellular-like values, and `ifi_lastchange` is aligned to the observed boot time.
 
-## Derivation And Lifetime
+## Derivation and Lifetime
 
 | Policy seed identifier | Meaning |
 | --- | --- |
@@ -42,7 +42,7 @@ Non-loopback byte counters are generated from a per-interface seeded base and a 
 
 The interface name is used as derivation context, so each visible interface receives stable scoped addresses and counter profiles without reusing one value everywhere. Counter values require no persisted state; they grow as uptime advances.
 
-## Impact And Tradeoffs
+## Impact and Tradeoffs
 
 This can break diagnostics, local peer discovery, WebRTC, VPN status checks, exact data-usage displays, and apps that bind sockets to the returned address or expect tunnel interfaces to be enumerable. It does not alter actual socket routing, DNS, routing-socket/sysctl interface inventories, NetworkExtension state, or server-observed network behavior.
 
@@ -56,12 +56,12 @@ Expected observations:
 - `AF_LINK` MAC bytes are locally administered unicast values when visible.
 - Tunnel-like `tap`/`tun`/`utun`/`ppp`/`ipsec` rows are absent from the returned `getifaddrs` list.
 - `ifi_ibytes` and `ifi_obytes` grow over time from a seeded per-interface profile.
-- packet counters follow the synthetic byte counters, small error counters are low seeded values, and non-loopback `ifi_baudrate` values are common coarse rates.
+- Packet counters follow the synthetic byte counters, small error counters are low seeded values, and non-loopback `ifi_baudrate` values are common coarse rates.
 - `CFNetworkCopySystemProxySettings` and SystemConfiguration proxy-copy results omit `__SCOPED__` keys containing `tap`, `tun`, `utun`, `ppp`, or `ipsec`.
 - Network.framework interface enumeration omits `other` and loopback path interfaces, `nw_interface_get_name` does not expose tunnel-like names, and `nw_path_uses_interface_type` returns false for those types.
 
 Device validation is required for framework wrappers that call other interface inventory paths, apps that use `if_data64` / non-`getifaddrs` counter paths, and private Network.framework entry points not covered by the public C symbols listed above.
 
-## Rollback And Pass-Through
+## Rollback and Pass-Through
 
 Disabling the module restores original `getifaddrs` output, original `ifa_data` values, original scoped proxy dictionaries, and original Network.framework path/interface accessors. Original errors pass through. If no hook can be installed, the module registers as a no-op.

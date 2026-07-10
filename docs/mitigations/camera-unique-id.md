@@ -17,6 +17,13 @@ The camera unique-ID option passes built-in and unknown `AVCaptureDevice` identi
 | Default behavior | Active when selected and allowed by runtime policy; built-in and unknown cameras pass through |
 | Permission requirement | Discovery may be available without capture permission; capture remains permissioned |
 
+## References
+
+- Apple Developer: `AVCaptureDevice`.
+- Apple Developer: `AVCaptureDevice.uniqueID`.
+- Apple Developer: `AVCaptureDevice.deviceWithUniqueID:`.
+- Apple Developer: `AVCaptureDevice.deviceType`.
+
 ## Surface And Relevance
 
 Camera lineup and capabilities are mostly hardware-profile values and remain out of standalone scope. Built-in camera unique IDs are part of that coherent hardware profile and pass through. External and Continuity camera IDs are different: they can persist across launches, identify attached user-environment devices, and let apps restore selected capture devices.
@@ -57,4 +64,4 @@ Repository-level validation is pending until the catalog and default selection a
 
 ## Rollback And Pass-Through
 
-If classification or derivation fails, the hook returns the original unique ID. If lookup mapping cannot enumerate devices or find a synthetic match, `deviceWithUniqueID:` preserves the platform result for the supplied ID.
+If classification or derivation fails, the hook returns the original unique ID. If lookup mapping cannot enumerate devices or find a synthetic match, `deviceWithUniqueID:` preserves the platform result for the supplied ID. Disabling the mitigation restores original camera identifier behavior on covered APIs.

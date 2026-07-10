@@ -14,7 +14,7 @@ external account probe. It reads the local iCloud ubiquity identity token and
 the current StoreKit storefront, then reports either the observed value or an
 availability sentinel.
 
-## Official and Equivalent Links
+## Official Links
 
 - [`FileManager.ubiquityIdentityToken`](https://developer.apple.com/documentation/foundation/filemanager/ubiquityidentitytoken)
 - [`NSUbiquityIdentityDidChange`](https://developer.apple.com/documentation/foundation/nsnotification/name-swift.struct/nsubiquityidentitydidchange)
@@ -38,7 +38,7 @@ equivalent StoreKit country-code surfaces because a mitigation that changes only
 | `storefront.country` | `await Storefront.current`, then `Storefront.countryCode` | None | Passive StoreKit account/storefront read | Include | Medium to high. The App Store storefront country can differ from device locale, time zone, SIM country, IP region, and travel location. |
 | `storefront.country == unavailable` | Same StoreKit API returning `nil` | None | Passive StoreKit availability read | Include as the unavailable state of the same surface | Medium. Unavailability can distinguish account, simulator, platform, store, or policy state. |
 
-## Permission and Activity Classification
+## Permission and Collection Class
 
 No Loupe Apple Account signal requires Contacts, Location, Bluetooth, Local
 Network, Motion, Photos, Music, iCloud Documents entitlement approval, or
@@ -125,7 +125,7 @@ unavailable shape unless the policy intentionally models a signed-in account.
 Returning a country while other StoreKit APIs fail in account-like ways is easy
 to detect.
 
-## Derivation and Coherence Considerations
+## Derivation Considerations
 
 Apple account values should belong to an account/profile state domain, not to
 the hardware profile and not to per-read randomization. A useful state record

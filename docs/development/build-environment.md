@@ -11,7 +11,7 @@ The canonical environment is macOS with Xcode, Theos, `ldid`, `dpkg-deb`, Python
 | arm64 iOS SDK/toolchain | Required by the Theos target `iphone:clang:latest:15.0`. |
 | `ldid` | Signs the standalone dylib before it is copied to `dist/`. |
 | `dpkg-deb` | Creates the rootless Debian package. |
-| Python 3 | Runs `scripts/build/generate-mitigation-build.py`. |
+| Python 3 + Pillow | Runs `src/scripts/build/generate-mitigation-build.py` and prepares masked PreferenceLoader icon assets. |
 | shell / Mach-O tooling | Supports static verification and package layout checks. |
 
 The root Makefile resolves `THEOS` from `THEOS_HOME` when present, otherwise from `~/theos`.
@@ -23,7 +23,7 @@ flowchart LR
     Catalog[config/mitigations.json] --> Gen[generate-mitigation-build.py]
     Selection[config/build.default.json] --> Gen
     Sources[Selected source policy-seed declarations] --> Gen
-    Gen --> Generated[core/generated + packaging/theos/generated]
+    Gen --> Generated["src/core/generated + src/packaging/theos/generated"]
     Generated --> Theos[Theos build]
     Theos --> Dylib[Theos runtime dylib]
     Dylib --> Sign[ldid signing]
@@ -61,8 +61,10 @@ make clean
 | --- | --- | --- |
 | Standalone dylib | `dist/runtime.dylib` | Signed result of the selected build. |
 | Debian package | `dist/com.loupehole.runtime_0.1.0_iphoneos-arm64.deb` | Rootless package generated from the same runtime selection. |
-| Intermediate dylib | `packaging/theos/.theos/obj/<generated-loader-basename>.dylib` | Loader basename is generated; it is not a fixed runtime identity. |
-| Theos package | `packaging/theos/packages/<package>_<version>_<arch>.deb` | Copied after package verification. |
+| Intermediate dylib | `src/packaging/theos/.theos/obj/<generated-loader-basename>.dylib` | Loader basename is generated; it is not a fixed runtime identity. |
+| Theos package | `src/packaging/theos/packages/<package>_<version>_<arch>.deb` | Copied after package verification. |
+
+`src/packaging/theos/` is intentionally under `src/` because it is the build adapter for both deliverables. The root `make` target uses it for the standalone dylib, and package targets use the same project plus generated package layout.
 
 ## Verification gates
 

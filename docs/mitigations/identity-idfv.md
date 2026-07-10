@@ -47,11 +47,11 @@ Non-IDFV APIs are untouched. If the target class or selector is unavailable, the
 | Policy seed identifier | `identifier_for_vendor` |
 | Generated seed symbol | `LHGeneratedPolicySeed_identifier_for_vendor` |
 | Helper | `LHMitigationDeriveUUIDString` |
-| Value shape | Lowercase RFC 4122 version 4 UUID string accepted by `NSUUID`. |
-| Derivation input | active/practical seed + generated policy seed + active `LHScope`. |
-| Storage behavior | No mitigation-owned state blob; stability comes from seed and scope. |
-| Lifetime | Stable until the active seed, policy seed, or scope changes. |
-| Temporal dependencies | None directly. |
+| Value shape | Lowercase RFC 4122 version 4 UUID string accepted by `NSUUID` |
+| Derivation input | active/practical seed + generated policy seed + active `LHScope` |
+| Storage behavior | No mitigation-owned state blob; stability comes from seed and scope |
+| Lifetime | Stable until the active seed, policy seed, or scope changes |
+| Temporal dependencies | None directly |
 
 IDFV scope choice matters. Per-app scope gives stronger unlinking between apps, while vendor-group scope better matches Apple's normal vendor sharing behavior when the vendor input is available.
 

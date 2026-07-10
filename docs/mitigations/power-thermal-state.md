@@ -17,6 +17,11 @@ The thermal-state option collapses low-severity thermal readings while preservin
 | Default behavior | Active when selected and allowed by runtime policy |
 | Permission requirement | None |
 
+## References
+
+- Apple Developer: [`ProcessInfo.thermalState`](https://developer.apple.com/documentation/foundation/processinfo/thermalstate).
+- Apple Developer: [`ProcessInfo.ThermalState`](https://developer.apple.com/documentation/foundation/processinfo/thermalstate-swift.enum).
+
 ## Surface And Relevance
 
 Thermal state can reveal workload, charging, ambient conditions, throttling, and performance context. Higher states are operationally meaningful and should not be hidden casually.
@@ -29,7 +34,16 @@ It does not hook thermal notifications, performance counters, timer behavior, GP
 
 ## Derivation And Lifetime
 
-No policy seed or state blob is used. The value follows the real thermal state through a low-entropy bucket.
+| Item | Value |
+| --- | --- |
+| Policy seed identifiers | None |
+| Value shape | `NSProcessInfoThermalState` |
+| Derivation input | Original platform thermal state |
+| Storage behavior | No mitigation-owned state |
+| Lifetime | Follows the real thermal state through a low-entropy bucket |
+| Dependencies | Real thermal notifications, throttling, and workload behavior remain outside coverage |
+
+The mapping is not seed-derived. It collapses `nominal` and `fair` to the common nominal bucket while preserving higher-severity states.
 
 ## Impact And Tradeoffs
 
