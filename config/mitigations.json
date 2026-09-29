@@ -338,7 +338,10 @@
     {
       "id": "network.interface_inventory.composite.common",
       "sources": [
-        "src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c"
+        "src/mitigations/network/interface_inventory/InterfaceInventoryMitigation.c",
+        "src/mitigations/network/interface_inventory/InterfaceTrafficValues.c",
+        "src/mitigations/network/interface_inventory/InterfaceTrafficMitigation.c",
+        "src/mitigations/network/interface_inventory/RoutingTableMitigation.c"
       ],
       "frameworks": [
         "CoreFoundation",

@@ -154,9 +154,14 @@ constants as independent System Info values. They are still relevant to
 fingerprinting, but they should be generated and tested as part of a complete
 hardware/device profile.
 
-The implemented `system.memory_counters` option covers live Mach VM counter
-precision only. It does not report a different RAM tier, physical memory amount,
-processor count, or hardware cohort.
+The implemented [system.memory_counters](../mitigations/system-memory-counters.md)
+option covers live Mach VM counters, available process memory, and bounded
+current-process `task_info` usage precision. The supplied binary analysis's
+flavor `0x14` is `MACH_TASK_BASIC_INFO`, not `TASK_VM_INFO` (`0x16`); both shapes
+are addressed without equating resident usage with physical footprint. It does
+not report a different RAM tier, physical memory amount, processor count, or
+hardware cohort. [CPU load research](cpu-load.md) covers adjacent task/processor
+accounting and timed benchmarks; CPU implementation remains deferred.
 
 ## Exclusion Note
 

@@ -2,6 +2,8 @@
 #include "LHGeneratedMitigationRegistry.h"
 
 #include "LHMitigationValues.h"
+#include "InterfaceTrafficMitigation.h"
+#include "RoutingTableMitigation.h"
 
 #include <arpa/inet.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -40,7 +42,6 @@ typedef void (*LHNwPathEnumerateInterfacesOriginal)(nw_path_t path, LHNWPathEnum
 LH_POLICY_SEED(network_interface_ipv4_host)
 LH_POLICY_SEED(network_interface_ipv6_suffix)
 LH_POLICY_SEED(network_interface_link_mac)
-LH_POLICY_SEED(network_interface_counter_profile)
 LH_POLICY_SEED(network_interface_name_alias)
 
 static LHGetIfAddrsOriginal LHInterfaceInventoryGetIfAddrsOriginalImplementation;
@@ -233,7 +234,7 @@ static void LHInterfaceInventoryRewriteLinkAddress(struct ifaddrs *entry) {
     memcpy(LLADDR(link), bytes, sizeof(bytes));
 }
 
-static void LHInterfaceInventoryRewriteEntry(struct ifaddrs *entry) {
+void LHInterfaceInventoryRewriteEntry(struct ifaddrs *entry) {
     if (entry == 0) {
         return;
     }
@@ -314,93 +315,25 @@ static void LHInterfaceInventoryRewriteSensitiveNames(struct ifaddrs *interfaces
     }
 }
 
-static uint64_t LHInterfaceInventoryUptimeSeconds(void) {
-    struct timeval bootTime;
-    memset(&bootTime, 0, sizeof(bootTime));
-    size_t length = sizeof(bootTime);
-    if (sysctlbyname("kern.boottime", &bootTime, &length, 0, 0) != 0 || bootTime.tv_sec <= 0) {
-        return 0;
-    }
-
-    time_t now = time(0);
-    if (now <= bootTime.tv_sec) {
-        return 0;
-    }
-    return (uint64_t)(now - bootTime.tv_sec);
-}
-
-static uint64_t LHInterfaceInventoryDeriveCounterBounded(const char *name, const char *field, uint64_t upperBound) {
-    if (LHInterfaceInventoryPolicy == 0 || field == 0 || upperBound == 0) {
-        return 0;
-    }
-
-    char context[96] = { 0 };
-    snprintf(context, sizeof(context), "%s:%s", name == 0 ? "" : name, field);
-    uint64_t value = 0;
-    if (!LHMitigationDeriveBoundedU64(&LHInterfaceInventoryPolicy->config.buildSeed,
-                                      &LHGeneratedPolicySeed_network_interface_counter_profile,
-                                      &LHInterfaceInventoryPolicy->appContext.scope,
-                                      (const uint8_t *)context,
-                                      strlen(context),
-                                      upperBound,
-                                      &value)) {
-        return 0;
-    }
-    return value;
-}
-
-static uint32_t LHInterfaceInventoryClampU32(uint64_t value) {
-    return value > UINT32_MAX ? UINT32_MAX : (uint32_t)value;
-}
-
-static uint32_t LHInterfaceInventorySyntheticBytes(const char *name, const char *field, uint64_t uptimeSeconds) {
-    uint64_t base = (16ULL * 1024ULL * 1024ULL) + LHInterfaceInventoryDeriveCounterBounded(name, field, 240ULL * 1024ULL * 1024ULL);
-    uint64_t rate = 64ULL + LHInterfaceInventoryDeriveCounterBounded(name, field, 449ULL);
-    uint64_t wobble = (uptimeSeconds / 300ULL) * (1ULL + LHInterfaceInventoryDeriveCounterBounded(name, field, 4096ULL));
-    return LHInterfaceInventoryClampU32(base + (rate * uptimeSeconds) + wobble);
-}
-
-static uint32_t LHInterfaceInventorySyntheticPackets(const char *name, const char *field, uint32_t bytes) {
-    uint64_t averagePacket = 720ULL + LHInterfaceInventoryDeriveCounterBounded(name, field, 640ULL);
-    return averagePacket == 0 ? bytes : LHInterfaceInventoryClampU32((uint64_t)bytes / averagePacket);
-}
-
-static uint32_t LHInterfaceInventoryCommonBaudRate(const char *name, uint32_t original) {
-    if (name == 0 || original == 0) {
-        return original;
-    }
-    if (strncmp(name, "lo", 2) == 0) {
-        return original;
-    }
-    if (strncmp(name, "en", 2) == 0) {
-        return 1000000000U;
-    }
-    if (strncmp(name, "pdp_ip", 6) == 0) {
-        return 100000000U;
-    }
-    return 100000000U;
+void LHInterfaceInventoryRewriteSensitiveEntryName(struct ifaddrs *entry) {
+    LHInterfaceInventoryRewriteLinkName(entry);
+    LHInterfaceInventoryRewriteInterfaceName(entry);
 }
 
 static void LHInterfaceInventoryShapeCounterData(struct ifaddrs *interfaces) {
-    uint64_t uptimeSeconds = LHInterfaceInventoryUptimeSeconds();
+    LHInterfaceTrafficSnapshot snapshot;
+    if (!LHInterfaceTrafficCopySnapshot(&snapshot)) {
+        return;
+    }
     for (struct ifaddrs *cursor = interfaces; cursor != 0; cursor = cursor->ifa_next) {
-        if (cursor->ifa_data == 0) {
+        if (cursor->ifa_data == 0 || cursor->ifa_addr == 0 || cursor->ifa_addr->sa_family != AF_LINK ||
+            cursor->ifa_name == 0 || LHInterfaceInventoryNameLooksLoopback(cursor->ifa_name)) {
             continue;
         }
-
-        struct if_data *data = (struct if_data *)cursor->ifa_data;
-        if (!LHInterfaceInventoryNameLooksLoopback(cursor->ifa_name)) {
-            data->ifi_ibytes = LHInterfaceInventorySyntheticBytes(cursor->ifa_name, "ibytes", uptimeSeconds);
-            data->ifi_obytes = LHInterfaceInventorySyntheticBytes(cursor->ifa_name, "obytes", uptimeSeconds);
-            data->ifi_ipackets = LHInterfaceInventorySyntheticPackets(cursor->ifa_name, "ipackets", data->ifi_ibytes);
-            data->ifi_opackets = LHInterfaceInventorySyntheticPackets(cursor->ifa_name, "opackets", data->ifi_obytes);
+        LHInterfaceTrafficValues values;
+        if (LHInterfaceTrafficCopyValues(LHInterfaceInventoryPolicy, cursor->ifa_name, &snapshot, &values)) {
+            LHInterfaceTrafficApply32((struct if_data *)cursor->ifa_data, cursor->ifa_name, &snapshot, &values);
         }
-        data->ifi_ierrors = (uint32_t)LHInterfaceInventoryDeriveCounterBounded(cursor->ifa_name, "ierrors", 3);
-        data->ifi_oerrors = (uint32_t)LHInterfaceInventoryDeriveCounterBounded(cursor->ifa_name, "oerrors", 3);
-        data->ifi_collisions = 0;
-        data->ifi_baudrate = LHInterfaceInventoryCommonBaudRate(cursor->ifa_name, data->ifi_baudrate);
-        data->ifi_lastchange.tv_sec = uptimeSeconds == 0 ? 0 : time(0) - (time_t)uptimeSeconds;
-        data->ifi_lastchange.tv_usec = 0;
     }
 }
 
@@ -467,19 +400,24 @@ static CFDictionaryRef LHInterfaceInventoryCopyFilteredProxySettings(CFDictionar
 
 static int LHInterfaceInventoryGetIfAddrsReplacement(struct ifaddrs **interfaces) {
     if (LHInterfaceInventoryGetIfAddrsOriginalImplementation == 0) {
+        errno = ENOSYS;
         return -1;
     }
 
+    LHInterfaceTrafficBeginOriginalList();
     int result = LHInterfaceInventoryGetIfAddrsOriginalImplementation(interfaces);
+    LHInterfaceTrafficEndOriginalList();
     if (result != 0 || interfaces == 0 || *interfaces == 0) {
         return result;
     }
+    int originalErrno = errno;
 
     for (struct ifaddrs *cursor = *interfaces; cursor != 0; cursor = cursor->ifa_next) {
         LHInterfaceInventoryRewriteEntry(cursor);
     }
     LHInterfaceInventoryShapeCounterData(*interfaces);
     LHInterfaceInventoryRewriteSensitiveNames(*interfaces);
+    errno = originalErrno;
     return result;
 }
 
@@ -629,7 +567,8 @@ static void LHInterfaceInventoryNwPathEnumerateInterfacesReplacement(nw_path_t p
 bool LHMitigation_network_interface_inventory_composite_common_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHInterfaceInventoryPolicy = policy;
 
-    bool installed = false;
+    bool installed = LHInterfaceInventoryInstallTrafficHooks(backend, policy);
+    installed = LHInterfaceInventoryInstallRoutingHooks(backend, policy) || installed;
     installed = LHHookBackendHookImportedSymbol(backend,
                                                 "getifaddrs",
                                                 (void *)LHInterfaceInventoryGetIfAddrsReplacement,

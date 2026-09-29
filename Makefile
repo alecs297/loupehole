@@ -32,7 +32,7 @@ export LH_DEFAULT_SCOPE_MODE ?= LHScopeModePerAppInstall
 
 # Root targets intentionally funnel through generation before build/test work so
 # ignored generated files are disposable outputs of catalog + selection.
-.PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check mitigation-value-check
+.PHONY: all build package package-build copy-package package-verify clean generate sign copy-artifact audit verify summary strings symbols swift-absence debug-log-absence seed-check seed-provider-check state-check mitigation-value-check surface-check interface-traffic-check routing-table-check imported-symbol-check process-memory-check telephony-check
 
 all: copy-artifact
 
@@ -97,3 +97,21 @@ state-check: generate
 
 mitigation-value-check: generate
 	src/scripts/verify/mitigation-value-check.sh
+
+# Focused Darwin-host regressions use the default selection's interface seeds.
+surface-check: interface-traffic-check routing-table-check imported-symbol-check process-memory-check telephony-check
+
+interface-traffic-check: generate
+	sh src/scripts/verify/interface-traffic-check.sh
+
+routing-table-check: generate
+	sh src/scripts/verify/routing-table-check.sh
+
+imported-symbol-check:
+	sh src/scripts/verify/imported-symbol-check.sh
+
+process-memory-check:
+	sh src/scripts/verify/process-memory-check.sh
+
+telephony-check:
+	sh src/scripts/verify/verify_telephony_coherence.sh

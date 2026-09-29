@@ -83,6 +83,18 @@ results can all contradict a fake telephony profile.
 
 ## Mitigation Strategy Ideas
 
+The supplied device-information binary analysis additionally reads
+`dataServiceIdentifier`, provider dictionaries, legacy provider getters,
+carrier name/country/MCC/MNC, and SDK callbacks. Loupe does not collect all of
+those values. Current bounded implementation is documented in
+[telephony.radio_access](../mitigations/telephony-radio-access-single-lte.md):
+one shared service alias, LTE state, and a common redacted carrier tuple are
+used across successfully installed related getter paths and provider notifier
+wrappers. Nil/unavailable state is not invented. RAT notifications and
+data-service delegate callbacks remain gaps; this is not a full synthetic
+carrier, hardware, or region profile. Multiple network `pdp_ip*` counters are
+not collapsed to one service, because interface count is not SIM count.
+
 ### `telephony.radio_profile`
 
 Hook CoreTelephony radio state as a profile:

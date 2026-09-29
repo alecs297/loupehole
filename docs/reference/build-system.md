@@ -31,6 +31,10 @@ The root Makefile centralizes generation, Theos invocation, signing, artifact co
 | `make package-build` | Generates inputs and invokes Theos package build with package state provider, no runtime-dylib build seed, and preference metadata enabled. |
 | `make package-verify` | Validates copied `.deb` package layout. |
 | `make generate` | Runs `src/scripts/build/generate-mitigation-build.py`. |
+| `make surface-check` | Runs focused Darwin-host interface-traffic, route, imported-symbol, process-memory, and telephony regression fixtures; use the default profile's interface seeds. Separate from artifact scans and device evidence. |
+| `make interface-traffic-check` / `make routing-table-check` | Generates selected seeds and tests actual interface/route shaping with sanitizers. Requires these modules in the selection. |
+| `make imported-symbol-check` | Tests parsers/protections, live classic/chained images, late loads, actual system imports, and direct/import hook composition. |
+| `make process-memory-check` / `make telephony-check` | Runs bounded field/ABI and cellular-service coherence fixtures using test-only seed/registry inputs. |
 | `make clean` | Removes build/package artifacts and `dist`. |
 
 ## Generation Inputs And Outputs

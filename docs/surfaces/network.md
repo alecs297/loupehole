@@ -276,6 +276,10 @@ compiled because preserving local discovery functionality while hiding nearby
 device and service identity is not a coherent mitigation boundary. DNS resolver
 server-address masking is not currently compiled because attempted
 SystemConfiguration/BIND resolver inventory hooks caused guarded
-file-descriptor crashes on device. General URL loading, routing-table
-inspection, NetworkExtension state, DNS resolver inventory, Bonjour/DNS-SD
-browsing, and `getaddrinfo` resolution behavior remain pass-through.
+file-descriptor crashes on device. The new [traffic and gateway research](network-traffic.md)
+extends the interface module to bounded 32/64-bit interface dumps and supported
+gateway observations; it does not reconstruct route topology. General URL
+loading, routing-socket/ioctl inspection, NetworkExtension state, DNS resolver
+inventory, Bonjour/DNS-SD browsing, and `getaddrinfo` resolution remain
+pass-through. [Resolver research](dns-resolvers.md) explains why copied-output
+hooks do not cover the supplied binary's direct state reads safely.

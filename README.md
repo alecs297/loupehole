@@ -44,6 +44,8 @@ Loupehole is in very early development. The current baseline includes:
 - 32 experimental mitigation modules in the default selection.
 - an API and some documentation to allow contribution to the project
 
+Recent coverage work prioritizes data consumption: covered interface lists and raw 32/64-bit dumps now share one counter model, with bounded gateway normalization alongside it. Cellular-service getters and current-process memory reads have also been extended for cross-API coherence. These remain experimental and require target-device validation. CPU load is [research only](docs/surfaces/cpu-load.md); [DNS resolver inventory](docs/surfaces/dns-resolvers.md) remains untreated.
+
 The [surface inventory](docs/surfaces/) is research coverage and explains some of the numerous ways applications could track you. The [mitigation pages](docs/mitigations/) describe implemented behaviors, and how Loupehole tries to limit that fingerprinting. A compiled mitigation is not a claim that the whole surface is solved; always read the linked mitigation page for exact API coverage, limitations, rollback behavior, and validation evidence.
 
 ## Available Mitigations
@@ -100,6 +102,9 @@ make package
 
 # Build the dylib and run static verification.
 make audit
+
+# Run focused Darwin-host surface and import-hook regressions (default profile).
+make surface-check
 
 # Use a different profile.
 BUILD_SELECTION=path/to/selection.json make audit

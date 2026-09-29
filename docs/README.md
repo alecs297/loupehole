@@ -39,3 +39,5 @@ Two detailed reference libraries are maintained separately from the system overv
 - `docs/mitigations/` — implemented mitigation behavior library.
 
 They contain the API-specific research and behavior pages. This documentation layer provides the navigation, system model, and contributor standards that keep those pages consistent.
+
+The device-information binary analysis is tracked separately from Loupe research in [Network traffic and gateways](surfaces/network-traffic.md), [CPU load](surfaces/cpu-load.md), and [DNS resolver inventory](surfaces/dns-resolvers.md). Traffic accounting has bounded implementation; CPU load is deferred and DNS remains untreated. See the related mitigation pages for actual code coverage, not the research inventory.

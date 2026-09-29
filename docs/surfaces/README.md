@@ -1,9 +1,10 @@
 # Fingerprinting Surface Inventory
 
-This directory maps Loupe's fingerprinting providers to Loupehole surface
-inventory pages. Each page is research coverage first: it records what Loupe
-reads, why that read matters, and what a future mitigation would need to keep
-coherent. A page in this directory does not mean the surface is implemented.
+This directory maps Loupe's fingerprinting providers and separately analyzed
+collector paths to Loupehole surface inventory pages. Each page is research
+coverage first: it records what the reviewed source reads, why that read matters,
+and what a future mitigation would need to keep coherent. A page in this
+directory does not mean the surface is implemented.
 
 Treat these pages as the reference template for adding or maintaining surface
 inventory. Preserve reviewed facts, call out uncertainty, and avoid upgrading a
@@ -29,10 +30,11 @@ model, display, CPU, GPU, camera, and WebKit hardware claims agree.
 
 ## Inventory
 
-| Loupe category | Page | Collection class | Permission requirement |
+| Source category / surface | Page | Collection class | Permission requirement |
 | --- | --- | --- | --- |
 | Device Identity | [`device-identity.md`](device-identity.md) | Passive native identity | None for included IDFV/hostname/version; user-assigned device name requires Apple's entitlement on modern iOS |
 | System Info | [`system-info.md`](system-info.md) | Passive system/runtime state | None |
+| CPU Load (binary-analysis extension; implementation deferred) | [`cpu-load.md`](cpu-load.md) | Passive cumulative processor/task/thread accounting | No TCC prompt; Mach port rights and OS/sandbox availability vary |
 | Battery & Power | [`battery-power.md`](battery-power.md) | Passive live state | None |
 | Storage | [`storage.md`](storage.md) | Passive storage/volume state | None |
 | Display | [`display.md`](display.md) | Passive live display and user-preference state | None |
@@ -42,6 +44,8 @@ model, display, CPU, GPU, camera, and WebKit hardware claims agree.
 | Pasteboard | [`pasteboard.md`](pasteboard.md) | Passive/active clipboard metadata read | None, but pasteboard access can have user-visible privacy behavior depending on API and OS |
 | Device Motion | [`device-motion.md`](device-motion.md) | Active sensor sampling | Motion/privacy constraints vary by API and platform version |
 | Network | [`network.md`](network.md) | Passive network-path and interface state | None for path/proxy/interface reads |
+| Network Traffic and Gateways (binary-analysis extension) | [`network-traffic.md`](network-traffic.md) | Passive interface accounting and route inventory; active speed-test context | None for analyzed local reads; API availability varies |
+| DNS Resolver Inventory (binary-analysis extension; untreated) | [`dns-resolvers.md`](dns-resolvers.md) | Passive configuration inventory coupled to functional resolver state | None for analyzed reads; API availability varies |
 | Fonts | [`fonts.md`](fonts.md) | Passive installed-resource inventory | None |
 | Installed Voices | [`installed-voices.md`](installed-voices.md) | Passive installed-resource inventory | None |
 | App & Bundle | [`app-bundle.md`](app-bundle.md) | Passive app/container metadata | None |
@@ -88,6 +92,12 @@ the content maps cleanly:
 12. Optional `## Exclusion Note` when Loupe reports values that this page
     deliberately excludes from first-class mitigation ownership.
 13. `## Relevance`
+
+For inventory extensions from a supplied analysis rather than a Loupe provider,
+name that source explicitly and distinguish observed collector calls from
+adjacent APIs proposed for research. Keep the metadata and section order, but
+qualify the signals heading for that provenance. Mark deferred implementation
+explicitly; do not imply that the reviewed Loupe provider collects the extension.
 
 Use tables for Loupe signals when there is more than one signal. Include these
 columns when they are useful: `Loupe signal`, `Provider source`, `Permission`,
