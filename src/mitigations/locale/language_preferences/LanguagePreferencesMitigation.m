@@ -5,8 +5,6 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 
-#include <dlfcn.h>
-
 typedef NSArray<NSString *> *(*LHPreferredLanguagesOriginal)(id self, SEL selector);
 typedef id (*LHUserDefaultsObjectForKeyOriginal)(NSUserDefaults *self, SEL selector, NSString *key);
 typedef NSArray *(*LHUserDefaultsArrayForKeyOriginal)(NSUserDefaults *self, SEL selector, NSString *key);
@@ -20,6 +18,7 @@ static LHUserDefaultsArrayForKeyOriginal LHPreferredLanguagesArrayForKeyOriginal
 static LHUserDefaultsStringArrayForKeyOriginal LHPreferredLanguagesStringArrayForKeyOriginalImplementation;
 static LHCFLocaleCopyPreferredLanguagesOriginal LHCFLocaleCopyPreferredLanguagesOriginalImplementation;
 static LHCFPreferencesCopyAppValueOriginal LHCFPreferencesCopyAppValueOriginalImplementation;
+static __thread BOOL LHPreferredLanguagesInReplacement;
 
 static BOOL LHPreferredLanguagesKeyMatches(NSString *key) {
     return [key isKindOfClass:[NSString class]] && [key isEqualToString:@"AppleLanguages"];
@@ -60,14 +59,27 @@ static NSArray<NSString *> *LHPreferredLanguagesReplacement(id self, SEL selecto
     if (LHPreferredLanguagesOriginalImplementation == 0) {
         return nil;
     }
-    return LHReducedPreferredLanguages(LHPreferredLanguagesOriginalImplementation(self, selector));
+    if (LHPreferredLanguagesInReplacement) {
+        return LHPreferredLanguagesOriginalImplementation(self, selector);
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
+    NSArray<NSString *> *original = LHPreferredLanguagesOriginalImplementation(self, selector);
+    LHPreferredLanguagesInReplacement = NO;
+    return LHReducedPreferredLanguages(original);
 }
 
 static CFArrayRef LHCFLocaleCopyPreferredLanguagesReplacement(void) {
     if (LHCFLocaleCopyPreferredLanguagesOriginalImplementation == 0) {
         return 0;
     }
+    if (LHPreferredLanguagesInReplacement) {
+        return LHCFLocaleCopyPreferredLanguagesOriginalImplementation();
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
     CFArrayRef original = LHCFLocaleCopyPreferredLanguagesOriginalImplementation();
+    LHPreferredLanguagesInReplacement = NO;
     CFArrayRef reduced = LHCreateReducedPreferredLanguagesCopy(original);
     if (original != 0) {
         CFRelease(original);
@@ -79,7 +91,13 @@ static CFPropertyListRef LHCFPreferencesCopyAppValueReplacement(CFStringRef key,
     if (LHCFPreferencesCopyAppValueOriginalImplementation == 0) {
         return 0;
     }
+    if (LHPreferredLanguagesInReplacement) {
+        return LHCFPreferencesCopyAppValueOriginalImplementation(key, applicationID);
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
     CFPropertyListRef original = LHCFPreferencesCopyAppValueOriginalImplementation(key, applicationID);
+    LHPreferredLanguagesInReplacement = NO;
     if (LHCFPreferredLanguagesKeyMatches(key) && original != 0 && CFGetTypeID(original) == CFArrayGetTypeID()) {
         CFArrayRef reduced = LHCreateReducedPreferredLanguagesCopy((CFArrayRef)original);
         CFRelease(original);
@@ -92,7 +110,13 @@ static id LHPreferredLanguagesObjectForKeyReplacement(NSUserDefaults *self, SEL 
     if (LHPreferredLanguagesObjectForKeyOriginalImplementation == 0) {
         return nil;
     }
+    if (LHPreferredLanguagesInReplacement) {
+        return LHPreferredLanguagesObjectForKeyOriginalImplementation(self, selector, key);
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
     id original = LHPreferredLanguagesObjectForKeyOriginalImplementation(self, selector, key);
+    LHPreferredLanguagesInReplacement = NO;
     if (LHPreferredLanguagesKeyMatches(key)) {
         return LHReducedPreferredLanguages(original);
     }
@@ -103,7 +127,13 @@ static NSArray *LHPreferredLanguagesArrayForKeyReplacement(NSUserDefaults *self,
     if (LHPreferredLanguagesArrayForKeyOriginalImplementation == 0) {
         return nil;
     }
+    if (LHPreferredLanguagesInReplacement) {
+        return LHPreferredLanguagesArrayForKeyOriginalImplementation(self, selector, key);
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
     NSArray *original = LHPreferredLanguagesArrayForKeyOriginalImplementation(self, selector, key);
+    LHPreferredLanguagesInReplacement = NO;
     if (LHPreferredLanguagesKeyMatches(key)) {
         return LHReducedPreferredLanguages(original);
     }
@@ -114,7 +144,13 @@ static NSArray<NSString *> *LHPreferredLanguagesStringArrayForKeyReplacement(NSU
     if (LHPreferredLanguagesStringArrayForKeyOriginalImplementation == 0) {
         return nil;
     }
+    if (LHPreferredLanguagesInReplacement) {
+        return LHPreferredLanguagesStringArrayForKeyOriginalImplementation(self, selector, key);
+    }
+
+    LHPreferredLanguagesInReplacement = YES;
     NSArray<NSString *> *original = LHPreferredLanguagesStringArrayForKeyOriginalImplementation(self, selector, key);
+    LHPreferredLanguagesInReplacement = NO;
     if (LHPreferredLanguagesKeyMatches(key)) {
         return LHReducedPreferredLanguages(original);
     }
@@ -160,25 +196,11 @@ bool LHMitigation_locale_preferred_languages_foundation_primary_only_install(LHH
                                              (void **)&LHPreferredLanguagesStringArrayForKeyOriginalImplementation) || installed;
     }
 
-    void *cfLocaleTarget = dlsym(RTLD_DEFAULT, "CFLocaleCopyPreferredLanguages");
-    if (cfLocaleTarget != 0) {
-        installed = LHHookBackendHookFunction(backend,
-                                              cfLocaleTarget,
-                                              (void *)LHCFLocaleCopyPreferredLanguagesReplacement,
-                                              (void **)&LHCFLocaleCopyPreferredLanguagesOriginalImplementation) || installed;
-    }
     installed = LHHookBackendHookImportedSymbol(backend,
                                                 "CFLocaleCopyPreferredLanguages",
                                                 (void *)LHCFLocaleCopyPreferredLanguagesReplacement,
                                                 (void **)&LHCFLocaleCopyPreferredLanguagesOriginalImplementation) || installed;
 
-    void *cfPreferencesTarget = dlsym(RTLD_DEFAULT, "CFPreferencesCopyAppValue");
-    if (cfPreferencesTarget != 0) {
-        installed = LHHookBackendHookFunction(backend,
-                                              cfPreferencesTarget,
-                                              (void *)LHCFPreferencesCopyAppValueReplacement,
-                                              (void **)&LHCFPreferencesCopyAppValueOriginalImplementation) || installed;
-    }
     installed = LHHookBackendHookImportedSymbol(backend,
                                                 "CFPreferencesCopyAppValue",
                                                 (void *)LHCFPreferencesCopyAppValueReplacement,

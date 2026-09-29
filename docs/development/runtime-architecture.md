@@ -73,7 +73,9 @@ A mitigation is present only when its catalog entry is selected during generatio
 
 ## Hook Backend Boundary
 
-`LHHookBackend` exposes three hook shapes: function patching, imported-symbol rebinding, and Objective-C message replacement. A module uses the smallest shape appropriate to the observed call path. The backend records original implementations so a replacement can preserve pass-through behavior.
+`LHHookBackend` exposes three hook shapes: function patching, imported-symbol rebinding, and Objective-C message replacement. A module uses the smallest shape appropriate to the observed call path. The backend resolves the exported original before replacing imported slots so replacements do not call an unbound lazy-import trampoline, and it records original implementations so replacements can preserve pass-through behavior.
+
+Prefer imported-symbol rebinding for high-frequency system C APIs when app-facing imports provide sufficient coverage. A distant process-wide function patch can require a hook backend to route calls through a breakpoint exception port; that is not appropriate for hot startup APIs in processes that also manage Mach ports. Accept explicitly documented pass-through for direct system-library and dynamically resolved calls instead.
 
 The boot-time module demonstrates why this boundary exists: its public behavior may be reached through multiple C symbols and Objective-C Foundation APIs. Each adapter reads the same temporal helper rather than inventing an independent timeline.
 

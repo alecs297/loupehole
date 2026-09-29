@@ -12,8 +12,8 @@ The interface inventory option shapes local interface disclosure across low-leve
 | User-facing name | Network interface inventory |
 | Status | Experimental |
 | Surface | Network |
-| Classification | Passive local interface read; active C hook mitigation |
-| Affected APIs | `getifaddrs`, `freeifaddrs`, `CFNetworkCopySystemProxySettings`, `SCDynamicStoreCopyProxies`, `SCDynamicStoreCopyProxiesWithOptions`, `nw_path_enumerate_interfaces`, `nw_path_uses_interface_type`, `nw_interface_get_name`, `nw_interface_get_type`, `nw_path_is_expensive`, `nw_path_is_constrained` |
+| Classification | Passive local interface read; active imported-symbol mitigation |
+| Affected APIs | Imported calls to `getifaddrs`, `CFNetworkCopySystemProxySettings`, `SCDynamicStoreCopyProxies`, `SCDynamicStoreCopyProxiesWithOptions`, `nw_path_enumerate_interfaces`, `nw_path_uses_interface_type`, `nw_interface_get_name`, `nw_interface_get_type`, `nw_path_is_expensive`, `nw_path_is_constrained` |
 | Default behavior | Enabled when selected and runtime policy allows the module |
 | Permission requirement | None |
 
@@ -23,11 +23,11 @@ Interface rows, scoped proxy dictionaries, and path snapshots reveal local IPv4 
 
 ## Mitigation Strategy
 
-The mitigation hooks `getifaddrs`/`freeifaddrs` directly and through imported-symbol rebinding. On success it filters sensitive tunnel rows out of the returned list, rewrites non-loopback IPv4 addresses to `192.168.1.X`, rewrites IPv4 netmasks to `/24`, rewrites IPv4 broadcast/destination addresses to `192.168.1.255`, rewrites non-loopback IPv6 addresses to link-local-shaped `fe80::` values, rewrites visible `AF_LINK` MAC bytes to locally administered unicast values, and shapes `struct if_data` counters in the same returned list.
+The mitigation covers `getifaddrs` through imported-symbol rebinding only. It leaves the returned list platform-owned, preserves its list shape, and does not hook `freeifaddrs`. On covered calls it rewrites non-loopback IPv4 addresses to `192.168.1.X`, rewrites IPv4 netmasks to `/24`, rewrites IPv4 broadcast/destination addresses to `192.168.1.255`, rewrites non-loopback IPv6 addresses to link-local-shaped `fe80::` values, rewrites visible `AF_LINK` MAC bytes to locally administered unicast values, and shapes `struct if_data` counters in place. Sensitive tunnel rows are left in the raw list and marked without `IFF_UP` or `IFF_RUNNING`; this avoids returning a cloned allocation that an unhooked release path cannot safely free.
 
-The same sensitive-interface policy is applied to scoped proxy dictionaries returned by CFNetwork and SystemConfiguration: entries under `__SCOPED__` whose keys contain `tap`, `tun`, `utun`, `ppp`, or `ipsec` are removed while unrelated proxy keys are preserved. Network.framework path enumeration suppresses `other` and loopback interfaces, `nw_path_uses_interface_type` returns false for those types, direct `nw_interface_get_name` reads of sensitive or virtual interfaces return common names such as `en0`, and direct `nw_interface_get_type` reads of those interfaces are normalized to Wi-Fi so virtual interface names and classes are not exposed as a separate local signal. `nw_path_is_expensive` and `nw_path_is_constrained` currently pass through because they describe route policy rather than a stable interface identifier.
+The same sensitive-interface policy is applied to covered scoped proxy dictionaries returned by CFNetwork and SystemConfiguration: entries under `__SCOPED__` whose keys contain `tap`, `tun`, `utun`, `ppp`, or `ipsec` are removed while unrelated proxy keys are preserved. Covered Network.framework path enumeration suppresses `other` and loopback interfaces, `nw_path_uses_interface_type` returns false for those types, `nw_interface_get_name` reads of sensitive or virtual interfaces return common names such as `en0`, and `nw_interface_get_type` reads of those interfaces are normalized to Wi-Fi so virtual interface names and classes are not exposed as a separate local signal. `nw_path_is_expensive` and `nw_path_is_constrained` currently pass through because they describe route policy rather than a stable interface identifier.
 
-Interfaces whose names begin with `tap`, `tun`, `utun`, `ppp`, or `ipsec` are removed from cloned lists returned to target apps. Proxy-scope filtering and counter shaping are intentionally merged into this module so one mitigation owns the local interface disclosure lifecycle. This is stricter than the compatibility default documented in the surface inventory and assumes system apps are not injected.
+The module does not patch process-wide C function entry points. Calls made directly inside system libraries or resolved dynamically with `dlsym` can pass through. Proxy-scope filtering and counter shaping are intentionally merged into this module so one mitigation owns the covered local interface disclosure lifecycle.
 
 Non-loopback byte counters are generated from a per-interface seeded base and a seeded rate multiplied by current uptime since `kern.boottime`; packet counters are derived from the synthetic byte counts using seeded average packet sizes. Small error counters are reduced to tiny seeded values, collisions are cleared, non-loopback baud rates are normalized to common Wi-Fi/cellular-like values, and `ifi_lastchange` is aligned to the observed boot time.
 
@@ -54,14 +54,14 @@ Expected observations:
 - IPv4 broadcast/destination addresses are `192.168.1.255`.
 - Non-loopback IPv6 addresses read through `getifaddrs` are link-local-shaped.
 - `AF_LINK` MAC bytes are locally administered unicast values when visible.
-- Tunnel-like `tap`/`tun`/`utun`/`ppp`/`ipsec` rows are absent from the returned `getifaddrs` list.
+- Tunnel-like `tap`/`tun`/`utun`/`ppp`/`ipsec` rows retain platform ownership and list position, but covered `getifaddrs` calls report them without `IFF_UP` or `IFF_RUNNING` and with shaped address/counter data.
 - `ifi_ibytes` and `ifi_obytes` grow over time from a seeded per-interface profile.
 - Packet counters follow the synthetic byte counters, small error counters are low seeded values, and non-loopback `ifi_baudrate` values are common coarse rates.
 - `CFNetworkCopySystemProxySettings` and SystemConfiguration proxy-copy results omit `__SCOPED__` keys containing `tap`, `tun`, `utun`, `ppp`, or `ipsec`.
 - Network.framework interface enumeration omits `other` and loopback path interfaces, `nw_interface_get_name` does not expose tunnel-like names, and `nw_path_uses_interface_type` returns false for those types.
 
-Device validation is required for framework wrappers that call other interface inventory paths, apps that use `if_data64` / non-`getifaddrs` counter paths, and private Network.framework entry points not covered by the public C symbols listed above.
+Device validation is required for framework wrappers that call other interface inventory paths, dynamically resolved symbols, apps that use `if_data64` / non-`getifaddrs` counter paths, and private Network.framework entry points not covered by the public C symbols listed above.
 
 ## Rollback and Pass-Through
 
-Disabling the module restores original `getifaddrs` output, original `ifa_data` values, original scoped proxy dictionaries, and original Network.framework path/interface accessors. Original errors pass through. If no hook can be installed, the module registers as a no-op.
+Disabling the module restores original `getifaddrs` output, original `ifa_data` values, original scoped proxy dictionaries, and original Network.framework path/interface accessors. Original errors pass through. Uncovered direct/internal calls retain platform behavior and ownership. If no imported call site can be rebound, the module registers as a no-op.

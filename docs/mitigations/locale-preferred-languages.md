@@ -13,7 +13,7 @@ The preferred-languages option reduces ordered language-list entropy by preservi
 | Status | Experimental |
 | Surface | Locale and region |
 | Classification | Passive local language preference read; active Foundation hook mitigation |
-| Affected APIs | `+[NSLocale preferredLanguages]`, `CFLocaleCopyPreferredLanguages`, `CFPreferencesCopyAppValue`, `-[NSUserDefaults objectForKey:]`, `-[NSUserDefaults arrayForKey:]`, `-[NSUserDefaults stringArrayForKey:]` for `AppleLanguages` |
+| Affected APIs | `+[NSLocale preferredLanguages]`, imported calls to `CFLocaleCopyPreferredLanguages` and `CFPreferencesCopyAppValue`, and `-[NSUserDefaults objectForKey:]`, `-[NSUserDefaults arrayForKey:]`, `-[NSUserDefaults stringArrayForKey:]` for `AppleLanguages` |
 | Default behavior | Enabled when the mitigation is selected and runtime policy allows the module |
 | Permission requirement | None |
 
@@ -29,7 +29,9 @@ An ordered preferred-language list can be high entropy for multilingual users. T
 
 ## Mitigation Strategy
 
-The mitigation hooks the `NSLocale` class method `preferredLanguages`, `CFLocaleCopyPreferredLanguages`, `CFPreferencesCopyAppValue`, and the `NSUserDefaults` read shapes commonly used for the backing `AppleLanguages` list. When the original list contains more than one valid string, the replacement returns an array containing only the original first language tag. Empty, malformed, single-entry lists, and unrelated defaults keys pass through unchanged.
+The mitigation hooks the `NSLocale` class method `preferredLanguages` and the `NSUserDefaults` read shapes commonly used for the backing `AppleLanguages` list. It covers `CFLocaleCopyPreferredLanguages` and `CFPreferencesCopyAppValue` through imported-symbol rebinding only; it does not patch the process-wide CoreFoundation function entry points. Direct calls made inside CoreFoundation or resolved dynamically with `dlsym` can therefore pass through.
+
+When the original list contains more than one valid string, the replacement returns an array containing only the original first language tag. Empty, malformed, single-entry lists, and unrelated defaults keys pass through unchanged. A thread-local reentrancy guard lets nested Foundation/CoreFoundation preference reads call their originals while the outer covered read still reduces its result.
 
 The module does not alter `Locale.current`, `NSLocale.currentLocale`, calendars, time zones, formatters, WebKit language surfaces, or server-side `Accept-Language` headers.
 
@@ -55,10 +57,10 @@ Apps may use secondary languages for localization fallback, content choice, sear
 Expected observations:
 
 - Loupe's preferred-language list contains the original first language only.
-- Direct `AppleLanguages` reads through covered `NSUserDefaults` and CFPreferences getters contain the original first language only.
+- Direct `AppleLanguages` reads through covered `NSUserDefaults` getters and imported CFPreferences call sites contain the original first language only.
 - A single-language device reports the same list as before.
 - Locale identifier, calendar, time-zone, and formatter behavior remain unchanged.
 
 ## Rollback and Pass-Through
 
-If the class method and defaults hooks are unavailable or hook installation fails, the module registers as a no-op. If the original list is empty, malformed, or already contains one language, the original result is returned unchanged. Defaults keys other than `AppleLanguages` pass through unchanged.
+If the class method, defaults hooks, and imported call sites are unavailable, the module registers as a no-op. CoreFoundation-internal and dynamically resolved C calls pass through. If the original list is empty, malformed, or already contains one language, the original result is returned unchanged. Defaults keys other than `AppleLanguages` pass through unchanged.

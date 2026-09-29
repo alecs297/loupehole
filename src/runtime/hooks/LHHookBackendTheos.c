@@ -217,6 +217,13 @@ static bool LHTheosHookImportedSymbol(LHHookBackend *backend, const char *symbol
         return false;
     }
 
+    if (original != 0 && *original == 0) {
+        void *resolved = dlsym(RTLD_DEFAULT, symbol);
+        if (resolved != 0 && resolved != replacement) {
+            *original = resolved;
+        }
+    }
+
     LHImportedSymbolBinding binding = {
         .symbol = symbol,
         .replacement = replacement,

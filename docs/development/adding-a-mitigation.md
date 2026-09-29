@@ -105,7 +105,7 @@ The hook should:
 4. preserve normal errors, output sizing, and unrelated request behavior;
 5. pass through on derivation, parsing, coherence, installation, or availability failure.
 
-Use `LHHookBackend` for the hook mechanism: Objective-C message replacement for a selector, function patching for a direct function, and imported-symbol rebinding where callers can bypass a public wrapper. Keep original implementation pointers and never assume an original is always available.
+Use `LHHookBackend` for the hook mechanism: Objective-C message replacement for a selector, function patching only when a process-wide direct hook is required and safe, and imported-symbol rebinding for covered app-facing C call sites. Prefer imported-symbol rebinding for high-frequency system C APIs because distant function patches may require breakpoint exception-port handling. Document direct system-library and dynamically resolved calls as pass-through when imported coverage is the safe boundary. Keep original implementation pointers and never assume an original is always available.
 
 ## 7. Generate, Build, And Validate
 

@@ -5,7 +5,6 @@
 
 #include <arpa/inet.h>
 #include <CoreFoundation/CoreFoundation.h>
-#include <dlfcn.h>
 #include <ifaddrs.h>
 #include <Network/Network.h>
 #include <net/if.h>
@@ -23,7 +22,6 @@
 #include <time.h>
 
 typedef int (*LHGetIfAddrsOriginal)(struct ifaddrs **interfaces);
-typedef void (*LHFreeIfAddrsOriginal)(struct ifaddrs *interfaces);
 typedef CFDictionaryRef (*LHCFNetworkCopySystemProxySettingsOriginal)(void);
 typedef CFDictionaryRef (*LHSCDynamicStoreCopyProxiesOriginal)(void *store);
 typedef CFDictionaryRef (*LHSCDynamicStoreCopyProxiesWithOptionsOriginal)(void *store, CFDictionaryRef options);
@@ -40,7 +38,6 @@ LH_POLICY_SEED(network_interface_link_mac)
 LH_POLICY_SEED(network_interface_counter_profile)
 
 static LHGetIfAddrsOriginal LHInterfaceInventoryGetIfAddrsOriginalImplementation;
-static LHFreeIfAddrsOriginal LHInterfaceInventoryFreeIfAddrsOriginalImplementation;
 static LHCFNetworkCopySystemProxySettingsOriginal LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation;
 static LHSCDynamicStoreCopyProxiesOriginal LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation;
 static LHSCDynamicStoreCopyProxiesWithOptionsOriginal LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation;
@@ -51,7 +48,6 @@ static LHNwPathBooleanOriginal LHInterfaceInventoryNwPathIsExpensiveOriginalImpl
 static LHNwPathBooleanOriginal LHInterfaceInventoryNwPathIsConstrainedOriginalImplementation;
 static LHNwPathEnumerateInterfacesOriginal LHInterfaceInventoryNwPathEnumerateInterfacesOriginalImplementation;
 static LHPolicyEngine *LHInterfaceInventoryPolicy;
-static struct ifaddrs *LHInterfaceInventoryOwnedLists[64];
 
 static bool LHInterfaceInventoryNameLooksSensitive(const char *name) {
     if (name == 0) {
@@ -379,144 +375,6 @@ static CFDictionaryRef LHInterfaceInventoryCopyFilteredProxySettings(CFDictionar
     return filtered;
 }
 
-static size_t LHInterfaceInventorySockaddrLength(const struct sockaddr *address) {
-    if (address == 0) {
-        return 0;
-    }
-    if (address->sa_len != 0) {
-        return address->sa_len;
-    }
-    switch (address->sa_family) {
-        case AF_INET:
-            return sizeof(struct sockaddr_in);
-        case AF_INET6:
-            return sizeof(struct sockaddr_in6);
-        case AF_LINK:
-            return sizeof(struct sockaddr_dl);
-        default:
-            return sizeof(struct sockaddr);
-    }
-}
-
-static struct sockaddr *LHInterfaceInventoryCopySockaddr(const struct sockaddr *address) {
-    size_t length = LHInterfaceInventorySockaddrLength(address);
-    if (length == 0) {
-        return 0;
-    }
-    struct sockaddr *copy = (struct sockaddr *)malloc(length);
-    if (copy == 0) {
-        return 0;
-    }
-    memcpy(copy, address, length);
-    return copy;
-}
-
-static void *LHInterfaceInventoryCopyData(const void *data) {
-    if (data == 0) {
-        return 0;
-    }
-    void *copy = malloc(sizeof(struct if_data));
-    if (copy == 0) {
-        return 0;
-    }
-    memcpy(copy, data, sizeof(struct if_data));
-    return copy;
-}
-
-static void LHInterfaceInventoryFreeOwnedList(struct ifaddrs *interfaces) {
-    struct ifaddrs *cursor = interfaces;
-    while (cursor != 0) {
-        struct ifaddrs *next = cursor->ifa_next;
-        free(cursor->ifa_name);
-        free(cursor->ifa_addr);
-        free(cursor->ifa_netmask);
-        free(cursor->ifa_dstaddr);
-        free(cursor->ifa_data);
-        free(cursor);
-        cursor = next;
-    }
-}
-
-static bool LHInterfaceInventoryRememberOwnedList(struct ifaddrs *interfaces) {
-    if (interfaces == 0) {
-        return false;
-    }
-    for (size_t index = 0; index < sizeof(LHInterfaceInventoryOwnedLists) / sizeof(LHInterfaceInventoryOwnedLists[0]); index++) {
-        if (LHInterfaceInventoryOwnedLists[index] == 0) {
-            LHInterfaceInventoryOwnedLists[index] = interfaces;
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool LHInterfaceInventoryForgetOwnedList(struct ifaddrs *interfaces) {
-    for (size_t index = 0; index < sizeof(LHInterfaceInventoryOwnedLists) / sizeof(LHInterfaceInventoryOwnedLists[0]); index++) {
-        if (LHInterfaceInventoryOwnedLists[index] == interfaces) {
-            LHInterfaceInventoryOwnedLists[index] = 0;
-            return true;
-        }
-    }
-    return false;
-}
-
-static struct ifaddrs *LHInterfaceInventoryCloneVisibleList(struct ifaddrs *interfaces, bool *filtered, bool *failed) {
-    struct ifaddrs *head = 0;
-    struct ifaddrs *tail = 0;
-    if (filtered != 0) {
-        *filtered = false;
-    }
-    if (failed != 0) {
-        *failed = false;
-    }
-
-    for (struct ifaddrs *cursor = interfaces; cursor != 0; cursor = cursor->ifa_next) {
-        if (LHInterfaceInventoryNameLooksSensitive(cursor->ifa_name)) {
-            if (filtered != 0) {
-                *filtered = true;
-            }
-            continue;
-        }
-
-        struct ifaddrs *copy = (struct ifaddrs *)calloc(1, sizeof(struct ifaddrs));
-        if (copy == 0) {
-            LHInterfaceInventoryFreeOwnedList(head);
-            if (failed != 0) {
-                *failed = true;
-            }
-            return 0;
-        }
-        *copy = *cursor;
-        copy->ifa_next = 0;
-        copy->ifa_name = cursor->ifa_name == 0 ? 0 : strdup(cursor->ifa_name);
-        copy->ifa_addr = LHInterfaceInventoryCopySockaddr(cursor->ifa_addr);
-        copy->ifa_netmask = LHInterfaceInventoryCopySockaddr(cursor->ifa_netmask);
-        copy->ifa_dstaddr = LHInterfaceInventoryCopySockaddr(cursor->ifa_dstaddr);
-        copy->ifa_data = LHInterfaceInventoryCopyData(cursor->ifa_data);
-
-        if ((cursor->ifa_name != 0 && copy->ifa_name == 0) ||
-            (cursor->ifa_addr != 0 && copy->ifa_addr == 0) ||
-            (cursor->ifa_netmask != 0 && copy->ifa_netmask == 0) ||
-            (cursor->ifa_dstaddr != 0 && copy->ifa_dstaddr == 0) ||
-            (cursor->ifa_data != 0 && copy->ifa_data == 0)) {
-            LHInterfaceInventoryFreeOwnedList(copy);
-            LHInterfaceInventoryFreeOwnedList(head);
-            if (failed != 0) {
-                *failed = true;
-            }
-            return 0;
-        }
-
-        if (tail == 0) {
-            head = copy;
-        } else {
-            tail->ifa_next = copy;
-        }
-        tail = copy;
-    }
-    return head;
-}
-
 static int LHInterfaceInventoryGetIfAddrsReplacement(struct ifaddrs **interfaces) {
     if (LHInterfaceInventoryGetIfAddrsOriginalImplementation == 0) {
         return -1;
@@ -527,33 +385,11 @@ static int LHInterfaceInventoryGetIfAddrsReplacement(struct ifaddrs **interfaces
         return result;
     }
 
-    bool filtered = false;
-    bool failed = false;
-    struct ifaddrs *visible = LHInterfaceInventoryCloneVisibleList(*interfaces, &filtered, &failed);
-    if (filtered && !failed && (visible == 0 || LHInterfaceInventoryRememberOwnedList(visible))) {
-        if (LHInterfaceInventoryFreeIfAddrsOriginalImplementation != 0) {
-            LHInterfaceInventoryFreeIfAddrsOriginalImplementation(*interfaces);
-        }
-        *interfaces = visible;
-    } else {
-        LHInterfaceInventoryFreeOwnedList(visible);
-    }
-
     for (struct ifaddrs *cursor = *interfaces; cursor != 0; cursor = cursor->ifa_next) {
         LHInterfaceInventoryRewriteEntry(cursor);
     }
     LHInterfaceInventoryShapeCounterData(*interfaces);
     return result;
-}
-
-static void LHInterfaceInventoryFreeIfAddrsReplacement(struct ifaddrs *interfaces) {
-    if (interfaces != 0 && LHInterfaceInventoryForgetOwnedList(interfaces)) {
-        LHInterfaceInventoryFreeOwnedList(interfaces);
-        return;
-    }
-    if (LHInterfaceInventoryFreeIfAddrsOriginalImplementation != 0) {
-        LHInterfaceInventoryFreeIfAddrsOriginalImplementation(interfaces);
-    }
 }
 
 static CFDictionaryRef LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement(void) {
@@ -646,78 +482,54 @@ static void LHInterfaceInventoryNwPathEnumerateInterfacesReplacement(nw_path_t p
     });
 }
 
-static bool LHInterfaceInventoryHookFunction(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
-    bool installed = false;
-    void *target = dlsym(RTLD_DEFAULT, symbol);
-    if (target != 0) {
-        installed = LHHookBackendHookFunction(backend, target, replacement, original) || installed;
-    }
-    installed = LHHookBackendHookImportedSymbol(backend, symbol, replacement, original) || installed;
-    return installed;
+static bool LHInterfaceInventoryHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
+    return LHHookBackendHookImportedSymbol(backend, symbol, replacement, original);
 }
 
 bool LHMitigation_network_interface_inventory_composite_common_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHInterfaceInventoryPolicy = policy;
 
     bool installed = false;
-    void *target = dlsym(RTLD_DEFAULT, "getifaddrs");
-    if (target != 0) {
-        installed = LHHookBackendHookFunction(backend,
-                                              target,
-                                              (void *)LHInterfaceInventoryGetIfAddrsReplacement,
-                                              (void **)&LHInterfaceInventoryGetIfAddrsOriginalImplementation) || installed;
-    }
     installed = LHHookBackendHookImportedSymbol(backend,
                                                 "getifaddrs",
                                                 (void *)LHInterfaceInventoryGetIfAddrsReplacement,
                                                 (void **)&LHInterfaceInventoryGetIfAddrsOriginalImplementation) || installed;
-    void *freeTarget = dlsym(RTLD_DEFAULT, "freeifaddrs");
-    if (freeTarget != 0) {
-        installed = LHHookBackendHookFunction(backend,
-                                              freeTarget,
-                                              (void *)LHInterfaceInventoryFreeIfAddrsReplacement,
-                                              (void **)&LHInterfaceInventoryFreeIfAddrsOriginalImplementation) || installed;
-    }
-    installed = LHHookBackendHookImportedSymbol(backend,
-                                                "freeifaddrs",
-                                                (void *)LHInterfaceInventoryFreeIfAddrsReplacement,
-                                                (void **)&LHInterfaceInventoryFreeIfAddrsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "CFNetworkCopySystemProxySettings",
-                                                 (void *)LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement,
-                                                 (void **)&LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "SCDynamicStoreCopyProxies",
-                                                 (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesReplacement,
-                                                 (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "SCDynamicStoreCopyProxiesWithOptions",
-                                                 (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsReplacement,
-                                                 (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_interface_get_name",
-                                                 (void *)LHInterfaceInventoryNwInterfaceGetNameReplacement,
-                                                 (void **)&LHInterfaceInventoryNwInterfaceGetNameOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_interface_get_type",
-                                                 (void *)LHInterfaceInventoryNwInterfaceGetTypeReplacement,
-                                                 (void **)&LHInterfaceInventoryNwInterfaceGetTypeOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_path_uses_interface_type",
-                                                 (void *)LHInterfaceInventoryNwPathUsesInterfaceTypeReplacement,
-                                                 (void **)&LHInterfaceInventoryNwPathUsesInterfaceTypeOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_path_is_expensive",
-                                                 (void *)LHInterfaceInventoryNwPathIsExpensiveReplacement,
-                                                 (void **)&LHInterfaceInventoryNwPathIsExpensiveOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_path_is_constrained",
-                                                 (void *)LHInterfaceInventoryNwPathIsConstrainedReplacement,
-                                                 (void **)&LHInterfaceInventoryNwPathIsConstrainedOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookFunction(backend,
-                                                 "nw_path_enumerate_interfaces",
-                                                 (void *)LHInterfaceInventoryNwPathEnumerateInterfacesReplacement,
-                                                 (void **)&LHInterfaceInventoryNwPathEnumerateInterfacesOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "CFNetworkCopySystemProxySettings",
+                                                        (void *)LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement,
+                                                        (void **)&LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "SCDynamicStoreCopyProxies",
+                                                        (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesReplacement,
+                                                        (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "SCDynamicStoreCopyProxiesWithOptions",
+                                                        (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsReplacement,
+                                                        (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_interface_get_name",
+                                                        (void *)LHInterfaceInventoryNwInterfaceGetNameReplacement,
+                                                        (void **)&LHInterfaceInventoryNwInterfaceGetNameOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_interface_get_type",
+                                                        (void *)LHInterfaceInventoryNwInterfaceGetTypeReplacement,
+                                                        (void **)&LHInterfaceInventoryNwInterfaceGetTypeOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_path_uses_interface_type",
+                                                        (void *)LHInterfaceInventoryNwPathUsesInterfaceTypeReplacement,
+                                                        (void **)&LHInterfaceInventoryNwPathUsesInterfaceTypeOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_path_is_expensive",
+                                                        (void *)LHInterfaceInventoryNwPathIsExpensiveReplacement,
+                                                        (void **)&LHInterfaceInventoryNwPathIsExpensiveOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_path_is_constrained",
+                                                        (void *)LHInterfaceInventoryNwPathIsConstrainedReplacement,
+                                                        (void **)&LHInterfaceInventoryNwPathIsConstrainedOriginalImplementation) || installed;
+    installed = LHInterfaceInventoryHookImportedSymbol(backend,
+                                                        "nw_path_enumerate_interfaces",
+                                                        (void *)LHInterfaceInventoryNwPathEnumerateInterfacesReplacement,
+                                                        (void **)&LHInterfaceInventoryNwPathEnumerateInterfacesOriginalImplementation) || installed;
 
     if (!installed) {
         return LHHookBackendRegisterNoOp(backend, LHModuleID_network_interface_inventory_composite_common);
