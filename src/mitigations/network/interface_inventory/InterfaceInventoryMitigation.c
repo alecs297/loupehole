@@ -5,12 +5,14 @@
 
 #include <arpa/inet.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <errno.h>
 #include <ifaddrs.h>
 #include <Network/Network.h>
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/if_var.h>
 #include <netinet/in.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,6 +24,9 @@
 #include <time.h>
 
 typedef int (*LHGetIfAddrsOriginal)(struct ifaddrs **interfaces);
+typedef struct if_nameindex *(*LHIfNameIndexOriginal)(void);
+typedef char *(*LHIfIndexToNameOriginal)(unsigned int interfaceIndex, char *interfaceName);
+typedef unsigned int (*LHIfNameToIndexOriginal)(const char *interfaceName);
 typedef CFDictionaryRef (*LHCFNetworkCopySystemProxySettingsOriginal)(void);
 typedef CFDictionaryRef (*LHSCDynamicStoreCopyProxiesOriginal)(void *store);
 typedef CFDictionaryRef (*LHSCDynamicStoreCopyProxiesWithOptionsOriginal)(void *store, CFDictionaryRef options);
@@ -36,8 +41,12 @@ LH_POLICY_SEED(network_interface_ipv4_host)
 LH_POLICY_SEED(network_interface_ipv6_suffix)
 LH_POLICY_SEED(network_interface_link_mac)
 LH_POLICY_SEED(network_interface_counter_profile)
+LH_POLICY_SEED(network_interface_name_alias)
 
 static LHGetIfAddrsOriginal LHInterfaceInventoryGetIfAddrsOriginalImplementation;
+static LHIfNameIndexOriginal LHInterfaceInventoryIfNameIndexOriginalImplementation;
+static LHIfIndexToNameOriginal LHInterfaceInventoryIfIndexToNameOriginalImplementation;
+static LHIfNameToIndexOriginal LHInterfaceInventoryIfNameToIndexOriginalImplementation;
 static LHCFNetworkCopySystemProxySettingsOriginal LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation;
 static LHSCDynamicStoreCopyProxiesOriginal LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation;
 static LHSCDynamicStoreCopyProxiesWithOptionsOriginal LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation;
@@ -84,7 +93,13 @@ static bool LHInterfaceInventoryPathTypeLooksSensitive(nw_interface_type_t type)
     return type == nw_interface_type_other || type == nw_interface_type_loopback;
 }
 
-static const char *LHInterfaceInventoryCommonNetworkInterfaceName(nw_interface_type_t type) {
+static const char *LHInterfaceInventoryCommonAliasForName(const char *name);
+
+static const char *LHInterfaceInventoryCommonNetworkInterfaceName(nw_interface_type_t type, const char *name) {
+    if (LHInterfaceInventoryNameLooksSensitive(name)) {
+        return LHInterfaceInventoryCommonAliasForName(name);
+    }
+
     switch (type) {
         case nw_interface_type_cellular:
             return "pdp_ip0";
@@ -117,6 +132,18 @@ static bool LHInterfaceInventoryDeriveBytes(const LHPolicySeed *policySeed,
                                    contextLength,
                                    output,
                                    outputLength);
+}
+
+static const char *LHInterfaceInventoryCommonAliasForName(const char *name) {
+    static const char *const aliases[] = { "en1", "en2", "en3" };
+    uint8_t byte = 0;
+    if (!LHInterfaceInventoryDeriveBytes(&LHGeneratedPolicySeed_network_interface_name_alias,
+                                         name,
+                                         &byte,
+                                         sizeof(byte))) {
+        return "en0";
+    }
+    return aliases[byte % (sizeof(aliases) / sizeof(aliases[0]))];
 }
 
 static void LHInterfaceInventoryRewriteIPv4(struct ifaddrs *entry) {
@@ -164,6 +191,9 @@ static void LHInterfaceInventoryRewriteIPv6(struct ifaddrs *entry) {
     address->sin6_addr.s6_addr[0] = 0xfe;
     address->sin6_addr.s6_addr[1] = 0x80;
     memcpy(&address->sin6_addr.s6_addr[8], bytes, sizeof(bytes));
+    if (LHInterfaceInventoryNameLooksSensitive(entry->ifa_name)) {
+        address->sin6_scope_id = 0;
+    }
 
     if (entry->ifa_netmask != 0 && entry->ifa_netmask->sa_family == AF_INET6) {
         struct sockaddr_in6 *netmask = (struct sockaddr_in6 *)entry->ifa_netmask;
@@ -176,6 +206,9 @@ static void LHInterfaceInventoryRewriteIPv6(struct ifaddrs *entry) {
         destination->sin6_addr.s6_addr[0] = 0xfe;
         destination->sin6_addr.s6_addr[1] = 0x80;
         memset(&destination->sin6_addr.s6_addr[8], 0xff, 8);
+        if (LHInterfaceInventoryNameLooksSensitive(entry->ifa_name)) {
+            destination->sin6_scope_id = 0;
+        }
     }
 }
 
@@ -201,12 +234,16 @@ static void LHInterfaceInventoryRewriteLinkAddress(struct ifaddrs *entry) {
 }
 
 static void LHInterfaceInventoryRewriteEntry(struct ifaddrs *entry) {
-    if (entry == 0 || entry->ifa_addr == 0) {
+    if (entry == 0) {
         return;
     }
 
     if (LHInterfaceInventoryNameLooksSensitive(entry->ifa_name)) {
         entry->ifa_flags &= ~(IFF_UP | IFF_RUNNING);
+    }
+
+    if (entry->ifa_addr == 0) {
+        return;
     }
 
     switch (entry->ifa_addr->sa_family) {
@@ -221,6 +258,59 @@ static void LHInterfaceInventoryRewriteEntry(struct ifaddrs *entry) {
             break;
         default:
             break;
+    }
+}
+
+static void LHInterfaceInventoryRewriteLinkName(struct ifaddrs *entry) {
+    if (entry == 0 || entry->ifa_addr == 0 || entry->ifa_addr->sa_family != AF_LINK ||
+        !LHInterfaceInventoryNameLooksSensitive(entry->ifa_name)) {
+        return;
+    }
+
+    const char *alias = LHInterfaceInventoryCommonAliasForName(entry->ifa_name);
+    size_t aliasLength = strlen(alias);
+    struct sockaddr_dl *link = (struct sockaddr_dl *)entry->ifa_addr;
+    size_t dataOffset = offsetof(struct sockaddr_dl, sdl_data);
+    if (link->sdl_len <= dataOffset) {
+        return;
+    }
+
+    size_t capacity = (size_t)link->sdl_len - dataOffset;
+    size_t originalNameLength = link->sdl_nlen;
+    size_t tailLength = (size_t)link->sdl_alen + (size_t)link->sdl_slen;
+    if (originalNameLength > capacity || tailLength > capacity - originalNameLength ||
+        aliasLength > capacity || tailLength > capacity - aliasLength) {
+        return;
+    }
+
+    uint8_t *data = (uint8_t *)link->sdl_data;
+    memmove(data + aliasLength, data + originalNameLength, tailLength);
+    if (originalNameLength > aliasLength) {
+        memset(data + aliasLength + tailLength, 0, originalNameLength - aliasLength);
+    }
+    memcpy(data, alias, aliasLength);
+    link->sdl_nlen = (uint8_t)aliasLength;
+}
+
+static void LHInterfaceInventoryRewriteInterfaceName(struct ifaddrs *entry) {
+    if (entry == 0 || !LHInterfaceInventoryNameLooksSensitive(entry->ifa_name)) {
+        return;
+    }
+
+    const char *alias = LHInterfaceInventoryCommonAliasForName(entry->ifa_name);
+    size_t aliasLength = strlen(alias);
+    if (strlen(entry->ifa_name) < aliasLength) {
+        return;
+    }
+    memcpy(entry->ifa_name, alias, aliasLength + 1);
+}
+
+static void LHInterfaceInventoryRewriteSensitiveNames(struct ifaddrs *interfaces) {
+    for (struct ifaddrs *cursor = interfaces; cursor != 0; cursor = cursor->ifa_next) {
+        LHInterfaceInventoryRewriteLinkName(cursor);
+    }
+    for (struct ifaddrs *cursor = interfaces; cursor != 0; cursor = cursor->ifa_next) {
+        LHInterfaceInventoryRewriteInterfaceName(cursor);
     }
 }
 
@@ -389,7 +479,61 @@ static int LHInterfaceInventoryGetIfAddrsReplacement(struct ifaddrs **interfaces
         LHInterfaceInventoryRewriteEntry(cursor);
     }
     LHInterfaceInventoryShapeCounterData(*interfaces);
+    LHInterfaceInventoryRewriteSensitiveNames(*interfaces);
     return result;
+}
+
+static struct if_nameindex *LHInterfaceInventoryIfNameIndexReplacement(void) {
+    if (LHInterfaceInventoryIfNameIndexOriginalImplementation == 0) {
+        return 0;
+    }
+
+    struct if_nameindex *interfaces = LHInterfaceInventoryIfNameIndexOriginalImplementation();
+    if (interfaces == 0) {
+        return 0;
+    }
+
+    for (struct if_nameindex *cursor = interfaces; cursor->if_index != 0 || cursor->if_name != 0; cursor++) {
+        if (!LHInterfaceInventoryNameLooksSensitive(cursor->if_name)) {
+            continue;
+        }
+        const char *alias = LHInterfaceInventoryCommonAliasForName(cursor->if_name);
+        size_t aliasLength = strlen(alias);
+        if (strlen(cursor->if_name) >= aliasLength) {
+            memcpy(cursor->if_name, alias, aliasLength + 1);
+        }
+    }
+    return interfaces;
+}
+
+static char *LHInterfaceInventoryIfIndexToNameReplacement(unsigned int interfaceIndex, char *interfaceName) {
+    if (LHInterfaceInventoryIfIndexToNameOriginalImplementation == 0) {
+        return 0;
+    }
+
+    char *result = LHInterfaceInventoryIfIndexToNameOriginalImplementation(interfaceIndex, interfaceName);
+    if (result == 0 || !LHInterfaceInventoryNameLooksSensitive(result)) {
+        return result;
+    }
+
+    const char *alias = LHInterfaceInventoryCommonAliasForName(result);
+    size_t aliasLength = strlen(alias);
+    if (aliasLength >= IFNAMSIZ) {
+        return result;
+    }
+    memcpy(result, alias, aliasLength + 1);
+    return result;
+}
+
+static unsigned int LHInterfaceInventoryIfNameToIndexReplacement(const char *interfaceName) {
+    if (LHInterfaceInventoryNameLooksSensitive(interfaceName)) {
+        errno = ENXIO;
+        return 0;
+    }
+    if (LHInterfaceInventoryIfNameToIndexOriginalImplementation == 0) {
+        return 0;
+    }
+    return LHInterfaceInventoryIfNameToIndexOriginalImplementation(interfaceName);
 }
 
 static CFDictionaryRef LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement(void) {
@@ -427,7 +571,7 @@ static const char *LHInterfaceInventoryNwInterfaceGetNameReplacement(nw_interfac
         type = LHInterfaceInventoryNwInterfaceGetTypeOriginalImplementation(interface);
     }
     if (LHInterfaceInventoryNameLooksSensitive(name) || LHInterfaceInventoryPathTypeLooksSensitive(type)) {
-        return LHInterfaceInventoryCommonNetworkInterfaceName(type);
+        return LHInterfaceInventoryCommonNetworkInterfaceName(type, name);
     }
     return name;
 }
@@ -482,10 +626,6 @@ static void LHInterfaceInventoryNwPathEnumerateInterfacesReplacement(nw_path_t p
     });
 }
 
-static bool LHInterfaceInventoryHookImportedSymbol(LHHookBackend *backend, const char *symbol, void *replacement, void **original) {
-    return LHHookBackendHookImportedSymbol(backend, symbol, replacement, original);
-}
-
 bool LHMitigation_network_interface_inventory_composite_common_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHInterfaceInventoryPolicy = policy;
 
@@ -494,42 +634,54 @@ bool LHMitigation_network_interface_inventory_composite_common_install(LHHookBac
                                                 "getifaddrs",
                                                 (void *)LHInterfaceInventoryGetIfAddrsReplacement,
                                                 (void **)&LHInterfaceInventoryGetIfAddrsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "CFNetworkCopySystemProxySettings",
-                                                        (void *)LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement,
-                                                        (void **)&LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "SCDynamicStoreCopyProxies",
-                                                        (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesReplacement,
-                                                        (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "SCDynamicStoreCopyProxiesWithOptions",
-                                                        (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsReplacement,
-                                                        (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_interface_get_name",
-                                                        (void *)LHInterfaceInventoryNwInterfaceGetNameReplacement,
-                                                        (void **)&LHInterfaceInventoryNwInterfaceGetNameOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_interface_get_type",
-                                                        (void *)LHInterfaceInventoryNwInterfaceGetTypeReplacement,
-                                                        (void **)&LHInterfaceInventoryNwInterfaceGetTypeOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_path_uses_interface_type",
-                                                        (void *)LHInterfaceInventoryNwPathUsesInterfaceTypeReplacement,
-                                                        (void **)&LHInterfaceInventoryNwPathUsesInterfaceTypeOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_path_is_expensive",
-                                                        (void *)LHInterfaceInventoryNwPathIsExpensiveReplacement,
-                                                        (void **)&LHInterfaceInventoryNwPathIsExpensiveOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_path_is_constrained",
-                                                        (void *)LHInterfaceInventoryNwPathIsConstrainedReplacement,
-                                                        (void **)&LHInterfaceInventoryNwPathIsConstrainedOriginalImplementation) || installed;
-    installed = LHInterfaceInventoryHookImportedSymbol(backend,
-                                                        "nw_path_enumerate_interfaces",
-                                                        (void *)LHInterfaceInventoryNwPathEnumerateInterfacesReplacement,
-                                                        (void **)&LHInterfaceInventoryNwPathEnumerateInterfacesOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "if_nameindex",
+                                                (void *)LHInterfaceInventoryIfNameIndexReplacement,
+                                                (void **)&LHInterfaceInventoryIfNameIndexOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "if_indextoname",
+                                                (void *)LHInterfaceInventoryIfIndexToNameReplacement,
+                                                (void **)&LHInterfaceInventoryIfIndexToNameOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "if_nametoindex",
+                                                (void *)LHInterfaceInventoryIfNameToIndexReplacement,
+                                                (void **)&LHInterfaceInventoryIfNameToIndexOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "CFNetworkCopySystemProxySettings",
+                                                (void *)LHInterfaceInventoryCFNetworkCopySystemProxySettingsReplacement,
+                                                (void **)&LHInterfaceInventoryCFNetworkCopySystemProxySettingsOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "SCDynamicStoreCopyProxies",
+                                                (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesReplacement,
+                                                (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "SCDynamicStoreCopyProxiesWithOptions",
+                                                (void *)LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsReplacement,
+                                                (void **)&LHInterfaceInventorySCDynamicStoreCopyProxiesWithOptionsOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_interface_get_name",
+                                                (void *)LHInterfaceInventoryNwInterfaceGetNameReplacement,
+                                                (void **)&LHInterfaceInventoryNwInterfaceGetNameOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_interface_get_type",
+                                                (void *)LHInterfaceInventoryNwInterfaceGetTypeReplacement,
+                                                (void **)&LHInterfaceInventoryNwInterfaceGetTypeOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_path_uses_interface_type",
+                                                (void *)LHInterfaceInventoryNwPathUsesInterfaceTypeReplacement,
+                                                (void **)&LHInterfaceInventoryNwPathUsesInterfaceTypeOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_path_is_expensive",
+                                                (void *)LHInterfaceInventoryNwPathIsExpensiveReplacement,
+                                                (void **)&LHInterfaceInventoryNwPathIsExpensiveOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_path_is_constrained",
+                                                (void *)LHInterfaceInventoryNwPathIsConstrainedReplacement,
+                                                (void **)&LHInterfaceInventoryNwPathIsConstrainedOriginalImplementation) || installed;
+    installed = LHHookBackendHookImportedSymbol(backend,
+                                                "nw_path_enumerate_interfaces",
+                                                (void *)LHInterfaceInventoryNwPathEnumerateInterfacesReplacement,
+                                                (void **)&LHInterfaceInventoryNwPathEnumerateInterfacesOriginalImplementation) || installed;
 
     if (!installed) {
         return LHHookBackendRegisterNoOp(backend, LHModuleID_network_interface_inventory_composite_common);

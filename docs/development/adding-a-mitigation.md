@@ -107,6 +107,8 @@ The hook should:
 
 Use `LHHookBackend` for the hook mechanism: Objective-C message replacement for a selector, function patching only when a process-wide direct hook is required and safe, and imported-symbol rebinding for covered app-facing C call sites. Prefer imported-symbol rebinding for high-frequency system C APIs because distant function patches may require breakpoint exception-port handling. Document direct system-library and dynamically resolved calls as pass-through when imported coverage is the safe boundary. Keep original implementation pointers and never assume an original is always available.
 
+Choose coverage by API semantics rather than by reproducing one reference app's call sequence. When several public getters, copy functions, or dictionary views expose the same value, cover the family if the module can preserve each API's ownership and failure contract. Reentrancy protection must unwind safely through Objective-C exceptions. Avoid broad hooks around unrelated APIs merely to increase the apparent surface count.
+
 ## 7. Generate, Build, And Validate
 
 ```sh
