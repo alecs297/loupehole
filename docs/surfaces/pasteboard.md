@@ -95,25 +95,21 @@ events within a session timeline.
 
 ### `pasteboard.metadata`
 
-Hook the metadata surfaces as one tuple:
+The implemented default should preserve paste workflows. Loupehole currently
+virtualizes only:
 
 - `UIPasteboard.changeCount`
-- `UIPasteboard.hasStrings`
-- `UIPasteboard.hasURLs`
-- `UIPasteboard.hasImages`
-- `UIPasteboard.hasColors`
-- `UIPasteboard.numberOfItems`
-- AppKit equivalents on `NSPasteboard.general`
 
-Compatibility default should pass through. Pasteboard metadata affects paste
-button enablement, edit menus, drag and drop, shortcut handling, share flows,
-and productivity apps. Returning `false` for everything can make an app hide a
-valid paste action.
+and passes through `hasStrings`, `hasURLs`, `hasImages`, `hasColors`,
+`numberOfItems`, content getters, writes, pattern detection, named pasteboards,
+and AppKit equivalents. Pasteboard content access remains under the OS privacy
+model; the mitigation should not block paste operations as a substitute for
+that protection.
 
-Privacy mode can reduce precision without breaking obvious behavior. For
-example, pass through booleans but bucket or virtualize `changeCount`, or freeze
-the counter within a short app session while allowing it to advance on modeled
-pasteboard events.
+Pasteboard metadata affects paste button enablement, edit menus, drag and drop,
+shortcut handling, share flows, and productivity apps. Returning `false` for
+everything can make an app hide a valid paste action, and returning real shape
+metadata while leaving content reads to the OS is a safer compatibility boundary.
 
 Strict mode can present an empty pasteboard shape for apps that only probe the
 clipboard, but it should be opt-in because it changes visible paste affordances.
@@ -122,7 +118,7 @@ count should be `0`.
 
 UIKit may expose metadata through a private concrete pasteboard subclass, so an
 iOS mitigation should cover both `UIPasteboard` and the runtime class returned
-by the general pasteboard.
+by the general pasteboard for whichever selectors it owns.
 
 ### `pasteboard.change_count`
 
@@ -192,8 +188,8 @@ clipboard-aware controls. If a target app uses pasteboard monitoring for core
 workflow, pass-through is the safest default.
 
 The best privacy default is narrow reduction: avoid exposing the absolute
-global counter when possible, keep metadata coherent with real or policy-shaped
-content access, and avoid one-off random booleans.
+global counter when possible, preserve real paste affordances, leave content
+reads to the OS privacy model, and avoid one-off random booleans.
 
 ## Exclusion Note
 
@@ -218,6 +214,6 @@ state without a prompt and without reading actual clipboard contents. It is not
 a long-term stable identifier, but `changeCount`, item count, and content-shape
 booleans are useful for timing correlation and workflow inference.
 
-The priority is medium. Mitigation should focus on coherent metadata reduction
-and counter virtualization, while preserving paste workflows unless a strict
-policy explicitly accepts the visible tradeoff.
+The priority is medium. Mitigation should focus on counter virtualization while
+preserving paste workflows unless a strict policy explicitly accepts the visible
+tradeoff.

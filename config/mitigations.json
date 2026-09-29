@@ -351,7 +351,7 @@
       "optionDoc": "docs/mitigations/network-interface-inventory.md"
     },
     {
-      "id": "pasteboard.metadata.uikit.empty_shape",
+      "id": "pasteboard.metadata.uikit.change_count",
       "sources": [
         "src/mitigations/pasteboard/metadata/PasteboardMetadataMitigation.m"
       ],

@@ -35,7 +35,7 @@
     "network.hostname.composite.generic_device_name",
     "network.wifi_identity.nehotspot.scoped",
     "network.interface_inventory.composite.common",
-    "pasteboard.metadata.uikit.empty_shape",
+    "pasteboard.metadata.uikit.change_count",
     "webview.script_fingerprint.wkwebview.exact_probe_guard"
   ]
 }

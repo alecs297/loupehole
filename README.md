@@ -80,7 +80,7 @@ The [surface inventory](docs/surfaces/) is research coverage and explains some o
 | [network.hostname](docs/mitigations/network-hostname.md) | [network/hostname](src/mitigations/network/hostname/) | `network.hostname.composite.generic_device_name` |
 | [network.wifi_identity](docs/mitigations/network-wifi-identity.md) | [network/wifi_identity](src/mitigations/network/wifi_identity/) | `network.wifi_identity.nehotspot.scoped` |
 | [network.interface_inventory](docs/mitigations/network-interface-inventory.md) | [network/interface_inventory](src/mitigations/network/interface_inventory/) | `network.interface_inventory.composite.common` |
-| [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.empty_shape` |
+| [pasteboard.metadata](docs/mitigations/pasteboard-metadata.md) | [pasteboard/metadata](src/mitigations/pasteboard/metadata/) | `pasteboard.metadata.uikit.change_count` |
 | [webview.script_fingerprint](docs/mitigations/webview-script-fingerprint.md) | [webview/script_fingerprint](src/mitigations/webview/script_fingerprint/) | `webview.script_fingerprint.wkwebview.exact_probe_guard` |
 
 The default selection mixes seeded synthetic values, coarse bucketing, strict empty inventory shapes, and low-entropy constants. Some surfaces are intentionally not covered because iOS already has strong permission controls or because a partial synthetic inventory would be more detectable than useful. See [Known limitations](docs/reference/known-limitations.md) for the current boundary.

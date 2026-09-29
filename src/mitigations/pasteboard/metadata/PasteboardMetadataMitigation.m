@@ -8,16 +8,10 @@
 #import <objc/runtime.h>
 
 typedef NSInteger (*LHPasteboardIntegerOriginal)(id self, SEL selector);
-typedef BOOL (*LHPasteboardBoolOriginal)(id self, SEL selector);
 
 LH_POLICY_SEED(pasteboard_change_count_base)
 
 static LHPasteboardIntegerOriginal LHPasteboardChangeCountOriginalImplementation;
-static LHPasteboardIntegerOriginal LHPasteboardNumberOfItemsOriginalImplementation;
-static LHPasteboardBoolOriginal LHPasteboardHasStringsOriginalImplementation;
-static LHPasteboardBoolOriginal LHPasteboardHasURLsOriginalImplementation;
-static LHPasteboardBoolOriginal LHPasteboardHasImagesOriginalImplementation;
-static LHPasteboardBoolOriginal LHPasteboardHasColorsOriginalImplementation;
 static LHPolicyEngine *LHPasteboardMetadataPolicy;
 static BOOL LHPasteboardObservedBaseInitialized;
 static NSInteger LHPasteboardObservedBase;
@@ -57,35 +51,11 @@ static NSInteger LHPasteboardChangeCountReplacement(id self, SEL selector) {
     return base + delta;
 }
 
-static NSInteger LHPasteboardNumberOfItemsReplacement(id self, SEL selector) {
-    (void)self;
-    (void)selector;
-    return 0;
-}
-
-static BOOL LHPasteboardHasItemReplacement(id self, SEL selector) {
-    (void)self;
-    (void)selector;
-    return NO;
-}
-
 static bool LHPasteboardHookInteger(LHHookBackend *backend,
                                     Class targetClass,
                                     const char *selectorName,
                                     void *replacement,
                                     LHPasteboardIntegerOriginal *original) {
-    SEL selector = sel_registerName(selectorName);
-    if (selector == 0) {
-        return false;
-    }
-    return LHHookBackendHookMessage(backend, targetClass, selector, replacement, (void **)original);
-}
-
-static bool LHPasteboardHookBool(LHHookBackend *backend,
-                                 Class targetClass,
-                                 const char *selectorName,
-                                 void *replacement,
-                                 LHPasteboardBoolOriginal *original) {
     SEL selector = sel_registerName(selectorName);
     if (selector == 0) {
         return false;
@@ -100,41 +70,16 @@ static bool LHPasteboardInstallForClass(LHHookBackend *backend, Class targetClas
                                         "changeCount",
                                         (void *)LHPasteboardChangeCountReplacement,
                                         &LHPasteboardChangeCountOriginalImplementation) || installed;
-    installed = LHPasteboardHookInteger(backend,
-                                        targetClass,
-                                        "numberOfItems",
-                                        (void *)LHPasteboardNumberOfItemsReplacement,
-                                        &LHPasteboardNumberOfItemsOriginalImplementation) || installed;
-    installed = LHPasteboardHookBool(backend,
-                                     targetClass,
-                                     "hasStrings",
-                                     (void *)LHPasteboardHasItemReplacement,
-                                     &LHPasteboardHasStringsOriginalImplementation) || installed;
-    installed = LHPasteboardHookBool(backend,
-                                     targetClass,
-                                     "hasURLs",
-                                     (void *)LHPasteboardHasItemReplacement,
-                                     &LHPasteboardHasURLsOriginalImplementation) || installed;
-    installed = LHPasteboardHookBool(backend,
-                                     targetClass,
-                                     "hasImages",
-                                     (void *)LHPasteboardHasItemReplacement,
-                                     &LHPasteboardHasImagesOriginalImplementation) || installed;
-    installed = LHPasteboardHookBool(backend,
-                                     targetClass,
-                                     "hasColors",
-                                     (void *)LHPasteboardHasItemReplacement,
-                                     &LHPasteboardHasColorsOriginalImplementation) || installed;
     return installed;
 }
 
-/** Installs strict general-pasteboard metadata reduction for UIKit metadata properties. */
-bool LHMitigation_pasteboard_metadata_uikit_empty_shape_install(LHHookBackend *backend, LHPolicyEngine *policy) {
+/** Installs general-pasteboard change-count reduction for UIKit metadata properties. */
+bool LHMitigation_pasteboard_metadata_uikit_change_count_install(LHHookBackend *backend, LHPolicyEngine *policy) {
     LHPasteboardMetadataPolicy = policy;
 
     Class targetClass = NSClassFromString(@"UIPasteboard");
     if (targetClass == Nil) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_empty_shape);
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_change_count);
     }
 
     bool installed = false;
@@ -151,7 +96,7 @@ bool LHMitigation_pasteboard_metadata_uikit_empty_shape_install(LHHookBackend *b
     }
 
     if (!installed) {
-        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_empty_shape);
+        return LHHookBackendRegisterNoOp(backend, LHModuleID_pasteboard_metadata_uikit_change_count);
     }
 
     return true;
